@@ -1,6 +1,5 @@
 package SDL2 1.0 {
     use strictures 2;
-    $|++;
     #
     use File::ShareDir qw[dist_dir];
     use File::Spec::Functions qw[catdir canonpath rel2abs];
@@ -15,7 +14,8 @@ package SDL2 1.0 {
     use base 'Exporter::Tiny';
     #
     use Data::Dump;
-    $ENV{FFI_PLATYPUS_DLERROR} = 1;
+
+    #$ENV{FFI_PLATYPUS_DLERROR} = 1;
 
 =encoding utf-8
 
@@ -47,17 +47,6 @@ SDL2 - FFI Wrapper for SDL (Simple DirectMedia Layer) Development Library
 
 SDL2 is ...
 
-=head1 LICENSE
-
-Copyright (C) Sanko Robinson.
-
-This library is free software; you can redistribute it and/or modify it under
-the same terms as Perl itself.
-
-=head1 AUTHOR
-
-Sanko Robinson E<lt>sanko@cpan.orgE<gt>
-
 =cut
 
     #warn `pkg-config --libs sdl2`;
@@ -78,9 +67,24 @@ Sanko Robinson E<lt>sanko@cpan.orgE<gt>
 
     #$ffi->bundle;
     FFI::C->ffi($ffi);
-    use Data::Dump;
 
-    #ddx($ffi);
+    # https://wiki.libsdl.org/CategoryVersion
+    use FFI::C::StructDef;
+    FFI::C::StructDef->new(
+        $ffi,
+        name    => 'SDL_version',
+        class   => 'SDL2::version',
+        members => [ major => 'uint8', minor => 'uint8', patch => 'uint8' ]
+    );
+    $ffi->attach( SDL_GetRevision       => [] => 'string' );
+    $ffi->attach( SDL_GetRevisionNumber => [] => 'int' );
+    $ffi->attach( SDL_GetVersion        => ['SDL_version'] );
+    my $ver = SDL2::version->new;
+    SDL_GetVersion($ver);
+
+    #warn $ver->major;
+    #warn $ver->minor;
+    #warn $ver->patch;
     # See https://wiki.libsdl.org/APIByCategory
     # Basics
     ## https://wiki.libsdl.org/CategoryInit
@@ -100,21 +104,9 @@ Sanko Robinson E<lt>sanko@cpan.orgE<gt>
 
     #$ffi->attach( SDL_DelHintCallback => ['string', 'sdl_HintCallback', 'opaque'] => 'void' );
     $ffi->attach( SDL_GetHint             => ['string']                    => 'string' );
-    $ffi->attach( SDL_GetHintBoolean      => [ 'string', 'bool' ]          => 'bool' );
     $ffi->attach( SDL_SetHint             => [ 'string', 'string' ]        => 'bool' );
     $ffi->attach( SDL_SetHintWithPriority => [ 'string', 'string', 'int' ] => 'bool' );
-
-    # https://wiki.libsdl.org/CategoryVersion
-    use FFI::C::StructDef;
-    FFI::C::StructDef->new(
-        $ffi,
-        name    => 'SDL_version',
-        class   => 'SDL2::version',
-        members => [ major => 'uint8', minor => 'uint8', patch => 'uint8' ]
-    );
-    $ffi->attach( SDL_GetRevision       => [] => 'string' );
-    $ffi->attach( SDL_GetRevisionNumber => [] => 'int' );
-    $ffi->attach( SDL_GetVersion        => ['SDL_version'] );
+    $ffi->attach( SDL_GetHintBoolean      => [ 'string', 'bool' ] => 'bool' ) if $ver->patch > 5;
 
     # https://wiki.libsdl.org/CategoryLog
     FFI::C->enum(
@@ -215,16 +207,16 @@ Sanko Robinson E<lt>sanko@cpan.orgE<gt>
         class   => 'SDL2::Surface',
         members => [
             flags     => 'uint32',
-            format    => 'opaque',                         # SDL_PixelFormat*
+            format    => 'opaque',    # SDL_PixelFormat*
             w         => 'int',
             h         => 'int',
             pitch     => 'int',
-            pixels    => 'opaque',                         # void*
-            userdata  => 'opaque',                         # void*
+            pixels    => 'opaque',    # void*
+            userdata  => 'opaque',    # void*
             locked    => 'int',
-            lock_data => 'opaque',                         # void*
-            clip_rect => 'opaque',                         # SDL_Rect
-            map       => 'opaque',                         # SDL_BlitMap*
+            lock_data => 'opaque',    # void*
+            clip_rect => 'opaque',    # SDL_Rect
+            map       => 'opaque',    # SDL_BlitMap*
             refcount  => 'int'
         ]
     );
@@ -289,7 +281,7 @@ Sanko Robinson E<lt>sanko@cpan.orgE<gt>
     );
     $ffi->attach(
         SDL_CreateWindowAndRenderer => [ 'int', 'int', 'uint32', 'SDL_Window', 'SDL_Renderer' ] =>
-            'int'                   => sub (
+            'int' => sub (
             $inner, $width, $height, $window_flags,
             $window = SDL2::Window->new,
             $renderer = SDL2::Renderer->new
@@ -987,7 +979,7 @@ Sanko Robinson E<lt>sanko@cpan.orgE<gt>
         [   qw[
                 SDL_MOUSEWHEEL_NORMAL
                 SDL_MOUSEWHEEL_FLIPPED
-                ]
+            ]
         ]
     );
     $ffi->attach( SDL_GetMouseFocus         => [] => 'SDL_Window' );
@@ -1036,7 +1028,7 @@ Sanko Robinson E<lt>sanko@cpan.orgE<gt>
                 SDL_PIXELTYPE_ARRAYU32
                 SDL_PIXELTYPE_ARRAYF16
                 SDL_PIXELTYPE_ARRAYF32
-                ]
+            ]
         ]
     );
     FFI::C->enum(
@@ -1045,7 +1037,7 @@ Sanko Robinson E<lt>sanko@cpan.orgE<gt>
                 SDL_BITMAPORDER_NONE
                 SDL_BITMAPORDER_4321
                 SDL_BITMAPORDER_1234
-                ]
+            ]
         ]
     );
     FFI::C->enum(
@@ -1060,7 +1052,7 @@ Sanko Robinson E<lt>sanko@cpan.orgE<gt>
                 SDL_PACKEDORDER_BGRX
                 SDL_PACKEDORDER_ABGR
                 SDL_PACKEDORDER_BGRA
-                ]
+            ]
         ]
     );
     FFI::C->enum(
@@ -1073,7 +1065,7 @@ Sanko Robinson E<lt>sanko@cpan.orgE<gt>
                 SDL_ARRAYORDER_BGR
                 SDL_ARRAYORDER_BGRA
                 SDL_ARRAYORDER_ABGR
-                ]
+            ]
         ]
     );
     FFI::C->enum(
@@ -1088,7 +1080,7 @@ Sanko Robinson E<lt>sanko@cpan.orgE<gt>
                 SDL_PACKEDLAYOUT_8888
                 SDL_PACKEDLAYOUT_2101010
                 SDL_PACKEDLAYOUT_1010102
-                ]
+            ]
         ]
     );
     sub SDL_DEFINE_PIXELFOURCC ( $A, $B, $C, $D ) { SDL_FOURCC( $A, $B, $C, $D ) }
@@ -1153,7 +1145,8 @@ Sanko Robinson E<lt>sanko@cpan.orgE<gt>
                     ( SDL_PIXELORDER($format) == SDL_PACKEDORDER_RGBA() ) ||
                     ( SDL_PIXELORDER($format) == SDL_PACKEDORDER_ABGR() ) ||
                     ( SDL_PIXELORDER($format) == SDL_PACKEDORDER_BGRA() ) )
-            ) || (
+            ) ||
+                (
                 SDL_ISPIXELFORMAT_ARRAY($format) &&
                 ( ( SDL_PIXELORDER($format) == SDL_ARRAYORDER_ARGB() ) ||
                     ( SDL_PIXELORDER($format) == SDL_ARRAYORDER_RGBA() ) ||

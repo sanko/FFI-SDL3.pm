@@ -7,7 +7,7 @@ my $quit  = 0;
 my $event = SDL2::Event->new;
 SDL_Init(SDL_INIT_VIDEO);
 my $window = SDL_CreateWindow( "My SDL Empty Window",
-    SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 640, 480, 0 );
+    SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 640, 480, SDL_WINDOW_RESIZABLE );
 warn SDL_GetError();
 my $renderer = SDL_CreateRenderer( $window, -1, 0 );
 warn SDL_GetError();
@@ -55,6 +55,7 @@ while ( !$quit ) {
     }
     SDL_RenderPresent($renderer);
 }
+
 SDL_DestroyRenderer($renderer);
 SDL_DestroyWindow($window);
 SDL_Quit();
