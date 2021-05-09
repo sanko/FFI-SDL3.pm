@@ -8,12 +8,10 @@ my $event = SDL2::Event->new;
 SDL_Init(SDL_INIT_VIDEO);
 my $window = SDL_CreateWindow( "My SDL Empty Window",
     SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 640, 480, 0 );
-warn SDL_GetError();
 my $renderer = SDL_CreateRenderer( $window, -1, 0 );
-warn SDL_GetError();
 my ( $y1, $y2, $x1, $x2 );
 my $drawing = 0;
-my @lines;
+my @rects;
 
 while ( !$quit ) {
     SDL_WaitEventTimeout( $event, 10 );
@@ -31,7 +29,7 @@ while ( !$quit ) {
     }
     elsif ( $event->type == SDL_MOUSEBUTTONUP && $drawing ) {
         if ( $event->button->button == SDL_BUTTON_LEFT ) {
-            push @lines, { x1 => $x1, y1 => $y1, x2 => $x2, y2 => $y2 };
+            push @rects, { x => $x1, y => $y1, w => $x2 - $x1, h => $y2 - $y1 };
             $drawing = 0;
         }
     }
@@ -45,17 +43,15 @@ while ( !$quit ) {
     SDL_RenderClear($renderer);
     if ($drawing) {
         SDL_SetRenderDrawColor( $renderer, 0, 0, 0, 255 );
-        SDL_RenderDrawLine( $renderer, $x1, $y1, $x2, $y2 );
+        SDL_RenderDrawRect( $renderer,
+            SDL2::Rect->new( { x => $x1, y => $y1, w => $x2 - $x1, h => $y2 - $y1 } ) );
     }
-    if (@lines) {
+    if (@rects) {
         SDL_SetRenderDrawColor( $renderer, 128, 128, 128, 255 );
-        for my $line (@lines) {
-            SDL_RenderDrawLine( $renderer, $line->{x1}, $line->{y1}, $line->{x2}, $line->{y2} );
+        for my $rect (@rects) {
+            SDL_RenderDrawRect( $renderer, SDL2::Rect->new($rect) );
         }
     }
-    my $rect = SDL2::Rect->new( { x => 250, y => 150, w => 200, h => 200 } );
-    SDL_SetRenderDrawColor( $renderer, 0, 0, 0, 255 );
-    SDL_RenderDrawRect( $renderer, $rect );
     SDL_RenderPresent($renderer);
 }
 SDL_DestroyRenderer($renderer);
