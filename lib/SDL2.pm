@@ -1362,3 +1362,18 @@ Sanko Robinson E<lt>sanko@cpan.orgE<gt>
     our @EXPORT =    # A start;
         grep {/^SDL_/} keys %SDL2::;
 }
+1;
+
+=head1 LICENSE
+
+Copyright (C) Sanko Robinson.
+
+This library is free software; you can redistribute it and/or modify it under
+the terms found in the Artistic License 2. Other copyrights, terms, and
+conditions may apply to data transmitted through this module.
+
+=head1 AUTHOR
+
+Sanko Robinson E<lt>sanko@cpan.orgE<gt>
+
+=cut
