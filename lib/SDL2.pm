@@ -1357,6 +1357,59 @@ SDL2 is ...
 }
 1;
 
+
+=head1 Installlation
+
+Use of this package requires you have SDL2 libs installed. Depending on your
+environment, this might be an easy task or a difficult one.
+
+If you need more information (building from scratch, etc.), see
+L<https://wiki.libsdl.org/Installation>.
+
+=head2 Linux
+
+Install the SDL2 libs with your package manager or follow instructions from the
+libSDL project.
+
+=head3 Debian (Ubuntu, et al.)
+
+	sudo apt-get install libsdl2-dev
+
+=head3 Fedora
+
+	sudo dnf install SDL2-devel
+
+=head3 Arch (Manjaro, et al.)
+
+	sudo pacman -S sdl2
+
+=head2 Mac OS X
+
+This is untested but might (should) work.
+
+Prebuilt libraries can be found here: https://www.libsdl.org/download-2.0.php
+
+=head3 Installing with L<brew|https://brew.sh/>
+
+	brew install sdl2
+	brew install sdl2_image
+
+=head3 Installing with C<macports>
+
+	sudo port install libsdl2
+
+And then add the following to you bash init script:
+
+	export LIBRARY_PATH="$LIBRARY_PATH:/opt/local/lib/"
+
+=head2 Windows
+
+You have some options with Windows but I have not tested them yet.
+
+Prebuilt binaries can be found here: https://www.libsdl.org/download-2.0.php
+
+=for future https://github.com/Rust-SDL2/rust-sdl2
+
 =head1 LICENSE
 
 Copyright (C) Sanko Robinson.
@@ -1368,5 +1421,7 @@ conditions may apply to data transmitted through this module.
 =head1 AUTHOR
 
 Sanko Robinson E<lt>sanko@cpan.orgE<gt>
+
+=for stopwords libSDL
 
 =cut
