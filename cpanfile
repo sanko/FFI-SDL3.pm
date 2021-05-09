@@ -1,5 +1,6 @@
 requires 'perl', '5.02000';
 requires 'strictures', 2;
+requires 'FFI::ExtractSymbols', 0.05;
 requires 'FFI::Platypus';
 requires 'FFI::Platypus::Lang::CPP';
 requires 'FFI::C';
