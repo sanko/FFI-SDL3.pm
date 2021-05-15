@@ -18,7 +18,7 @@ jobs:
     name: OS ${{matrix.runner}} Perl ${{matrix.perl}}
     
     container:
-     image: perl:${{ matrix.perl-version }}
+      image: perl:${{ matrix.perl-version }}
     
     steps:
     - uses: actions/checkout@v2
