@@ -28,6 +28,8 @@ jobs:
       run: perl -V
     - name: Install Dependencies
       run: curl -sL https://git.io/cpm | perl - install -g --show-build-log-on-failure
-    - name: Test with pytest
+    - name: Install Dev Dependencies
+      run: curl -sL https://git.io/cpm | perl - Module::Build::Tiny -g --show-build-log-on-failure
+    - name: Test
       run: |
         perl ./Build.PL ; ./Build ; ./Build test
