@@ -24,9 +24,7 @@ jobs:
 
     steps:
     - uses: actions/checkout@v2
-    - name: Set up perl ${{ matrix.perl-version }}
-      with:
-        perl-version: ${{ matrix.perl-version }}
+    - name: perl -V
       run: perl -V
     - name: Install Dependencies
       run: curl -sL https://git.io/cpm | perl - install -g --show-build-log-on-failure        
