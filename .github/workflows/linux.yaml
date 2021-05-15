@@ -27,10 +27,7 @@ jobs:
     - name: perl -V
       run: perl -V
     - name: Install Dependencies
-      run: curl -sL https://git.io/cpm | perl - install -g --show-build-log-on-failure        
-    - name: Install dependencies with cpanm
-      run: |
-        perl cpanm --installdeps .
+      run: curl -sL https://git.io/cpm | perl - install -g --show-build-log-on-failure
     - name: Test with pytest
       run: |
         perl ./Build.PL ; ./Build ; ./Build test
