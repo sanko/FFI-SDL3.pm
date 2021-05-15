@@ -17,17 +17,17 @@ jobs:
     runs-on: ${{matrix.runner}}
     name: OS ${{matrix.runner}} Perl ${{matrix.perl}}
     
-    container:
-      image: perl:${{ matrix.perl }}
+    #container:
+    #  image: perl:${{ matrix.perl-version }}
     
     steps:
     - uses: actions/checkout@v2
   
-    #- name: Set up perl
-      #uses: shogo82148/actions-setup-perl@v1
-      #with:
-          #perl-version: ${{ matrix.perl }}
-          #distribution: ${{ ( startsWith( matrix.runner, 'windows-' ) && 'strawberry' ) || 'default' }}
+    - name: Set up perl
+      uses: shogo82148/actions-setup-perl@v1
+      with:
+          perl-version: ${{ matrix.perl }}
+          distribution: ${{ ( startsWith( matrix.runner, 'windows-' ) && 'strawberry' ) || 'default' }}
  
     - name: perl -V
       run: perl -V
@@ -53,4 +53,3 @@ jobs:
           perl Build.PL
           ./Build
           ./Build test
- 
