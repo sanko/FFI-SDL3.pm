@@ -27,8 +27,8 @@ jobs:
     - name: Set up perl ${{ matrix.perl-version }}
       with:
         perl-version: ${{ matrix.perl-version }}
-      - name: Install Dependencies
-        run: curl -sL https://git.io/cpm | perl - install -g --show-build-log-on-failure        
+    - name: Install Dependencies
+      run: curl -sL https://git.io/cpm | perl - install -g --show-build-log-on-failure        
     - name: Install dependencies with cpanm
       run: |
         perl cpanm --installdeps .
