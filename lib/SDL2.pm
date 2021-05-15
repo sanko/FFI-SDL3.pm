@@ -1351,6 +1351,11 @@ SDL2 is ...
     # include/SDL_stdinc.h
     sub SDL_FOURCC ( $A, $B, $C, $D ) { $A << 0 | $B << 8 | $C << 16 | $D << 24 }
 
+# Unsorted
+    $ffi->attach( SDL_UpdateTexture       => [ 'SDL_Texture', 'opaque', 'opaque[]', 'int' ] => 'int');
+    $ffi->attach( SDL_RenderDrawPoint       => [ 'SDL_Renderer', 'int', 'int' ] => 'int');
+
+
     # Export symbols!
     our @EXPORT =    # A start;
         grep {/^SDL_/} keys %SDL2::;
