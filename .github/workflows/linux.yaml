@@ -1,0 +1,39 @@
+
+
+# This workflow will install Perl dependencies, run tests and lint with a variety of Python versions
+# For more information see: https://help.github.com/actions/language-and-framework-guides/using-python-with-github-actions
+
+name: Perl package
+
+on:
+  push:
+    branches: [ '*' ]
+    tags-ignore: [ '*' ]
+  pull_request:
+    branches: [ '*' ]
+
+jobs:
+  perl:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        perl-version: [5.20, 5.32, 'latest', 'threaded']
+    container:
+      image: perl:${{ matrix.perl-version }}
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: Set up perl ${{ matrix.perl-version }}
+      with:
+        perl-version: ${{ matrix.perl-version }}
+      - name: Install Dependencies
+        run: curl -sL https://git.io/cpm | perl - install -g --show-build-log-on-failure        
+    - name: Install dependencies with cpanm
+      run: |
+        perl cpanm --installdeps .
+    - name: Test with pytest
+      run: |
+        perl ./Build.PL
+        ./Build
+        ./Build test
