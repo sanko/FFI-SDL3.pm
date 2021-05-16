@@ -31,6 +31,11 @@ jobs:
  
     - name: perl -V
       run: perl -V
+      
+    - name: Install libsdl2
+      if: ${{ startsWith( matrix.runner, 'ubuntu-' )  }}
+      run: sudo apt-get install libsdl2-dev
+      
     - name: Install dependencies
       run: |
           cpanm --notest Module::Build::Tiny
