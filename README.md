@@ -1,4 +1,4 @@
-[![Build Status](https://travis-ci.com/sanko/SDL2.pm.svg?branch=master)](https://travis-ci.com/sanko/SDL2.pm) [![MetaCPAN Release](https://badge.fury.io/pl/SDL2.svg)](https://metacpan.org/release/SDL2)
+[![Actions Status](https://github.com/sanko/SDL2.pm/workflows/CI/badge.svg)](https://github.com/sanko/SDL2.pm/actions) [![MetaCPAN Release](https://badge.fury.io/pl/SDL2.svg)](https://metacpan.org/release/SDL2)
 # NAME
 
 SDL2 - FFI Wrapper for SDL (Simple DirectMedia Layer) Development Library
@@ -26,56 +26,6 @@ SDL2 - FFI Wrapper for SDL (Simple DirectMedia Layer) Development Library
 # DESCRIPTION
 
 SDL2 is ...
-
-# Installlation
-
-Use of this package requires you have SDL2 libs installed. Depending on your
-environment, this might be an easy task or a difficult one.
-
-If you need more information (building from scratch, etc.), see
-[https://wiki.libsdl.org/Installation](https://wiki.libsdl.org/Installation).
-
-## Linux
-
-Install the SDL2 libs with your package manager or follow instructions from the
-libSDL project.
-
-### Debian (Ubuntu, et al.)
-
-        sudo apt-get install libsdl2-dev
-
-### Fedora
-
-        sudo dnf install SDL2-devel
-
-### Arch (Manjaro, et al.)
-
-        sudo pacman -S sdl2
-
-## Mac OS X
-
-This is untested but might (should) work.
-
-Prebuilt libraries can be found here: https://www.libsdl.org/download-2.0.php
-
-### Installing with [brew](https://brew.sh/)
-
-        brew install sdl2
-        brew install sdl2_image
-
-### Installing with `macports`
-
-        sudo port install libsdl2
-
-And then add the following to you bash init script:
-
-        export LIBRARY_PATH="$LIBRARY_PATH:/opt/local/lib/"
-
-## Windows
-
-You have some options with Windows but I have not tested them yet.
-
-Prebuilt binaries can be found here: https://www.libsdl.org/download-2.0.php
 
 # LICENSE
 

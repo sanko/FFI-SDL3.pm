@@ -12,6 +12,7 @@ package SDL2 1.0 {
     use FFI::Platypus::Memory qw[malloc free];
     use experimental 'signatures';
     use base 'Exporter::Tiny';
+    use Alien::libsdl2;
     #
     use Data::Dump;
 
@@ -49,21 +50,8 @@ SDL2 is ...
 
 =cut
 
-    #warn `pkg-config --libs sdl2`;
-    #warn `pkg-config --cflags sdl2`;
-    my $ffi = FFI::Platypus->new(
-        api          => 1,
-        experimental => 2,
-        lang         => 'CPP',
-        lib          => find_lib_or_exit(
-            lib       => 'SDL2',
-            recursive => 1,
-            libpath   => [
-                qw[. ./share/lib ../share/lib],
-                eval { canonpath( catdir( dist_dir(__PACKAGE__), 'lib' ) ) }
-            ]
-        )
-    );
+    my $ffi = FFI::Platypus->new( api => 1, experimental => 2,
+        lib => [ Alien::libsdl2->dynamic_libs ] );
 
     #$ffi->bundle;
     FFI::C->ffi($ffi);
@@ -1351,69 +1339,15 @@ SDL2 is ...
     # include/SDL_stdinc.h
     sub SDL_FOURCC ( $A, $B, $C, $D ) { $A << 0 | $B << 8 | $C << 16 | $D << 24 }
 
-# Unsorted
-    $ffi->attach( SDL_UpdateTexture       => [ 'SDL_Texture', 'opaque', 'opaque[]', 'int' ] => 'int');
-    $ffi->attach( SDL_RenderDrawPoint       => [ 'SDL_Renderer', 'int', 'int' ] => 'int');
-
+    # Unsorted
+    $ffi->attach( SDL_UpdateTexture => [ 'SDL_Texture', 'opaque', 'opaque[]', 'int' ] => 'int' );
+    $ffi->attach( SDL_RenderDrawPoint => [ 'SDL_Renderer', 'int', 'int' ] => 'int' );
 
     # Export symbols!
     our @EXPORT =    # A start;
         grep {/^SDL_/} keys %SDL2::;
 }
 1;
-
-
-=head1 Installlation
-
-Use of this package requires you have SDL2 libs installed. Depending on your
-environment, this might be an easy task or a difficult one.
-
-If you need more information (building from scratch, etc.), see
-L<https://wiki.libsdl.org/Installation>.
-
-=head2 Linux
-
-Install the SDL2 libs with your package manager or follow instructions from the
-libSDL project.
-
-=head3 Debian (Ubuntu, et al.)
-
-	sudo apt-get install libsdl2-dev
-
-=head3 Fedora
-
-	sudo dnf install SDL2-devel
-
-=head3 Arch (Manjaro, et al.)
-
-	sudo pacman -S sdl2
-
-=head2 Mac OS X
-
-This is untested but might (should) work.
-
-Prebuilt libraries can be found here: https://www.libsdl.org/download-2.0.php
-
-=head3 Installing with L<brew|https://brew.sh/>
-
-	brew install sdl2
-	brew install sdl2_image
-
-=head3 Installing with C<macports>
-
-	sudo port install libsdl2
-
-And then add the following to you bash init script:
-
-	export LIBRARY_PATH="$LIBRARY_PATH:/opt/local/lib/"
-
-=head2 Windows
-
-You have some options with Windows but I have not tested them yet.
-
-Prebuilt binaries can be found here: https://www.libsdl.org/download-2.0.php
-
-=for future https://github.com/Rust-SDL2/rust-sdl2
 
 =head1 LICENSE
 
