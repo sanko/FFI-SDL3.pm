@@ -5,7 +5,7 @@ requires 'FFI::C';
 requires 'File::ShareDir';
 requires 'File::Spec::Functions';
 requires 'Exporter::Tiny';
-requires 'Alien::libsdl2', '1.01';
+requires 'Alien::libsdl2', '1.02';
 
 requires 'Data::Dump';
 

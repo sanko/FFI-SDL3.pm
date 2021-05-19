@@ -43,7 +43,7 @@
       },
       "runtime" : {
          "requires" : {
-            "Alien::libsdl2" : "1.01",
+            "Alien::libsdl2" : "1.02",
             "Data::Dump" : "0",
             "Exporter::Tiny" : "0",
             "FFI::C" : "0",
