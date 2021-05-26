@@ -10,6 +10,7 @@ package SDL2 1.0 {
     use FFI::Platypus 1.00;
     use FFI::C;
     use FFI::Platypus::Memory qw[malloc free];
+    use FFI::Platypus::Closure;
     use experimental 'signatures';
     use base 'Exporter::Tiny';
     use Alien::libsdl2;
@@ -64,6 +65,8 @@ SDL2 is ...
         class   => 'SDL2::version',
         members => [ major => 'uint8', minor => 'uint8', patch => 'uint8' ]
     );
+
+    # I need these first
     $ffi->attach( SDL_GetRevision       => [] => 'string' );
     $ffi->attach( SDL_GetRevisionNumber => [] => 'int' );
     $ffi->attach( SDL_GetVersion        => ['SDL_version'] );
@@ -75,26 +78,49 @@ SDL2 is ...
     #warn $ver->patch;
     # See https://wiki.libsdl.org/APIByCategory
     # Basics
-    ## https://wiki.libsdl.org/CategoryInit
-    $ffi->attach( SDL_Init          => ['uint32'] => 'int' );
-    $ffi->attach( SDL_InitSubSystem => ['uint32'] => 'int' );
-    $ffi->attach( SDL_Quit          => []         => 'void' );
-    $ffi->attach( SDL_QuitSubSystem => ['uint32'] => 'void' );
-    $ffi->attach( SDL_SetMainReady  => []         => 'void' );
-    $ffi->attach( SDL_WasInit       => ['uint32'] => 'uint32' );
+    sub attach (%args) {
+        $ffi->attach( $_ => @{ $args{$_} } ) for keys %args;
+    }
+    my $platform = $^O;                            # https://perldoc.perl.org/perlport#PLATFORMS
+    my $Windows  = !!( $platform eq 'MSWin32' );
 
-    # Only on windows
-    # https://wiki.libsdl.org/SDL_WinRTRunApp
-    #$ffi->attach( SDL_WinRTRunApp => ['opaque', 'opaque'] => 'int' );
-    # https://wiki.libsdl.org/CategoryHints
-    #$ffi->attach( SDL_AddHintCallback => ['string', 'sdl_HintCallback', 'opaque'] => 'void' );
-    $ffi->attach( SDL_ClearHints => [] => 'void' );
+    #my $closure  = $ffi->closure(sub ($userdata, $name, $oldValue, $newValue) { $_[0] * 6 });
+    #ddx $closure;
+    $ffi->type( '(opaque,string,string,string)->void' => 'SDL_HintCallback' );
+    my $closure = $ffi->closure( sub { print "hello world\n" } );
 
-    #$ffi->attach( SDL_DelHintCallback => ['string', 'sdl_HintCallback', 'opaque'] => 'void' );
-    $ffi->attach( SDL_GetHint             => ['string']                    => 'string' );
-    $ffi->attach( SDL_SetHint             => [ 'string', 'string' ]        => 'bool' );
-    $ffi->attach( SDL_SetHintWithPriority => [ 'string', 'string', 'int' ] => 'bool' );
-    $ffi->attach( SDL_GetHintBoolean      => [ 'string', 'bool' ] => 'bool' ) if $ver->patch > 5;
+    #$closure->sticky;
+    #my $closure = $ffi->closure(sub { $_[0] * 6 });
+    my $opaque = $ffi->cast( SDL_HintCallback => 'opaque', $closure );
+    attach(
+        # https://wiki.libsdl.org/CategoryInit
+        SDL_Init          => [ ['uint32'] => 'int' ],
+        SDL_InitSubSystem => [ ['uint32'] => 'int' ],
+        SDL_Quit          => [ []         => 'void' ],
+        SDL_QuitSubSystem => [ ['uint32'] => 'void' ],
+        SDL_SetMainReady  => [ []         => 'void' ],
+        SDL_WasInit       => [ ['uint32'] => 'uint32' ],
+
+        # Windows RT is dead
+        #$Windows ? ( SDL_WinRTRunApp => [ [ 'opaque', 'opaque' ] => 'int' ] ) : (),
+        # https://wiki.libsdl.org/CategoryHints
+        # Names are imported with SDL2::Enum qw[:SDL_Hint]; notes and examples are also there
+        SDL_AddHintCallback => [
+            [ 'string', 'SDL_HintCallback', 'opaque' ] => 'void' =>
+                sub ( $xsub, $name, $callback, $userdata ) {
+                my $cb = FFI::Platypus::Closure->new($callback);
+                $cb->sticky;
+                $xsub->( $name, $cb, $userdata );
+                return $cb;
+            }
+        ],
+        SDL_ClearHints      => [ []                                         => 'void' ],
+        SDL_DelHintCallback => [ [ 'string', 'SDL_HintCallback', 'opaque' ] => 'void' ],
+        SDL_GetHint         => [ ['string']                                 => 'string' ],
+        $ver->patch >= 5 ? ( SDL_GetHintBoolean => [ [ 'string', 'bool' ] => 'bool' ] ) : (),
+        SDL_SetHint             => [ [ 'string', 'string' ] => 'bool' ],
+        SDL_SetHintWithPriority => [ [ 'string', 'string', 'int' ] => 'bool' ]
+    );
 
     # https://wiki.libsdl.org/CategoryLog
     FFI::C->enum(
@@ -1343,7 +1369,25 @@ SDL2 is ...
     $ffi->attach( SDL_UpdateTexture => [ 'SDL_Texture', 'opaque', 'opaque[]', 'int' ] => 'int' );
     $ffi->attach( SDL_RenderDrawPoint => [ 'SDL_Renderer', 'int', 'int' ] => 'int' );
 
-    # Export symbols!
+# Unsorted - https://github.com/libsdl-org/SDL/blob/c59d4dcd38c382a1e9b69b053756f1139a861574/include/SDL_keycode.h
+#    https://github.com/libsdl-org/SDL/blob/c59d4dcd38c382a1e9b69b053756f1139a861574/include/SDL_scancode.h#L151
+    sub SDLK_SCANCODE_MASK           { 1 << 30 }
+    sub SDL_SCANCODE_TO_KEYCODE ($X) { $X | SDLK_SCANCODE_MASK }
+    FFI::C->enum(
+        'SDL_Keycode',
+        [   [ SDLK_UP => SDL_SCANCODE_TO_KEYCODE(82) ],    # 82 comes from include/SDL_scancode.h
+
+            # The following are incorrect!!!!!!!!!!!!!!!!!!!
+            qw[SDLK_DOWN
+                SDLK_LEFT
+                SDLK_RIGHT]
+        ]
+    );
+
+#warn SDL2::SDLK_UP();
+#warn SDL2::SDLK_DOWN();
+# https://github.com/libsdl-org/SDL/blob/c59d4dcd38c382a1e9b69b053756f1139a861574/include/SDL_hints.h
+# Export symbols!
     our @EXPORT =    # A start;
         grep {/^SDL_/} keys %SDL2::;
 }

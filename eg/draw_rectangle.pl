@@ -1,11 +1,28 @@
 use strictures 2;
 use lib '../lib';
 use SDL2;
+use SDL2::Enum qw[:SDL_HintPriority];
+use Data::Dump;
+$|++;
+
+#ddx SDL_AddHintCallback('SDL_HINT_RENDER_DRIVER', sub {ddx \@_;}, \{});
+my $cb = SDL_AddHintCallback(
+    'SDL_HINT_XINPUT_ENABLED',
+    sub {
+        ddx \@_;
+    },
+    \%INC
+);
+
+#SDL_DelHintCallback('SDL_HINT_XINPUT_ENABLED', $cb, \%INC);
+SDL_SetHintWithPriority( 'SDL_HINT_XINPUT_ENABLED', 1, SDL_HINT_OVERRIDE );
+SDL_SetHint( 'SDL_HINT_XINPUT_ENABLED', '1' );
+SDL_SetHint( 'SDL_HINT_XINPUT_ENABLED', '1' );
 
 # https://gigi.nullneuron.net/gigilabs/drawing-lines-with-sdl2/
 my $quit  = 0;
 my $event = SDL2::Event->new;
-SDL_Init(SDL_INIT_VIDEO);
+SDL_Init(SDL_INIT_EVERYTHING);
 my $window = SDL_CreateWindow( "My SDL Empty Window",
     SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 640, 480, 0 );
 my $renderer = SDL_CreateRenderer( $window, -1, 0 );
