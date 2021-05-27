@@ -1,23 +1,26 @@
 use strictures 2;
 use lib '../lib';
-use SDL2;
-use SDL2::Enum qw[:SDL_HintPriority];
+use SDL2 qw[:all];
+use SDL2::Enum qw[:all];
 use Data::Dump;
 $|++;
+SDL_SetHintWithPriority( SDL_HINT_EVENT_LOGGING, 2, SDL_HINT_OVERRIDE );
 
 #ddx SDL_AddHintCallback('SDL_HINT_RENDER_DRIVER', sub {ddx \@_;}, \{});
-my $cb = SDL_AddHintCallback(
-    'SDL_HINT_XINPUT_ENABLED',
-    sub {
-        ddx \@_;
-    },
-    \%INC
-);
+my $blah = 'HI!';
+my $cb   = SDL_AddHintCallback( SDL_HINT_XINPUT_ENABLED, sub { ddx \@_ }, \%ENV );
 
+#ddx $cb;
+#die;
+#SDL_DelHintCallback( SDL_HINT_XINPUT_ENABLED, $cb, \%ENV ) if 1;
 #SDL_DelHintCallback('SDL_HINT_XINPUT_ENABLED', $cb, \%INC);
-SDL_SetHintWithPriority( 'SDL_HINT_XINPUT_ENABLED', 1, SDL_HINT_OVERRIDE );
-SDL_SetHint( 'SDL_HINT_XINPUT_ENABLED', '1' );
-SDL_SetHint( 'SDL_HINT_XINPUT_ENABLED', '1' );
+#SDL_SetHintWithPriority( SDL_HINT_XINPUT_ENABLED, 1, SDL_HINT_OVERRIDE );
+#SDL_SetHint( SDL_HINT_XINPUT_ENABLED, 1 );
+#SDL_SetHint( SDL_HINT_XINPUT_ENABLED, 0 );
+#SDL_ClearHints;
+SDL_SetError( 'This operation has failed: %d', 4 );
+my $x;
+warn SDL_GetErrorMsg( $x, 300 );
 
 # https://gigi.nullneuron.net/gigilabs/drawing-lines-with-sdl2/
 my $quit  = 0;

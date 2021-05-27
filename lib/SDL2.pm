@@ -15,9 +15,11 @@ package SDL2 1.0 {
     use base 'Exporter::Tiny';
     use Alien::libsdl2;
     use lib '../lib/';
-    use SDL2::Enum qw[:all];
     #
     use Data::Dump;
+
+    # Export symbols!
+    our %EXPORT_TAGS;
 
     #$ENV{FFI_PLATYPUS_DLERROR} = 1;
 
@@ -81,47 +83,494 @@ SDL2 is ...
     # See https://wiki.libsdl.org/APIByCategory
     # Basics
     sub attach (%args) {
-        $ffi->attach( $_ => @{ $args{$_} } ) for keys %args;
+        for my $tag ( keys %args ) {
+            for my $func ( keys %{ $args{$tag} } ) {
+                $ffi->attach( $func => @{ $args{$tag}{$func} } );
+                push @{ $EXPORT_TAGS{$tag} }, $func;
+            }
+        }
     }
     my $platform = $^O;                            # https://perldoc.perl.org/perlport#PLATFORMS
     my $Windows  = !!( $platform eq 'MSWin32' );
+    #
 
-    #my $closure  = $ffi->closure(sub ($userdata, $name, $oldValue, $newValue) { $_[0] * 6 });
-    #ddx $closure;
+=head1 Initialization and Shutdown
+
+The functions in this category are used to set up SDL for use and generally
+have global effects in your program.
+
+=head2 C<SDL_Init( ... )>
+
+Initialize the SDL library.
+
+C<SDL_Init( ... )> simply forwards to calling L<< C<SDL_InitSubSystem( ...
+)>|/C<SDL_InitSubSystem( ... )> >>. Therefore, the two may be used
+interchangeably. Though for readability of your code L<< C<SDL_InitSubSystem(
+... )>|/C<SDL_InitSubSystem( ... )> >> might be preferred.
+
+The file I/O (for example: SDL_RWFromFile) and threading (SDL_CreateThread)
+subsystems are initialized by default. Message boxes (SDL_ShowSimpleMessageBox)
+also attempt to work without initializing the video subsystem, in hopes of
+being useful in showing an error dialog when SDL_Init fails. You must
+specifically initialize other subsystems if you use them in your application.
+
+Logging (such as SDL_Log) works without initialization, too.
+
+Expected parameters include:
+
+=over
+
+=item C<flags> which may be any be imported from SDL2::Enum with the L<< C<:init>|SDL2::Enum/C<:init> >> tag and may be OR'd together.
+
+=back
+
+Subsystem initialization is ref-counted, you must call L<< C<SDL_QuitSubSystem(
+... )>|/C<SDL_QuitSubSystem( ... )> >> for each L<< C<SDL_InitSubSystem( ...
+)>|/C<SDL_InitSubSystem( ... )> >> to correctly shutdown a subsystem manually
+(or call L<< C<SDL_Quit( )>|/C<SDL_Quit( )> >> to force shutdown). If a
+subsystem is already loaded then this call will increase the ref-count and
+return.
+
+Returns C<0> on success or a negative error code on failure; call L<<
+C<SDL_GetError( )>|/C<SDL_GetError( )> >> for more information.
+
+=head2 C<SDL_InitSubSystem( ... )>
+
+Compatibility function to initialize the SDL library.
+
+In SDL2, this function and L<< C<SDL_Init( ... )>|/C<SDL_Init( ... )> >> are
+interchangeable.
+
+Expected parameters include:
+
+=over
+
+=item C<flags> which may be any be imported from SDL2::Enum with the L<< C<:init>|SDL2::Enum/C<:init> >> tag and may be OR'd together.
+
+=back
+
+Returns C<0> on success or a negative error code on failure; call L<<
+C<SDL_GetError()>|/C<SDL_GetError( )> >> for more information.
+
+=head2 C<SDL_Quit( )>
+
+Clean up all initialized subsystems.
+
+You should call this function even if you have already shutdown each
+initialized subsystem with L<< C<SDL_QuitSubSystem( )>|/C<SDL_QuitSubSystem( )>
+>>. It is safe to call this function even in the case of errors in
+initialization.
+
+If you start a subsystem using a call to that subsystem's init function (for
+example L<< C<SDL_VideoInit()>|/C<SDL_VideoInit( )> >>) instead of L<<
+C<SDL_Init( ... )>|/C<SDL_Init( ... )> >> or L<< C<SDL_InitSubSystem( ...
+)>|/C<SDL_InitSubSystem( ... )> >>, then you must use that subsystem's quit
+function (L<< C<SDL_VideoQuit( )>|/C<SDL_VideoQuit( )> >>) to shut it down
+before calling C<SDL_Quit( )>. But generally, you should not be using those
+functions directly anyhow; use L<< C<SDL_Init( ... )>|/C<SDL_Init( ... )> >>
+instead.
+
+You can use this function in an C<END { ... }> block to ensure that it is run
+when your application is shutdown.
+
+=head2 C<SDL_QuitSubSystem( ... )>
+
+Shut down specific SDL subsystems.
+
+If you start a subsystem using a call to that subsystem's init function (for
+example L<< C<SDL_VideoInit( )> |/C<SDL_VideoInit( )> >>) instead of L<<
+C<SDL_Init( ... )>|/C<SDL_Init( ... )> >> or L<< C<SDL_InitSubSystem( ...
+)>|/C<SDL_InitSubSystem( ... )> >>, L<< C<SDL_QuitSubSystem( ...
+)>|/C<SDL_QuitSubSystem( ... )> >> and L<< C<SDL_WasInit( ...
+)>|/C<SDL_WasInit( ... )> >> will not work. You will need to use that
+subsystem's quit function ( L<< C<SDL_VideoQuit( )>|/C<SDL_VideoQuit( )> >>
+directly instead. But generally, you should not be using those functions
+directly anyhow; use L<< C<SDL_Init( ... )>|/C<SDL_Init( ... )> >> instead.
+
+You still need to call L<< C<SDL_Quit( )>|/C<SDL_Quit( )> >> even if you close
+all open subsystems with L<< C<SDL_QuitSubSystem( ... )>|/C<SDL_QuitSubSystem(
+... )> >>.
+
+Expected parameters include:
+
+=over
+
+=item C<flags> which may be any be imported from SDL2::Enum with the L<< C<:init>|SDL2::Enum/C<:init> >> tag and may be OR'd together.
+
+=back
+
+=head2 C<SDL_WasInit( ... )>
+
+Get a mask of the specified subsystems which are currently initialized.
+
+Expected parameters include:
+
+=over
+
+=item C<flags> which may be any be imported from SDL2::Enum with the L<< C<:init>|SDL2::Enum/C<:init> >> tag and may be OR'd together.
+
+=back
+
+If C<flags> is C<0>, it returns a mask of all initialized subsystems, otherwise
+it returns the initialization status of the specified subsystems.
+
+The return value does not include C<SDL_INIT_NOPARACHUTE>.
+
+=cut
+
+    attach(
+        init => {
+
+            # https://wiki.libsdl.org/CategoryInit
+            SDL_Init          => [ ['uint32'] => 'int' ],
+            SDL_InitSubSystem => [ ['uint32'] => 'int' ],
+            SDL_Quit          => [ []         => 'void' ],
+            SDL_QuitSubSystem => [ ['uint32'] => 'void' ],
+            SDL_WasInit       => [ ['uint32'] => 'uint32' ]
+        }
+    );
+
+=head1 Configuration Variables
+
+This category contains functions to set and get configuration hints, as well as
+listing each of them alphabetically.
+
+The convention for naming hints is C<SDL_HINT_X>, where C<SDL_X> is the
+environment variable that can be used to override the default.
+
+In general these hints are just that - they may or may not be supported or
+applicable on any given platform, but they provide a way for an application or
+user to give the library a hint as to how they would like the library to work.
+
+=head2 C<SDL_SetHintWithPriority( ... )>
+
+Set a hint with a specific priority.
+
+	SDL_SetHintWithPriority( SDL_EVENT_LOGGING, 2, SDL_HINT_OVERRIDE );
+
+The priority controls the behavior when setting a hint that already has a
+value. Hints will replace existing hints of their priority and lower.
+Environment variables are considered to have override priority.
+
+Expected parameters include:
+
+=over
+
+=item C<name>
+
+the hint to set
+
+=item C<value>
+
+the value of the hint variable
+
+=item C<priority>
+
+the priority level for the hint
+
+=back
+
+Returns a true if the hint was set, untrue otherwise.
+
+=head2 C<SDL_SetHint( ... )>
+
+Set a hint with normal priority.
+
+	SDL_SetHint( SDL_HINT_XINPUT_ENABLED, 1 );
+
+Hints will not be set if there is an existing override hint or environment
+variable that takes precedence. You can use SDL_SetHintWithPriority() to set
+the hint with override priority instead.
+
+Expected parameters:
+
+=over
+
+=item C<name>
+
+the hint to set
+
+=item C<value>
+
+the value of the hint variable
+
+=back
+
+Returns a true value if the hint was set, untrue otherwise.
+
+=head2 C<SDL_GetHint( ... )>
+
+Get the value of a hint.
+
+	SDL_GetHint( SDL_HINT_XINPUT_ENABLED );
+
+Expected parameters:
+
+=over
+
+=item C<name>
+
+the hint to query
+
+=back
+
+Returns the string value of a hint or an undefined value if the hint isn't set.
+
+=head2 C<SDL_GetHintBoolean( ... )>
+
+Get the boolean value of a hint variable.
+
+	SDL_GetHintBoolean( SDL_HINT_XINPUT_ENABLED, 0);
+
+Expected parameters:
+
+=over
+
+=item C<name>
+
+the name of the hint to get the boolean value from
+
+=item C<default_value>
+
+the value to return if the hint does not exist
+
+=back
+
+Returns the boolean value of a hint or the provided default value if the hint
+does not exist.
+
+=head2 C<SDL_AddHintCallback( ... )>
+
+Add a function to watch a particular hint.
+
+	my $cb = SDL_AddHintCallback(
+		SDL_HINT_XINPUT_ENABLED,
+		sub {
+			my ($userdata, $name, $oldvalue, $newvalue) = @_;
+			...;
+		},
+		{ time => time(), clicks => 3 }
+	);
+
+Expected parameters:
+
+=over
+
+=item C<name>
+
+the hint to watch
+
+=item C<callback>
+
+a code reference that will be called when the hint value changes
+
+=item C<userdata>
+
+a pointer to pass to the callback function
+
+=back
+
+Returns a pointer to a L<FFI::Platypus::Closure> which you may pass to L<<
+C<SDL_DelHintCallback( ... )>|/C<SDL_DelHintCallback( ... )> >>.
+
+=head2 C<SDL_DelHintCallback( ... )>
+
+Remove a callback watching a particular hint.
+
+	SDL_AddHintCallback(
+		SDL_HINT_XINPUT_ENABLED,
+		$cb,
+		{ time => time(), clicks => 3 }
+	);
+
+Expected parameters:
+
+=over
+
+=item C<name>
+
+the hint to watch
+
+=item C<callback>
+
+L<FFI::Platypus::Closure> object returned by L<< C<SDL_AddHintCallback( ...
+)>|/C<SDL_AddHintCallback( ... )> >>
+
+=item C<userdata>
+
+a pointer to pass to the callback function
+
+=back
+
+=head2 C<SDL_ClearHints()>
+
+Clear all hints.
+
+	SDL_ClearHints();
+
+This function is automatically called during L<< C<SDL_Quit( )>|/C<SDL_Quit( )>
+>>.
+
+=cut
+
+    #
     $ffi->type( '(opaque,string,string,string)->void' => 'SDL_HintCallback' );
     my $closure = $ffi->closure( sub { print "hello world\n" } );
-
-    #$closure->sticky;
-    #my $closure = $ffi->closure(sub { $_[0] * 6 });
-    my $opaque = $ffi->cast( SDL_HintCallback => 'opaque', $closure );
+    my $opaque  = $ffi->cast( SDL_HintCallback => 'opaque', $closure );
     attach(
-        # https://wiki.libsdl.org/CategoryInit
-        SDL_Init          => [ ['uint32'] => 'int' ],
-        SDL_InitSubSystem => [ ['uint32'] => 'int' ],
-        SDL_Quit          => [ []         => 'void' ],
-        SDL_QuitSubSystem => [ ['uint32'] => 'void' ],
-        SDL_SetMainReady  => [ []         => 'void' ],
-        SDL_WasInit       => [ ['uint32'] => 'uint32' ],
+        hints => {
+            SDL_SetHintWithPriority => [ [ 'string', 'string', 'int' ] => 'bool' ],
+            SDL_SetHint             => [ [ 'string', 'string' ]        => 'bool' ],
+            SDL_GetHint             => [ ['string']                    => 'string' ],
+            $ver->patch >= 5 ? ( SDL_GetHintBoolean => [ [ 'string', 'bool' ] => 'bool' ] ) : (),
+            SDL_AddHintCallback => [
+                [ 'string', 'SDL_HintCallback', 'opaque' ] => 'void' =>
+                    sub ( $xsub, $name, $callback, $userdata ) {    # Fake void pointer
+                    my $cb = FFI::Platypus::Closure->new(
+                        sub ( $ptr, @etc ) { $callback->( $userdata, @etc ) } );
+                    $cb->sticky;
+                    $xsub->( $name, $cb, $userdata );
+                    return $cb;
+                }
+            ],
+            SDL_DelHintCallback => [
+                [ 'string', 'SDL_HintCallback', 'opaque' ] => 'void' =>
+                    sub ( $xsub, $name, $callback, $userdata ) {    # Fake void pointer
+                    my $cb = $callback;
+                    $cb->unstick;
+                    $xsub->( $name, $cb, $userdata );
+                    return $cb;
+                }
+            ],
+            SDL_ClearHints => [ [] => 'void' ],
+        },
+    );
 
-        # Windows RT is dead
-        #$Windows ? ( SDL_WinRTRunApp => [ [ 'opaque', 'opaque' ] => 'int' ] ) : (),
-        # https://wiki.libsdl.org/CategoryHints
-        # Names are imported with SDL2::Enum qw[:SDL_Hint]; notes and examples are also there
-        SDL_AddHintCallback => [
-            [ 'string', 'SDL_HintCallback', 'opaque' ] => 'void' =>
-                sub ( $xsub, $name, $callback, $userdata ) {
-                my $cb = FFI::Platypus::Closure->new($callback);
-                $cb->sticky;
-                $xsub->( $name, $cb, $userdata );
-                return $cb;
-            }
-        ],
-        SDL_ClearHints      => [ []                                         => 'void' ],
-        SDL_DelHintCallback => [ [ 'string', 'SDL_HintCallback', 'opaque' ] => 'void' ],
-        SDL_GetHint         => [ ['string']                                 => 'string' ],
-        $ver->patch >= 5 ? ( SDL_GetHintBoolean => [ [ 'string', 'bool' ] => 'bool' ] ) : (),
-        SDL_SetHint             => [ [ 'string', 'string' ] => 'bool' ],
-        SDL_SetHintWithPriority => [ [ 'string', 'string', 'int' ] => 'bool' ]
+=head1 Error Handling
+
+Functions in this category provide simple error message routines for SDL. L<<
+C<SDL_GetError( )>|/C<SDL_GetError( )> >> can be called for almost all SDL
+functions to determine what problems are occurring. Check the wiki page of each
+specific SDL function to see whether L<< C<SDL_GetError( )>|/C<SDL_GetError( )>
+>> is meaningful for them or not.
+
+The SDL error messages are in English.
+
+=head2 C<SDL_SetError( ... )>
+
+Set the SDL error message for the current thread.
+
+Calling this function will replace any previous error message that was set.
+
+This function always returns C<-1>, since SDL frequently uses C<-1> to signify
+an failing result, leading to this idiom:
+
+
+	if ($error_code) {
+		return SDL_SetError( 'This operation has failed: %d', $error_code );
+	}
+
+Expected parameters:
+
+=over
+
+=item C<fmt>
+
+a C<printf()>-style message format string
+
+=item C<@params>
+
+additional parameters matching % tokens in the C<fmt> string, if any
+
+=back
+
+=head2 C<SDL_GetError( )>
+
+Retrieve a message about the last error that occurred on the current thread.
+
+	warn SDL_GetError();
+
+It is possible for multiple errors to occur before calling C<SDL_GetError()>.
+Only the last error is returned.
+
+The message is only applicable when an SDL function has signaled an error. You
+must check the return values of SDL function calls to determine when to
+appropriately call C<SDL_GetError()>. You should B<not> use the results of
+C<SDL_GetError()> to decide if an error has occurred! Sometimes SDL will set an
+error string even when reporting success.
+
+SDL will B<not> clear the error string for successful API calls. You B<must>
+check return values for failure cases before you can assume the error string
+applies.
+
+Error strings are set per-thread, so an error set in a different thread will
+not interfere with the current thread's operation.
+
+The returned string is internally allocated and must not be freed by the
+application.
+
+Returns a message with information about the specific error that occurred, or
+an empty string if there hasn't been an error message set since the last call
+to L<< C<SDL_ClearError()>|/C<SDL_ClearError()> >>. The message is only
+applicable when an SDL function has signaled an error. You must check the
+return values of SDL function calls to determine when to appropriately call
+C<SDL_GetError()>.
+
+=head2 C<SDL_GetErrorMsg( ... )>
+
+Get the last error message that was set for the current thread.
+
+	my $x;
+	warn SDL_GetErrorMsg($x, 300);
+
+This allows the caller to copy the error string into a provided buffer, but
+otherwise operates exactly the same as L<< C<SDL_GetError()>|/C<SDL_GetError()>
+>>.
+
+=over
+
+=item C<errstr>
+
+A buffer to fill with the last error message that was set for the current
+thread
+
+=item C<maxlen>
+
+The size of the buffer pointed to by the errstr parameter
+
+=back
+
+Returns the pointer passed in as the C<errstr> parameter.
+
+=head2 C<SDL_ClearError( )>
+
+Clear any previous error message for this thread.
+
+=cut
+
+    attach(
+        error => {
+            SDL_SetError => [
+                ['string'] => ['int'] =>
+                    sub ( $inner, $fmt, @params ) { $inner->( sprintf( $fmt, @params ) ); }
+            ],
+            SDL_GetError    => [ [] => 'string' ],
+            SDL_GetErrorMsg => [
+                [ 'string', 'int' ] => 'string' =>
+                    sub ( $inner, $errstr, $maxlen = length $errstr ) {
+                    $_[1] = ' ' x $maxlen if !defined $_[1] || length $errstr != $maxlen;
+                    $inner->( $_[1], $maxlen );
+                }
+            ],
+            SDL_ClearError => [ [] => 'void' ]
+        }
+    );
+    attach(
+        all => {
+
+            # Unknown...
+            SDL_SetMainReady => [ [] => 'void' ]
+        }
     );
 
     # https://wiki.libsdl.org/CategoryLog
@@ -171,15 +620,6 @@ SDL2 is ...
             $inner->( $closure, $userdata );
         }
     );
-
-    # https://wiki.libsdl.org/CategoryError
-    $ffi->attach(
-        SDL_SetError => ['string'] => ['int'] => sub ( $inner, $fmt, @args ) {
-            $inner->( sprintf( $fmt, @args ) );
-        }
-    );
-    $ffi->attach( SDL_GetError   => [] => 'string' );
-    $ffi->attach( SDL_ClearError => [] );
 
     # Platform and CPU Information
     # https://wiki.libsdl.org/CategoryPlatform
@@ -1374,8 +1814,10 @@ SDL2 is ...
 #warn SDL2::SDLK_DOWN();
 # https://github.com/libsdl-org/SDL/blob/c59d4dcd38c382a1e9b69b053756f1139a861574/include/SDL_hints.h
 # Export symbols!
-    our @EXPORT =    # A start;
-        grep {/^SDL_/} keys %SDL2::;
+    our @EXPORT_OK = sort
+        keys %{ { map { $_ => 1 } grep {/^SDL_/} keys %SDL2::, map {@$_} values %EXPORT_TAGS } };
+    $EXPORT_TAGS{default} = [];             # Export nothing by default
+    $EXPORT_TAGS{all}     = \@EXPORT_OK;    # Export everything with :all tag
 }
 1;
 

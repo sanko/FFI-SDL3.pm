@@ -18,7 +18,7 @@ SDL2::Enum is ...
 This list of imports will be organized by their related tags. Of course, you
 may import them all by name as well.
 
-=head2 SDL_Init
+=head2 C<:init>
 
 These are the flags which may be passed to C<SDL_Init()>. You should specify
 the subsystems which you will be using in your application.
@@ -27,35 +27,47 @@ the subsystems which you will be using in your application.
 
 =item C<SDL_INIT_TIMER>
 
+Timer subsystem.
+
 =item C<SDL_INIT_AUDIO>
+
+Audio subsystem.
 
 =item C<SDL_INIT_VIDEO>
 
-C<SDL_INIT_VIDEO> implies C<SDL_INIT_EVENTS>
+Video subsystem. Automatically initializes the events subsystem.
 
 =item C<SDL_INIT_JOYSTICK>
 
-C<SDL_INIT_JOYSTICK> implies C<SDL_INIT_EVENTS>
+Joystick subsystem. Automatically initializes the events subsystem.
 
 =item C<SDL_INIT_HAPTIC>
 
+Haptic (force feedback) subsystem.
+
 =item C<SDL_INIT_GAMECONTROLLER>
 
-C<SDL_INIT_GAMECONTROLLER> implies C<SDL_INIT_JOYSTICK>
+Controller subsistem. Automatically initilizes the joystick subsystem.
 
 =item C<SDL_INIT_EVENTS>
 
+Events subsystem.
+
+=item C<SDL_INIT_EVERYTHING>
+
+All of the above subsystems.
+
 =item C<SDL_INIT_SENSOR>
+
 
 =item C<SDL_INIT_NOPARACHUTE>
 
 Compatibility; this flag is ignored.
 
-=item C<SDL_INIT_EVERYTHING>
 
 =back
 
-=head2 SDL_HintPriority
+=head2 C<:hints>
 
 =over
 
