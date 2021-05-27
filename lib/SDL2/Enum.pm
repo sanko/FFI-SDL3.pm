@@ -12,6 +12,23 @@ package SDL2::Enum 1.0 {
         SDL_HintPriority => [qw[SDL_HINT_DEFAULT SDL_HINT_NORMAL SDL_HINT_OVERRIDE]]
     );
     my %Defines = (
+        SDL_Init => [
+            [ SDL_INIT_TIMER          => 0x00000001 ],
+            [ SDL_INIT_AUDIO          => 0x00000010 ],
+            [ SDL_INIT_VIDEO          => 0x00000020 ],
+            [ SDL_INIT_JOYSTICK       => 0x00000200 ],
+            [ SDL_INIT_HAPTIC         => 0x00001000 ],
+            [ SDL_INIT_GAMECONTROLLER => 0x00002000 ],
+            [ SDL_INIT_EVENTS         => 0x00004000 ],
+            [ SDL_INIT_SENSOR         => 0x00008000 ],
+            [ SDL_INIT_NOPARACHUTE    => 0x00100000 ],
+            [   SDL_INIT_EVERYTHING => sub {
+                    SDL_INIT_TIMER() | SDL_INIT_AUDIO() | SDL_INIT_VIDEO() | SDL_INIT_EVENTS()
+                        | SDL_INIT_JOYSTICK() | SDL_INIT_HAPTIC() | SDL_INIT_GAMECONTROLLER()
+                        | SDL_INIT_SENSOR();
+                }
+            ]
+        ],
 
 # https://github.com/libsdl-org/SDL/blob/c59d4dcd38c382a1e9b69b053756f1139a861574/include/SDL_hints.h
         SDL_Hint => [
@@ -61,27 +78,15 @@ package SDL2::Enum 1.0 {
                 SDL_HINT_WINRT_HANDLE_BACK_BUTTON SDL_HINT_WINRT_PRIVACY_POLICY_LABEL
                 SDL_HINT_WINRT_PRIVACY_POLICY_URL SDL_HINT_XINPUT_ENABLED
                 SDL_HINT_XINPUT_USE_OLD_JOYSTICK_MAPPING SDL_HINT__VIDEO_WIN_D3DCOMPILE
-                SDL_HINT_RETURN_KEY_HIDES_IME
-                SDL_HINT_WINDOWS_FORCE_MUTEX_CRITICAL_SECTIONS
-                SDL_HINT_WINDOWS_FORCE_SEMAPHORE_KERNEL
-                SDL_HINT_WINDOWS_USE_D3D9EX
-                SDL_HINT_VIDEO_DOUBLE_BUFFER
-                SDL_HINT_KMSDRM_REQUIRE_DRM_MASTER
-                SDL_HINT_OPENGL_ES_DRIVER
-                SDL_HINT_AUDIO_RESAMPLING_MODE
-                SDL_HINT_AUDIO_CATEGORY
-                SDL_HINT_RENDER_BATCHING
-                SDL_HINT_AUTO_UPDATE_JOYSTICKS
-                SDL_HINT_AUTO_UPDATE_SENSORS
-                SDL_HINT_EVENT_LOGGING
-                SDL_HINT_WAVE_RIFF_CHUNK_SIZE
-                SDL_HINT_WAVE_TRUNCATION
-                SDL_HINT_WAVE_FACT_CHUNK
-                SDL_HINT_DISPLAY_USABLE_BOUNDS
-                SDL_HINT_AUDIO_DEVICE_APP_NAME
-                SDL_HINT_AUDIO_DEVICE_STREAM_NAME
-                SDL_HINT_AUDIO_DEVICE_STREAM_ROLE
-                SDL_HINT_ALLOW_ALT_TAB_WHILE_GRABBED
+                SDL_HINT_RETURN_KEY_HIDES_IME SDL_HINT_WINDOWS_FORCE_MUTEX_CRITICAL_SECTIONS
+                SDL_HINT_WINDOWS_FORCE_SEMAPHORE_KERNEL SDL_HINT_WINDOWS_USE_D3D9EX
+                SDL_HINT_VIDEO_DOUBLE_BUFFER SDL_HINT_KMSDRM_REQUIRE_DRM_MASTER
+                SDL_HINT_OPENGL_ES_DRIVER SDL_HINT_AUDIO_RESAMPLING_MODE SDL_HINT_AUDIO_CATEGORY
+                SDL_HINT_RENDER_BATCHING SDL_HINT_AUTO_UPDATE_JOYSTICKS SDL_HINT_AUTO_UPDATE_SENSORS
+                SDL_HINT_EVENT_LOGGING SDL_HINT_WAVE_RIFF_CHUNK_SIZE SDL_HINT_WAVE_TRUNCATION
+                SDL_HINT_WAVE_FACT_CHUNK SDL_HINT_DISPLAY_USABLE_BOUNDS
+                SDL_HINT_AUDIO_DEVICE_APP_NAME SDL_HINT_AUDIO_DEVICE_STREAM_NAME
+                SDL_HINT_AUDIO_DEVICE_STREAM_ROLE SDL_HINT_ALLOW_ALT_TAB_WHILE_GRABBED
                 SDL_HINT_PREFERRED_LOCALES
             ]
         ]
@@ -96,7 +101,9 @@ package SDL2::Enum 1.0 {
     for my $tag ( keys %Defines ) {
 
         #print $_->[0] . ' ' for sort { $a->[0] cmp $b->[0] } @{ $Defines{$tag} };
-        constant->import( ref $_ ? ( $_->[0] => $_->[1] ) : ( $_ => $_ ) ) for @{ $Defines{$tag} };
+        constant->import(
+            ref $_ ? ( $_->[0] => ( ref $_->[1] ? $_->[1]->() : $_->[1] ) ) : ( $_ => $_ ) )
+            for @{ $Defines{$tag} };
 
         #constant->import( $_ => $_ ) for @{ $Defines{$tag} };
         $EXPORT_TAGS{$tag} = [ sort map { ref $_ ? $_->[0] : $_ } @{ $Defines{$tag} } ];
@@ -107,6 +114,7 @@ package SDL2::Enum 1.0 {
 
     #ddx \%SDL2::Enum::;
     #warn SDL_HINT_ANDROID_BLOCK_ON_PAUSE_PAUSEAUDIO();
+    #warn SDL_INIT_EVERYTHING();
 };
 
 =head1 LICENSE

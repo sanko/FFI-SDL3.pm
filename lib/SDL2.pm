@@ -14,6 +14,8 @@ package SDL2 1.0 {
     use experimental 'signatures';
     use base 'Exporter::Tiny';
     use Alien::libsdl2;
+    use lib '../lib/';
+    use SDL2::Enum qw[:all];
     #
     use Data::Dump;
 
@@ -355,22 +357,6 @@ SDL2 is ...
     #
     $ffi->attach(
         SDL_CreateTexture => [ 'SDL_Renderer', 'uint32', 'int', 'int', 'int' ] => 'SDL_Texture' );
-
-    # Macros defined in SDL.h
-    sub SDL_INIT_TIMER ()          {0x00000001}
-    sub SDL_INIT_AUDIO ()          {0x00000010}
-    sub SDL_INIT_VIDEO ()          {0x00000020}
-    sub SDL_INIT_JOYSTICK ()       {0x00000200}
-    sub SDL_INIT_HAPTIC ()         {0x00001000}
-    sub SDL_INIT_GAMECONTROLLER () {0x00002000}
-    sub SDL_INIT_EVENTS ()         {0x00004000}
-    sub SDL_INIT_SENSOR ()         {0x00008000}
-    sub SDL_INIT_NOPARACHUTE ()    {0x00100000}
-
-    sub SDL_INIT_EVERYTHING () {
-        SDL_INIT_TIMER | SDL_INIT_AUDIO | SDL_INIT_VIDEO | SDL_INIT_EVENTS | SDL_INIT_JOYSTICK
-            | SDL_INIT_HAPTIC | SDL_INIT_GAMECONTROLLER | SDL_INIT_SENSOR;
-    }
 
     # SDL_rect.h
     FFI::C::StructDef->new(
