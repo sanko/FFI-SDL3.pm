@@ -1,17 +1,542 @@
-
 =encoding utf-8
 
 =head1 NAME
 
-SDL2 - FFI Wrapper for SDL (Simple DirectMedia Layer) Development Library
+SDL2::FFI - FFI Wrapper for SDL (Simple DirectMedia Layer) Development Library
 
 =head1 SYNOPSIS
 
-    use SDL2::Enum qw[:SDL_HintPriority];
+    use SDL2::FFI qw[:all];
+    die 'Error initializing SDL: ' . SDL_GetError() unless SDL_Init(SDL_INIT_VIDEO) == 0;
+    my $win = SDL_CreateWindow( 'Example window!',
+        SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 640, 480, SDL_WINDOW_RESIZABLE );
+    die 'Could not create window: ' . SDL_GetError() unless $win;
+    my $event = SDL2::Event->new;
+    SDL_Init(SDL_INIT_VIDEO);
+    my $renderer = SDL_CreateRenderer( $win, -1, 0 );
+    SDL_SetRenderDrawColor( $renderer, 242, 242, 242, 255 );
+    do {
+        SDL_WaitEventTimeout( $event, 10 );
+        SDL_RenderClear($renderer);
+        SDL_RenderPresent($renderer);
+    } until $event->type == SDL_QUIT;
+    SDL_DestroyRenderer($renderer);
+    SDL_DestroyWindow($win);
+    exit SDL_Quit();
 
 =head1 DESCRIPTION
 
-SDL2::Enum is ...
+SDL2::FFI is ...
+
+This package is named C<SDL2::FFI> because C<SDL2> is being squatted on and I'd
+rather make games than play them over namespaces.
+
+
+
+=head1 Initialization and Shutdown
+
+The functions in this category are used to set up SDL for use and generally
+have global effects in your program.
+
+=head2 C<SDL_Init( ... )>
+
+Initialize the SDL library.
+
+C<SDL_Init( ... )> simply forwards to calling L<< C<SDL_InitSubSystem( ...
+)>|/C<SDL_InitSubSystem( ... )> >>. Therefore, the two may be used
+interchangeably. Though for readability of your code L<< C<SDL_InitSubSystem(
+... )>|/C<SDL_InitSubSystem( ... )> >> might be preferred.
+
+The file I/O (for example: SDL_RWFromFile) and threading (SDL_CreateThread)
+subsystems are initialized by default. Message boxes (SDL_ShowSimpleMessageBox)
+also attempt to work without initializing the video subsystem, in hopes of
+being useful in showing an error dialog when SDL_Init fails. You must
+specifically initialize other subsystems if you use them in your application.
+
+Logging (such as SDL_Log) works without initialization, too.
+
+Expected parameters include:
+
+=over
+
+=item C<flags> which may be any be imported with the L<< C<:init>|SDL2::FFI/C<:init> >> tag and may be OR'd together.
+
+=back
+
+Subsystem initialization is ref-counted, you must call L<< C<SDL_QuitSubSystem(
+... )>|/C<SDL_QuitSubSystem( ... )> >> for each L<< C<SDL_InitSubSystem( ...
+)>|/C<SDL_InitSubSystem( ... )> >> to correctly shutdown a subsystem manually
+(or call L<< C<SDL_Quit( )>|/C<SDL_Quit( )> >> to force shutdown). If a
+subsystem is already loaded then this call will increase the ref-count and
+return.
+
+Returns C<0> on success or a negative error code on failure; call L<<
+C<SDL_GetError( )>|/C<SDL_GetError( )> >> for more information.
+
+=head2 C<SDL_InitSubSystem( ... )>
+
+Compatibility function to initialize the SDL library.
+
+In SDL2, this function and L<< C<SDL_Init( ... )>|/C<SDL_Init( ... )> >> are
+interchangeable.
+
+Expected parameters include:
+
+=over
+
+=item C<flags> which may be any be imported with the L<< C<:init>|SDL2::FFI/C<:init> >> tag and may be OR'd together.
+
+=back
+
+Returns C<0> on success or a negative error code on failure; call L<<
+C<SDL_GetError()>|/C<SDL_GetError( )> >> for more information.
+
+=head2 C<SDL_Quit( )>
+
+Clean up all initialized subsystems.
+
+You should call this function even if you have already shutdown each
+initialized subsystem with L<< C<SDL_QuitSubSystem( )>|/C<SDL_QuitSubSystem( )>
+>>. It is safe to call this function even in the case of errors in
+initialization.
+
+If you start a subsystem using a call to that subsystem's init function (for
+example L<< C<SDL_VideoInit()>|/C<SDL_VideoInit( )> >>) instead of L<<
+C<SDL_Init( ... )>|/C<SDL_Init( ... )> >> or L<< C<SDL_InitSubSystem( ...
+)>|/C<SDL_InitSubSystem( ... )> >>, then you must use that subsystem's quit
+function (L<< C<SDL_VideoQuit( )>|/C<SDL_VideoQuit( )> >>) to shut it down
+before calling C<SDL_Quit( )>. But generally, you should not be using those
+functions directly anyhow; use L<< C<SDL_Init( ... )>|/C<SDL_Init( ... )> >>
+instead.
+
+You can use this function in an C<END { ... }> block to ensure that it is run
+when your application is shutdown.
+
+=head2 C<SDL_QuitSubSystem( ... )>
+
+Shut down specific SDL subsystems.
+
+If you start a subsystem using a call to that subsystem's init function (for
+example L<< C<SDL_VideoInit( )> |/C<SDL_VideoInit( )> >>) instead of L<<
+C<SDL_Init( ... )>|/C<SDL_Init( ... )> >> or L<< C<SDL_InitSubSystem( ...
+)>|/C<SDL_InitSubSystem( ... )> >>, L<< C<SDL_QuitSubSystem( ...
+)>|/C<SDL_QuitSubSystem( ... )> >> and L<< C<SDL_WasInit( ...
+)>|/C<SDL_WasInit( ... )> >> will not work. You will need to use that
+subsystem's quit function ( L<< C<SDL_VideoQuit( )>|/C<SDL_VideoQuit( )> >>
+directly instead. But generally, you should not be using those functions
+directly anyhow; use L<< C<SDL_Init( ... )>|/C<SDL_Init( ... )> >> instead.
+
+You still need to call L<< C<SDL_Quit( )>|/C<SDL_Quit( )> >> even if you close
+all open subsystems with L<< C<SDL_QuitSubSystem( ... )>|/C<SDL_QuitSubSystem(
+... )> >>.
+
+Expected parameters include:
+
+=over
+
+=item C<flags> which may be any be imported with the L<< C<:init>|SDL2::FFI/C<:init> >> tag and may be OR'd together.
+
+=back
+
+=head2 C<SDL_WasInit( ... )>
+
+Get a mask of the specified subsystems which are currently initialized.
+
+Expected parameters include:
+
+=over
+
+=item C<flags> which may be any be imported with the L<< C<:init>|SDL2::FFI/C<:init> >> tag and may be OR'd together.
+
+=back
+
+If C<flags> is C<0>, it returns a mask of all initialized subsystems, otherwise
+it returns the initialization status of the specified subsystems.
+
+The return value does not include C<SDL_INIT_NOPARACHUTE>.
+
+
+=head1 Configuration Variables
+
+This category contains functions to set and get configuration hints, as well as
+listing each of them alphabetically.
+
+The convention for naming hints is C<SDL_HINT_X>, where C<SDL_X> is the
+environment variable that can be used to override the default.
+
+In general these hints are just that - they may or may not be supported or
+applicable on any given platform, but they provide a way for an application or
+user to give the library a hint as to how they would like the library to work.
+
+=head2 C<SDL_SetHintWithPriority( ... )>
+
+Set a hint with a specific priority.
+
+	SDL_SetHintWithPriority( SDL_EVENT_LOGGING, 2, SDL_HINT_OVERRIDE );
+
+The priority controls the behavior when setting a hint that already has a
+value. Hints will replace existing hints of their priority and lower.
+Environment variables are considered to have override priority.
+
+Expected parameters include:
+
+=over
+
+=item C<name>
+
+the hint to set
+
+=item C<value>
+
+the value of the hint variable
+
+=item C<priority>
+
+the priority level for the hint
+
+=back
+
+Returns a true if the hint was set, untrue otherwise.
+
+=head2 C<SDL_SetHint( ... )>
+
+Set a hint with normal priority.
+
+	SDL_SetHint( SDL_HINT_XINPUT_ENABLED, 1 );
+
+Hints will not be set if there is an existing override hint or environment
+variable that takes precedence. You can use SDL_SetHintWithPriority() to set
+the hint with override priority instead.
+
+Expected parameters:
+
+=over
+
+=item C<name>
+
+the hint to set
+
+=item C<value>
+
+the value of the hint variable
+
+=back
+
+Returns a true value if the hint was set, untrue otherwise.
+
+=head2 C<SDL_GetHint( ... )>
+
+Get the value of a hint.
+
+	SDL_GetHint( SDL_HINT_XINPUT_ENABLED );
+
+Expected parameters:
+
+=over
+
+=item C<name>
+
+the hint to query
+
+=back
+
+Returns the string value of a hint or an undefined value if the hint isn't set.
+
+=head2 C<SDL_GetHintBoolean( ... )>
+
+Get the boolean value of a hint variable.
+
+	SDL_GetHintBoolean( SDL_HINT_XINPUT_ENABLED, 0);
+
+Expected parameters:
+
+=over
+
+=item C<name>
+
+the name of the hint to get the boolean value from
+
+=item C<default_value>
+
+the value to return if the hint does not exist
+
+=back
+
+Returns the boolean value of a hint or the provided default value if the hint
+does not exist.
+
+=head2 C<SDL_AddHintCallback( ... )>
+
+Add a function to watch a particular hint.
+
+	my $cb = SDL_AddHintCallback(
+		SDL_HINT_XINPUT_ENABLED,
+		sub {
+			my ($userdata, $name, $oldvalue, $newvalue) = @_;
+			...;
+		},
+		{ time => time(), clicks => 3 }
+	);
+
+Expected parameters:
+
+=over
+
+=item C<name>
+
+the hint to watch
+
+=item C<callback>
+
+a code reference that will be called when the hint value changes
+
+=item C<userdata>
+
+a pointer to pass to the callback function
+
+=back
+
+Returns a pointer to a L<FFI::Platypus::Closure> which you may pass to L<<
+C<SDL_DelHintCallback( ... )>|/C<SDL_DelHintCallback( ... )> >>.
+
+=head2 C<SDL_DelHintCallback( ... )>
+
+Remove a callback watching a particular hint.
+
+	SDL_AddHintCallback(
+		SDL_HINT_XINPUT_ENABLED,
+		$cb,
+		{ time => time(), clicks => 3 }
+	);
+
+Expected parameters:
+
+=over
+
+=item C<name>
+
+the hint to watch
+
+=item C<callback>
+
+L<FFI::Platypus::Closure> object returned by L<< C<SDL_AddHintCallback( ...
+)>|/C<SDL_AddHintCallback( ... )> >>
+
+=item C<userdata>
+
+a pointer to pass to the callback function
+
+=back
+
+=head2 C<SDL_ClearHints()>
+
+Clear all hints.
+
+	SDL_ClearHints();
+
+This function is automatically called during L<< C<SDL_Quit( )>|/C<SDL_Quit( )>
+>>.
+
+
+=head1 Error Handling
+
+Functions in this category provide simple error message routines for SDL. L<<
+C<SDL_GetError( )>|/C<SDL_GetError( )> >> can be called for almost all SDL
+functions to determine what problems are occurring. Check the wiki page of each
+specific SDL function to see whether L<< C<SDL_GetError( )>|/C<SDL_GetError( )>
+>> is meaningful for them or not.
+
+The SDL error messages are in English.
+
+=head2 C<SDL_SetError( ... )>
+
+Set the SDL error message for the current thread.
+
+Calling this function will replace any previous error message that was set.
+
+This function always returns C<-1>, since SDL frequently uses C<-1> to signify
+an failing result, leading to this idiom:
+
+
+	if ($error_code) {
+		return SDL_SetError( 'This operation has failed: %d', $error_code );
+	}
+
+Expected parameters:
+
+=over
+
+=item C<fmt>
+
+a C<printf()>-style message format string
+
+=item C<@params>
+
+additional parameters matching % tokens in the C<fmt> string, if any
+
+=back
+
+=head2 C<SDL_GetError( )>
+
+Retrieve a message about the last error that occurred on the current thread.
+
+	warn SDL_GetError();
+
+It is possible for multiple errors to occur before calling C<SDL_GetError()>.
+Only the last error is returned.
+
+The message is only applicable when an SDL function has signaled an error. You
+must check the return values of SDL function calls to determine when to
+appropriately call C<SDL_GetError()>. You should B<not> use the results of
+C<SDL_GetError()> to decide if an error has occurred! Sometimes SDL will set an
+error string even when reporting success.
+
+SDL will B<not> clear the error string for successful API calls. You B<must>
+check return values for failure cases before you can assume the error string
+applies.
+
+Error strings are set per-thread, so an error set in a different thread will
+not interfere with the current thread's operation.
+
+The returned string is internally allocated and must not be freed by the
+application.
+
+Returns a message with information about the specific error that occurred, or
+an empty string if there hasn't been an error message set since the last call
+to L<< C<SDL_ClearError()>|/C<SDL_ClearError()> >>. The message is only
+applicable when an SDL function has signaled an error. You must check the
+return values of SDL function calls to determine when to appropriately call
+C<SDL_GetError()>.
+
+=head2 C<SDL_GetErrorMsg( ... )>
+
+Get the last error message that was set for the current thread.
+
+	my $x;
+	warn SDL_GetErrorMsg($x, 300);
+
+This allows the caller to copy the error string into a provided buffer, but
+otherwise operates exactly the same as L<< C<SDL_GetError()>|/C<SDL_GetError()>
+>>.
+
+=over
+
+=item C<errstr>
+
+A buffer to fill with the last error message that was set for the current
+thread
+
+=item C<maxlen>
+
+The size of the buffer pointed to by the errstr parameter
+
+=back
+
+Returns the pointer passed in as the C<errstr> parameter.
+
+=head2 C<SDL_ClearError( )>
+
+Clear any previous error message for this thread.
+
+
+=head1 Log Handling
+
+Simple log messages with categories and priorities.
+
+By default, logs are quiet but if you're debugging SDL you might want:
+
+	SDL_LogSetAllPriority( SDL_LOG_PRIORITY_WARN );
+
+Here's where the messages go on different platforms:
+
+	Windows		debug output stream
+	Android		log output
+	Others		standard error output (STDERR)
+
+Messages longer than the maximum size (4096 bytes) will be truncated.
+
+=head2 C<SDL_LogSetAllPriority( ... )>
+
+Set the priority of all log categories.
+
+	SDL_LogSetAllPriority( SDL_LOG_PRIORITY_WARN );
+
+Expected parameters:
+
+=over
+
+=item C<priority>
+
+The SDL_LogPriority to assign.
+
+=back
+
+=cut
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 =head1 Imports
 
@@ -47,7 +572,7 @@ Haptic (force feedback) subsystem.
 
 =item C<SDL_INIT_GAMECONTROLLER>
 
-Controller subsistem. Automatically initilizes the joystick subsystem.
+Controller subsystem. Automatically initilizes the joystick subsystem.
 
 =item C<SDL_INIT_EVENTS>
 
@@ -63,7 +588,6 @@ All of the above subsystems.
 =item C<SDL_INIT_NOPARACHUTE>
 
 Compatibility; this flag is ignored.
-
 
 =back
 
@@ -2051,6 +2575,134 @@ optional: "en". So you might have a list like this: "en_GB,jp,es_PT"
 
 =back
 
+=head2 C<:logcategory>
+
+The predefined log categories
+
+By default the application category is enabled at the INFO level, the assert
+category is enabled at the WARN level, test is enabled at the VERBOSE level and
+all other categories are enabled at the CRITICAL level.
+
+=over
+
+=item C<SDL_LOG_CATEGORY_APPLICATION>
+
+=item C<SDL_LOG_CATEGORY_ERROR>
+
+=item C<SDL_LOG_CATEGORY_ASSERT>
+
+=item C<SDL_LOG_CATEGORY_SYSTEM>
+
+=item C<SDL_LOG_CATEGORY_AUDIO>
+
+=item C<SDL_LOG_CATEGORY_VIDEO>
+
+=item C<SDL_LOG_CATEGORY_RENDER>
+
+=item C<SDL_LOG_CATEGORY_INPUT>
+
+=item C<SDL_LOG_CATEGORY_TEST>
+
+=item C<SDL_LOG_CATEGORY_RESERVED1>
+
+=item C<SDL_LOG_CATEGORY_RESERVED2>
+
+=item C<SDL_LOG_CATEGORY_RESERVED3>
+
+=item C<SDL_LOG_CATEGORY_RESERVED4>
+
+=item C<SDL_LOG_CATEGORY_RESERVED5>
+
+=item C<SDL_LOG_CATEGORY_RESERVED6>
+
+=item C<SDL_LOG_CATEGORY_RESERVED7>
+
+=item C<SDL_LOG_CATEGORY_RESERVED8>
+
+=item C<SDL_LOG_CATEGORY_RESERVED9>
+
+=item C<SDL_LOG_CATEGORY_RESERVED10>
+
+=item C<SDL_LOG_CATEGORY_CUSTOM>
+
+=back
+
+=head2 C<:logpriority>
+
+The predefined log priorities.
+
+=over
+
+=item C<SDL_LOG_PRIORITY_VERBOSE>
+
+=item C<SDL_LOG_PRIORITY_DEBUG>
+
+=item C<SDL_LOG_PRIORITY_INFO>
+
+=item C<SDL_LOG_PRIORITY_WARN>
+
+=item C<SDL_LOG_PRIORITY_ERROR>
+
+=item C<SDL_LOG_PRIORITY_CRITICAL>
+
+=item C<SDL_NUM_LOG_PRIORITIES>
+
+=back
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 =head1 LICENSE
 
 Copyright (C) Sanko Robinson.
@@ -2062,7 +2714,6 @@ conditions may apply to data transmitted through this module.
 =head1 AUTHOR
 
 Sanko Robinson E<lt>sanko@cpan.orgE<gt>
-
 
 =begin stopwords
 

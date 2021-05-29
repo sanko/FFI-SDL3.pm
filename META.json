@@ -12,7 +12,7 @@
       "url" : "http://search.cpan.org/perldoc?CPAN::Meta::Spec",
       "version" : 2
    },
-   "name" : "SDL2",
+   "name" : "SDL2-FFI",
    "no_index" : {
       "directory" : [
          "t",

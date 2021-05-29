@@ -1,6 +1,6 @@
 use strictures 2;
 use lib '../lib';
-use SDL2;
+use SDL2::FFI qw[:all];
 
 # https://gigi.nullneuron.net/gigilabs/drawing-lines-with-sdl2/
 my $quit  = 0;
@@ -10,11 +10,12 @@ my $window = SDL_CreateWindow( "My SDL Empty Window",
     SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 640, 480, SDL_WINDOW_RESIZABLE );
 warn SDL_GetError();
 my $renderer = SDL_CreateRenderer( $window, -1, 0 );
+
+#die ref $renderer;
 warn SDL_GetError();
 my ( $y1, $y2, $x1, $x2 );
 my $drawing = 0;
 my @lines;
-
 while ( !$quit ) {
     SDL_WaitEventTimeout( $event, 10 );
     if ( $event->type == SDL_QUIT ) {

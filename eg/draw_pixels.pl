@@ -1,6 +1,6 @@
 use strictures 2;
 use lib '../lib';
-use SDL2;
+use SDL2::FFI qw[:all];
 
 # https://gigi.nullneuron.net/gigilabs/sdl2-pixel-drawing/
 my $quit  = 0;

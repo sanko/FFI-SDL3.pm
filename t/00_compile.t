@@ -2,7 +2,7 @@ use strict;
 use warnings;
 use Test2::V0;
 use lib '../lib', 'lib';
-use SDL2 qw[:all];
+use SDL2::FFI qw[:all];
 #
 my $ver = SDL2::version->new;
 #

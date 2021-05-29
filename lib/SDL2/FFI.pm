@@ -1,85 +1,253 @@
-package SDL2 1.0 {
+package SDL2::FFI 1.0 {
     use strictures 2;
     #
-    use File::ShareDir qw[dist_dir];
-    use File::Spec::Functions qw[catdir canonpath rel2abs];
+    $|++;
 
     #use Carp::Always;
+    #$ENV{FFI_PLATYPUS_DLERROR} = 1;
+    use Data::Dump;
     #
     use FFI::CheckLib;
     use FFI::Platypus 1.00;
     use FFI::C;
-    use FFI::Platypus::Memory qw[malloc free];
-    use FFI::Platypus::Closure;
+
+    #use FFI::C::StructDef;
+    #use FFI::Platypus::Memory qw[malloc free];
+    #use FFI::Platypus::Closure;
+    #
     use experimental 'signatures';
     use base 'Exporter::Tiny';
     use Alien::libsdl2;
-    use lib '../lib/';
     #
-    use Data::Dump;
-
-    # Export symbols!
-    our %EXPORT_TAGS;
-
-    #$ENV{FFI_PLATYPUS_DLERROR} = 1;
-
-=encoding utf-8
-
-=head1 NAME
-
-SDL2 - FFI Wrapper for SDL (Simple DirectMedia Layer) Development Library
-
-=head1 SYNOPSIS
-
-    use SDL2;
-    die 'Error initializing SDL: ' . SDL_GetError() unless SDL_Init(SDL_INIT_VIDEO) == 0;
-    my $win = SDL_CreateWindow( 'Example window!',
-        SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 640, 480, SDL_WINDOW_RESIZABLE );
-    die 'Could not create window: ' . SDL_GetError() unless $win;
-    my $event = SDL2::Event->new;
-    SDL_Init(SDL_INIT_VIDEO);
-    my $renderer = SDL_CreateRenderer( $win, -1, 0 );
-    SDL_SetRenderDrawColor( $renderer, 242, 242, 242, 255 );
-    do {
-        SDL_WaitEventTimeout( $event, 10 );
-        SDL_RenderClear($renderer);
-        SDL_RenderPresent($renderer);
-    } until $event->type == SDL_QUIT;
-    SDL_DestroyRenderer($renderer);
-    SDL_DestroyWindow($win);
-    exit SDL_Quit();
-
-=head1 DESCRIPTION
-
-SDL2 is ...
-
-=cut
-
     my $ffi = FFI::Platypus->new( api => 1, experimental => 2,
         lib => [ Alien::libsdl2->dynamic_libs ] );
-
-    #$ffi->bundle;
     FFI::C->ffi($ffi);
 
-    # https://wiki.libsdl.org/CategoryVersion
-    use FFI::C::StructDef;
+    # I need these first
     FFI::C::StructDef->new(
         $ffi,
         name    => 'SDL_version',
-        class   => 'SDL2::version',
+        class   => 'SDL2::FFI::Version',
         members => [ major => 'uint8', minor => 'uint8', patch => 'uint8' ]
     );
-
-    # I need these first
-    $ffi->attach( SDL_GetRevision       => [] => 'string' );
-    $ffi->attach( SDL_GetRevisionNumber => [] => 'int' );
-    $ffi->attach( SDL_GetVersion        => ['SDL_version'] );
-    my $ver = SDL2::version->new;
+    attach(
+        version => {
+            SDL_GetRevision       => [ [] => 'string' ],
+            SDL_GetRevisionNumber => [ [] => 'int' ],
+            SDL_GetVersion        => [ ['SDL_version'] ]
+        }
+    );
+    my $ver = SDL2::FFI::Version->new;
     SDL_GetVersion($ver);
+    #
+    my $platform = $^O;                            # https://perldoc.perl.org/perlport#PLATFORMS
+    my $Windows  = !!( $platform eq 'MSWin32' );
+    #
+    # Export symbols!
+    our %EXPORT_TAGS;
+    my %Enums = (
 
-    #warn $ver->major;
-    #warn $ver->minor;
-    #warn $ver->patch;
+# https://github.com/libsdl-org/SDL/blob/c59d4dcd38c382a1e9b69b053756f1139a861574/include/SDL_hints.h
+        SDL_HintPriority => [qw[SDL_HINT_DEFAULT SDL_HINT_NORMAL SDL_HINT_OVERRIDE]],
+        SDL_LogCategory  => [
+            qw[
+                SDL_LOG_CATEGORY_APPLICATION SDL_LOG_CATEGORY_ERROR SDL_LOG_CATEGORY_ASSERT
+                SDL_LOG_CATEGORY_SYSTEM      SDL_LOG_CATEGORY_AUDIO SDL_LOG_CATEGORY_VIDEO
+                SDL_LOG_CATEGORY_RENDER      SDL_LOG_CATEGORY_INPUT SDL_LOG_CATEGORY_TEST
+                SDL_LOG_CATEGORY_RESERVED1   SDL_LOG_CATEGORY_RESERVED2
+                SDL_LOG_CATEGORY_RESERVED3   SDL_LOG_CATEGORY_RESERVED4
+                SDL_LOG_CATEGORY_RESERVED5   SDL_LOG_CATEGORY_RESERVED6
+                SDL_LOG_CATEGORY_RESERVED7   SDL_LOG_CATEGORY_RESERVED8
+                SDL_LOG_CATEGORY_RESERVED9   SDL_LOG_CATEGORY_RESERVED10
+                SDL_LOG_CATEGORY_CUSTOM
+            ]
+        ],
+        SDL_LogPriority => [
+            [ SDL_LOG_PRIORITY_VERBOSE => 1 ], qw[SDL_LOG_PRIORITY_DEBUG SDL_LOG_PRIORITY_INFO
+                SDL_LOG_PRIORITY_WARN SDL_LOG_PRIORITY_ERROR SDL_LOG_PRIORITY_CRITICAL
+                SDL_NUM_LOG_PRIORITIES]
+        ]
+    );
+    my %Defines = (
+        SDL_Init => [
+            [ SDL_INIT_TIMER          => 0x00000001 ],
+            [ SDL_INIT_AUDIO          => 0x00000010 ],
+            [ SDL_INIT_VIDEO          => 0x00000020 ],
+            [ SDL_INIT_JOYSTICK       => 0x00000200 ],
+            [ SDL_INIT_HAPTIC         => 0x00001000 ],
+            [ SDL_INIT_GAMECONTROLLER => 0x00002000 ],
+            [ SDL_INIT_EVENTS         => 0x00004000 ],
+            [ SDL_INIT_SENSOR         => 0x00008000 ],
+            [ SDL_INIT_NOPARACHUTE    => 0x00100000 ],
+            [   SDL_INIT_EVERYTHING => sub {
+                    SDL_INIT_TIMER() | SDL_INIT_AUDIO() | SDL_INIT_VIDEO() | SDL_INIT_EVENTS()
+                        | SDL_INIT_JOYSTICK() | SDL_INIT_HAPTIC() | SDL_INIT_GAMECONTROLLER()
+                        | SDL_INIT_SENSOR();
+                }
+            ]
+        ],
+
+# https://github.com/libsdl-org/SDL/blob/c59d4dcd38c382a1e9b69b053756f1139a861574/include/SDL_hints.h
+        SDL_Hint => [
+            [ SDL_HINT_ACCELEROMETER_AS_JOYSTICK   => 'SDL_ACCELEROMETER_AS_JOYSTICK' ],
+            [ SDL_HINT_ALLOW_ALT_TAB_WHILE_GRABBED => 'SDL_ALLOW_ALT_TAB_WHILE_GRABBED' ],
+            [ SDL_HINT_ALLOW_TOPMOST               => 'SDL_ALLOW_TOPMOST' ],
+            [   SDL_HINT_ANDROID_APK_EXPANSION_MAIN_FILE_VERSION =>
+                    'SDL_ANDROID_APK_EXPANSION_MAIN_FILE_VERSION'
+            ],
+            [   SDL_HINT_ANDROID_APK_EXPANSION_PATCH_FILE_VERSION =>
+                    'SDL_ANDROID_APK_EXPANSION_PATCH_FILE_VERSION'
+            ],
+            [ SDL_HINT_ANDROID_BLOCK_ON_PAUSE => 'SDL_ANDROID_BLOCK_ON_PAUSE' ],
+            [   SDL_HINT_ANDROID_BLOCK_ON_PAUSE_PAUSEAUDIO =>
+                    'SDL_ANDROID_BLOCK_ON_PAUSE_PAUSEAUDIO'
+            ],
+            [ SDL_HINT_ANDROID_SEPARATE_MOUSE_AND_TOUCH => 'SDL_ANDROID_SEPARATE_MOUSE_AND_TOUCH' ],
+            [ SDL_HINT_ANDROID_TRAP_BACK_BUTTON         => 'SDL_ANDROID_TRAP_BACK_BUTTON' ],
+            [ SDL_HINT_APPLE_TV_CONTROLLER_UI_EVENTS    => 'SDL_APPLE_TV_CONTROLLER_UI_EVENTS' ],
+            [ SDL_HINT_APPLE_TV_REMOTE_ALLOW_ROTATION   => 'SDL_APPLE_TV_REMOTE_ALLOW_ROTATION' ],
+            [ SDL_HINT_AUDIO_CATEGORY                   => 'SDL_AUDIO_CATEGORY' ],
+            [ SDL_HINT_AUDIO_DEVICE_APP_NAME            => 'SDL_AUDIO_DEVICE_APP_NAME' ],
+            [ SDL_HINT_AUDIO_DEVICE_STREAM_NAME         => 'SDL_AUDIO_DEVICE_STREAM_NAME' ],
+            [ SDL_HINT_AUDIO_DEVICE_STREAM_ROLE         => 'SDL_AUDIO_DEVICE_STREAM_ROLE' ],
+            [ SDL_HINT_AUDIO_RESAMPLING_MODE            => 'SDL_AUDIO_RESAMPLING_MODE' ],
+            [ SDL_HINT_AUTO_UPDATE_JOYSTICKS            => 'SDL_AUTO_UPDATE_JOYSTICKS' ],
+            [ SDL_HINT_AUTO_UPDATE_SENSORS              => 'SDL_AUTO_UPDATE_SENSORS' ],
+            [ SDL_HINT_BMP_SAVE_LEGACY_FORMAT           => 'SDL_BMP_SAVE_LEGACY_FORMAT' ],
+            [ SDL_HINT_DISPLAY_USABLE_BOUNDS            => 'SDL_DISPLAY_USABLE_BOUNDS' ],
+            [ SDL_HINT_EMSCRIPTEN_ASYNCIFY              => 'SDL_EMSCRIPTEN_ASYNCIFY' ],
+            [ SDL_HINT_EMSCRIPTEN_KEYBOARD_ELEMENT      => 'SDL_EMSCRIPTEN_KEYBOARD_ELEMENT' ],
+            [ SDL_HINT_ENABLE_STEAM_CONTROLLERS         => 'SDL_ENABLE_STEAM_CONTROLLERS' ],
+            [ SDL_HINT_EVENT_LOGGING                    => 'SDL_EVENT_LOGGING' ],
+            [ SDL_HINT_FRAMEBUFFER_ACCELERATION         => 'SDL_FRAMEBUFFER_ACCELERATION' ],
+            [ SDL_HINT_GAMECONTROLLERCONFIG             => 'SDL_GAMECONTROLLERCONFIG' ],
+            [ SDL_HINT_GAMECONTROLLERCONFIG_FILE        => 'SDL_GAMECONTROLLERCONFIG_FILE' ],
+            [ SDL_HINT_GAMECONTROLLERTYPE               => 'SDL_GAMECONTROLLERTYPE' ],
+            [ SDL_HINT_GAMECONTROLLER_IGNORE_DEVICES    => 'SDL_GAMECONTROLLER_IGNORE_DEVICES' ],
+            [   SDL_HINT_GAMECONTROLLER_IGNORE_DEVICES_EXCEPT =>
+                    'SDL_GAMECONTROLLER_IGNORE_DEVICES_EXCEPT'
+            ],
+            [ SDL_HINT_GAMECONTROLLER_USE_BUTTON_LABELS => 'SDL_GAMECONTROLLER_USE_BUTTON_LABELS' ],
+            [ SDL_HINT_GRAB_KEYBOARD                    => 'SDL_GRAB_KEYBOARD' ],
+            [ SDL_HINT_IDLE_TIMER_DISABLED              => 'SDL_IDLE_TIMER_DISABLED' ],
+            [ SDL_HINT_IME_INTERNAL_EDITING             => 'SDL_IME_INTERNAL_EDITING' ],
+            [ SDL_HINT_IOS_HIDE_HOME_INDICATOR          => 'SDL_IOS_HIDE_HOME_INDICATOR' ],
+            [ SDL_HINT_JOYSTICK_ALLOW_BACKGROUND_EVENTS => 'SDL_JOYSTICK_ALLOW_BACKGROUND_EVENTS' ],
+            [ SDL_HINT_JOYSTICK_HIDAPI                  => 'SDL_JOYSTICK_HIDAPI' ],
+            [ SDL_HINT_JOYSTICK_HIDAPI_CORRELATE_XINPUT => 'SDL_JOYSTICK_HIDAPI_CORRELATE_XINPUT' ],
+            [ SDL_HINT_JOYSTICK_HIDAPI_GAMECUBE         => 'SDL_JOYSTICK_HIDAPI_GAMECUBE' ],
+            [ SDL_HINT_JOYSTICK_HIDAPI_JOY_CONS         => 'SDL_JOYSTICK_HIDAPI_JOY_CONS' ],
+            [ SDL_HINT_JOYSTICK_HIDAPI_PS4              => 'SDL_JOYSTICK_HIDAPI_PS4' ],
+            [ SDL_HINT_JOYSTICK_HIDAPI_PS4_RUMBLE       => 'SDL_JOYSTICK_HIDAPI_PS4_RUMBLE' ],
+            [ SDL_HINT_JOYSTICK_HIDAPI_PS5              => 'SDL_JOYSTICK_HIDAPI_PS5' ],
+            [ SDL_HINT_JOYSTICK_HIDAPI_PS5_PLAYER_LED   => 'SDL_JOYSTICK_HIDAPI_PS5_PLAYER_LED' ],
+            [ SDL_HINT_JOYSTICK_HIDAPI_PS5_RUMBLE       => 'SDL_JOYSTICK_HIDAPI_PS5_RUMBLE' ],
+            [ SDL_HINT_JOYSTICK_HIDAPI_STADIA           => 'SDL_JOYSTICK_HIDAPI_STADIA' ],
+            [ SDL_HINT_JOYSTICK_HIDAPI_STEAM            => 'SDL_JOYSTICK_HIDAPI_STEAM' ],
+            [ SDL_HINT_JOYSTICK_HIDAPI_SWITCH           => 'SDL_JOYSTICK_HIDAPI_SWITCH' ],
+            [ SDL_HINT_JOYSTICK_HIDAPI_SWITCH_HOME_LED  => 'SDL_JOYSTICK_HIDAPI_SWITCH_HOME_LED' ],
+            [ SDL_HINT_JOYSTICK_HIDAPI_XBOX             => 'SDL_JOYSTICK_HIDAPI_XBOX' ],
+            [ SDL_HINT_JOYSTICK_RAWINPUT                => 'SDL_JOYSTICK_RAWINPUT' ],
+            [ SDL_HINT_JOYSTICK_THREAD                  => 'SDL_JOYSTICK_THREAD' ],
+            [ SDL_HINT_KMSDRM_REQUIRE_DRM_MASTER        => 'SDL_KMSDRM_REQUIRE_DRM_MASTER' ],
+            [ SDL_HINT_LINUX_JOYSTICK_DEADZONES         => 'SDL_LINUX_JOYSTICK_DEADZONES' ],
+            [ SDL_HINT_MAC_BACKGROUND_APP               => 'SDL_MAC_BACKGROUND_APP' ],
+            [   SDL_HINT_MAC_CTRL_CLICK_EMULATE_RIGHT_CLICK =>
+                    'SDL_MAC_CTRL_CLICK_EMULATE_RIGHT_CLICK'
+            ],
+            [ SDL_HINT_MOUSE_DOUBLE_CLICK_RADIUS     => 'SDL_MOUSE_DOUBLE_CLICK_RADIUS' ],
+            [ SDL_HINT_MOUSE_DOUBLE_CLICK_TIME       => 'SDL_MOUSE_DOUBLE_CLICK_TIME' ],
+            [ SDL_HINT_MOUSE_FOCUS_CLICKTHROUGH      => 'SDL_MOUSE_FOCUS_CLICKTHROUGH' ],
+            [ SDL_HINT_MOUSE_NORMAL_SPEED_SCALE      => 'SDL_MOUSE_NORMAL_SPEED_SCALE' ],
+            [ SDL_HINT_MOUSE_RELATIVE_MODE_WARP      => 'SDL_MOUSE_RELATIVE_MODE_WARP' ],
+            [ SDL_HINT_MOUSE_RELATIVE_SCALING        => 'SDL_MOUSE_RELATIVE_SCALING' ],
+            [ SDL_HINT_MOUSE_RELATIVE_SPEED_SCALE    => 'SDL_MOUSE_RELATIVE_SPEED_SCALE' ],
+            [ SDL_HINT_MOUSE_TOUCH_EVENTS            => 'SDL_MOUSE_TOUCH_EVENTS' ],
+            [ SDL_HINT_NO_SIGNAL_HANDLERS            => 'SDL_NO_SIGNAL_HANDLERS' ],
+            [ SDL_HINT_OPENGL_ES_DRIVER              => 'SDL_OPENGL_ES_DRIVER' ],
+            [ SDL_HINT_ORIENTATIONS                  => 'SDL_ORIENTATIONS' ],
+            [ SDL_HINT_PREFERRED_LOCALES             => 'SDL_PREFERRED_LOCALES' ],
+            [ SDL_HINT_QTWAYLAND_CONTENT_ORIENTATION => 'SDL_QTWAYLAND_CONTENT_ORIENTATION' ],
+            [ SDL_HINT_QTWAYLAND_WINDOW_FLAGS        => 'SDL_QTWAYLAND_WINDOW_FLAGS' ],
+            [ SDL_HINT_RENDER_BATCHING               => 'SDL_RENDER_BATCHING' ],
+            [ SDL_HINT_RENDER_DIRECT3D11_DEBUG       => 'SDL_RENDER_DIRECT3D11_DEBUG' ],
+            [ SDL_HINT_RENDER_DIRECT3D_THREADSAFE    => 'SDL_RENDER_DIRECT3D_THREADSAFE' ],
+            [ SDL_HINT_RENDER_DRIVER                 => 'SDL_RENDER_DRIVER' ],
+            [ SDL_HINT_RENDER_LOGICAL_SIZE_MODE      => 'SDL_RENDER_LOGICAL_SIZE_MODE' ],
+            [ SDL_HINT_RENDER_OPENGL_SHADERS         => 'SDL_RENDER_OPENGL_SHADERS' ],
+            [ SDL_HINT_RENDER_SCALE_QUALITY          => 'SDL_RENDER_SCALE_QUALITY' ],
+            [ SDL_HINT_RENDER_VSYNC                  => 'SDL_RENDER_VSYNC' ],
+            [ SDL_HINT_RETURN_KEY_HIDES_IME          => 'SDL_RETURN_KEY_HIDES_IME' ],
+            [ SDL_HINT_RPI_VIDEO_LAYER               => 'SDL_RPI_VIDEO_LAYER' ],
+            [   SDL_HINT_THREAD_FORCE_REALTIME_TIME_CRITICAL =>
+                    'SDL_THREAD_FORCE_REALTIME_TIME_CRITICAL'
+            ],
+            [ SDL_HINT_THREAD_PRIORITY_POLICY          => 'SDL_THREAD_PRIORITY_POLICY' ],
+            [ SDL_HINT_THREAD_STACK_SIZE               => 'SDL_THREAD_STACK_SIZE' ],
+            [ SDL_HINT_TIMER_RESOLUTION                => 'SDL_TIMER_RESOLUTION' ],
+            [ SDL_HINT_TOUCH_MOUSE_EVENTS              => 'SDL_TOUCH_MOUSE_EVENTS' ],
+            [ SDL_HINT_TV_REMOTE_AS_JOYSTICK           => 'SDL_TV_REMOTE_AS_JOYSTICK' ],
+            [ SDL_HINT_VIDEO_ALLOW_SCREENSAVER         => 'SDL_VIDEO_ALLOW_SCREENSAVER' ],
+            [ SDL_HINT_VIDEO_DOUBLE_BUFFER             => 'SDL_VIDEO_DOUBLE_BUFFER' ],
+            [ SDL_HINT_VIDEO_EXTERNAL_CONTEXT          => 'SDL_VIDEO_EXTERNAL_CONTEXT' ],
+            [ SDL_HINT_VIDEO_HIGHDPI_DISABLED          => 'SDL_VIDEO_HIGHDPI_DISABLED' ],
+            [ SDL_HINT_VIDEO_MAC_FULLSCREEN_SPACES     => 'SDL_VIDEO_MAC_FULLSCREEN_SPACES' ],
+            [ SDL_HINT_VIDEO_MINIMIZE_ON_FOCUS_LOSS    => 'SDL_VIDEO_MINIMIZE_ON_FOCUS_LOSS' ],
+            [ SDL_HINT_VIDEO_WINDOW_SHARE_PIXEL_FORMAT => 'SDL_VIDEO_WINDOW_SHARE_PIXEL_FORMAT' ],
+            [ SDL_HINT_VIDEO_WIN_D3DCOMPILE            => 'SDL_VIDEO_WIN_D3DCOMPILE' ],
+            [ SDL_HINT_VIDEO_WIN_D3DCOMPILER           => 'SDL_VIDEO_WIN_D3DCOMPILER' ],
+            [ SDL_HINT_VIDEO_X11_FORCE_EGL             => 'SDL_VIDEO_X11_FORCE_EGL' ],
+            [   SDL_HINT_VIDEO_X11_NET_WM_BYPASS_COMPOSITOR =>
+                    'SDL_VIDEO_X11_NET_WM_BYPASS_COMPOSITOR'
+            ],
+            [ SDL_HINT_VIDEO_X11_NET_WM_PING         => 'SDL_VIDEO_X11_NET_WM_PING' ],
+            [ SDL_HINT_VIDEO_X11_WINDOW_VISUALID     => 'SDL_VIDEO_X11_WINDOW_VISUALID' ],
+            [ SDL_HINT_VIDEO_X11_XINERAMA            => 'SDL_VIDEO_X11_XINERAMA' ],
+            [ SDL_HINT_VIDEO_X11_XRANDR              => 'SDL_VIDEO_X11_XRANDR' ],
+            [ SDL_HINT_VIDEO_X11_XVIDMODE            => 'SDL_VIDEO_X11_XVIDMODE' ],
+            [ SDL_HINT_WAVE_FACT_CHUNK               => 'SDL_WAVE_FACT_CHUNK' ],
+            [ SDL_HINT_WAVE_RIFF_CHUNK_SIZE          => 'SDL_WAVE_RIFF_CHUNK_SIZE' ],
+            [ SDL_HINT_WAVE_TRUNCATION               => 'SDL_WAVE_TRUNCATION' ],
+            [ SDL_HINT_WINDOWS_DISABLE_THREAD_NAMING => 'SDL_WINDOWS_DISABLE_THREAD_NAMING' ],
+            [ SDL_HINT_WINDOWS_ENABLE_MESSAGELOOP    => 'SDL_WINDOWS_ENABLE_MESSAGELOOP' ],
+            [   SDL_HINT_WINDOWS_FORCE_MUTEX_CRITICAL_SECTIONS =>
+                    'SDL_WINDOWS_FORCE_MUTEX_CRITICAL_SECTIONS'
+            ],
+            [ SDL_HINT_WINDOWS_FORCE_SEMAPHORE_KERNEL => 'SDL_WINDOWS_FORCE_SEMAPHORE_KERNEL' ],
+            [ SDL_HINT_WINDOWS_INTRESOURCE_ICON       => 'SDL_WINDOWS_INTRESOURCE_ICON' ],
+            [ SDL_HINT_WINDOWS_INTRESOURCE_ICON_SMALL => 'SDL_WINDOWS_INTRESOURCE_ICON_SMALL' ],
+            [ SDL_HINT_WINDOWS_NO_CLOSE_ON_ALT_F4     => 'SDL_WINDOWS_NO_CLOSE_ON_ALT_F4' ],
+            [ SDL_HINT_WINDOWS_USE_D3D9EX             => 'SDL_WINDOWS_USE_D3D9EX' ],
+            [   SDL_HINT_WINDOW_FRAME_USABLE_WHILE_CURSOR_HIDDEN =>
+                    'SDL_WINDOW_FRAME_USABLE_WHILE_CURSOR_HIDDEN'
+            ],
+            [ SDL_HINT_WINRT_HANDLE_BACK_BUTTON        => 'SDL_WINRT_HANDLE_BACK_BUTTON' ],
+            [ SDL_HINT_WINRT_PRIVACY_POLICY_LABEL      => 'SDL_WINRT_PRIVACY_POLICY_LABEL' ],
+            [ SDL_HINT_WINRT_PRIVACY_POLICY_URL        => 'SDL_WINRT_PRIVACY_POLICY_URL' ],
+            [ SDL_HINT_XINPUT_ENABLED                  => 'SDL_XINPUT_ENABLED' ],
+            [ SDL_HINT_XINPUT_USE_OLD_JOYSTICK_MAPPING => 'SDL_XINPUT_USE_OLD_JOYSTICK_MAPPING' ]
+        ]
+    );
+    for my $tag ( keys %Enums ) {
+
+        #warn $tag;
+        FFI::C->enum( $tag => $Enums{$tag} );
+        $EXPORT_TAGS{ lc substr $tag, 4 }
+            = [ sort map { ref $_ ? $_->[0] : $_ } @{ $Enums{$tag} } ];
+    }
+    for my $tag ( keys %Defines ) {
+
+        #print $_->[0] . ' ' for sort { $a->[0] cmp $b->[0] } @{ $Defines{$tag} };
+        constant->import(
+            ref $_ ? ( $_->[0] => ( ref $_->[1] eq 'CODE' ? $_->[1]->() : $_->[1] ) ) :
+                ( $_ => $_ ) )
+            for @{ $Defines{$tag} };
+
+        #constant->import( $_ => $_ ) for @{ $Defines{$tag} };
+        $EXPORT_TAGS{ lc substr $tag, 4 }
+            = [ sort map { ref $_ ? $_->[0] : $_ } @{ $Defines{$tag} } ];
+    }
+    #
     # See https://wiki.libsdl.org/APIByCategory
     # Basics
     sub attach (%args) {
@@ -90,134 +258,6 @@ SDL2 is ...
             }
         }
     }
-    my $platform = $^O;                            # https://perldoc.perl.org/perlport#PLATFORMS
-    my $Windows  = !!( $platform eq 'MSWin32' );
-    #
-
-=head1 Initialization and Shutdown
-
-The functions in this category are used to set up SDL for use and generally
-have global effects in your program.
-
-=head2 C<SDL_Init( ... )>
-
-Initialize the SDL library.
-
-C<SDL_Init( ... )> simply forwards to calling L<< C<SDL_InitSubSystem( ...
-)>|/C<SDL_InitSubSystem( ... )> >>. Therefore, the two may be used
-interchangeably. Though for readability of your code L<< C<SDL_InitSubSystem(
-... )>|/C<SDL_InitSubSystem( ... )> >> might be preferred.
-
-The file I/O (for example: SDL_RWFromFile) and threading (SDL_CreateThread)
-subsystems are initialized by default. Message boxes (SDL_ShowSimpleMessageBox)
-also attempt to work without initializing the video subsystem, in hopes of
-being useful in showing an error dialog when SDL_Init fails. You must
-specifically initialize other subsystems if you use them in your application.
-
-Logging (such as SDL_Log) works without initialization, too.
-
-Expected parameters include:
-
-=over
-
-=item C<flags> which may be any be imported from SDL2::Enum with the L<< C<:init>|SDL2::Enum/C<:init> >> tag and may be OR'd together.
-
-=back
-
-Subsystem initialization is ref-counted, you must call L<< C<SDL_QuitSubSystem(
-... )>|/C<SDL_QuitSubSystem( ... )> >> for each L<< C<SDL_InitSubSystem( ...
-)>|/C<SDL_InitSubSystem( ... )> >> to correctly shutdown a subsystem manually
-(or call L<< C<SDL_Quit( )>|/C<SDL_Quit( )> >> to force shutdown). If a
-subsystem is already loaded then this call will increase the ref-count and
-return.
-
-Returns C<0> on success or a negative error code on failure; call L<<
-C<SDL_GetError( )>|/C<SDL_GetError( )> >> for more information.
-
-=head2 C<SDL_InitSubSystem( ... )>
-
-Compatibility function to initialize the SDL library.
-
-In SDL2, this function and L<< C<SDL_Init( ... )>|/C<SDL_Init( ... )> >> are
-interchangeable.
-
-Expected parameters include:
-
-=over
-
-=item C<flags> which may be any be imported from SDL2::Enum with the L<< C<:init>|SDL2::Enum/C<:init> >> tag and may be OR'd together.
-
-=back
-
-Returns C<0> on success or a negative error code on failure; call L<<
-C<SDL_GetError()>|/C<SDL_GetError( )> >> for more information.
-
-=head2 C<SDL_Quit( )>
-
-Clean up all initialized subsystems.
-
-You should call this function even if you have already shutdown each
-initialized subsystem with L<< C<SDL_QuitSubSystem( )>|/C<SDL_QuitSubSystem( )>
->>. It is safe to call this function even in the case of errors in
-initialization.
-
-If you start a subsystem using a call to that subsystem's init function (for
-example L<< C<SDL_VideoInit()>|/C<SDL_VideoInit( )> >>) instead of L<<
-C<SDL_Init( ... )>|/C<SDL_Init( ... )> >> or L<< C<SDL_InitSubSystem( ...
-)>|/C<SDL_InitSubSystem( ... )> >>, then you must use that subsystem's quit
-function (L<< C<SDL_VideoQuit( )>|/C<SDL_VideoQuit( )> >>) to shut it down
-before calling C<SDL_Quit( )>. But generally, you should not be using those
-functions directly anyhow; use L<< C<SDL_Init( ... )>|/C<SDL_Init( ... )> >>
-instead.
-
-You can use this function in an C<END { ... }> block to ensure that it is run
-when your application is shutdown.
-
-=head2 C<SDL_QuitSubSystem( ... )>
-
-Shut down specific SDL subsystems.
-
-If you start a subsystem using a call to that subsystem's init function (for
-example L<< C<SDL_VideoInit( )> |/C<SDL_VideoInit( )> >>) instead of L<<
-C<SDL_Init( ... )>|/C<SDL_Init( ... )> >> or L<< C<SDL_InitSubSystem( ...
-)>|/C<SDL_InitSubSystem( ... )> >>, L<< C<SDL_QuitSubSystem( ...
-)>|/C<SDL_QuitSubSystem( ... )> >> and L<< C<SDL_WasInit( ...
-)>|/C<SDL_WasInit( ... )> >> will not work. You will need to use that
-subsystem's quit function ( L<< C<SDL_VideoQuit( )>|/C<SDL_VideoQuit( )> >>
-directly instead. But generally, you should not be using those functions
-directly anyhow; use L<< C<SDL_Init( ... )>|/C<SDL_Init( ... )> >> instead.
-
-You still need to call L<< C<SDL_Quit( )>|/C<SDL_Quit( )> >> even if you close
-all open subsystems with L<< C<SDL_QuitSubSystem( ... )>|/C<SDL_QuitSubSystem(
-... )> >>.
-
-Expected parameters include:
-
-=over
-
-=item C<flags> which may be any be imported from SDL2::Enum with the L<< C<:init>|SDL2::Enum/C<:init> >> tag and may be OR'd together.
-
-=back
-
-=head2 C<SDL_WasInit( ... )>
-
-Get a mask of the specified subsystems which are currently initialized.
-
-Expected parameters include:
-
-=over
-
-=item C<flags> which may be any be imported from SDL2::Enum with the L<< C<:init>|SDL2::Enum/C<:init> >> tag and may be OR'd together.
-
-=back
-
-If C<flags> is C<0>, it returns a mask of all initialized subsystems, otherwise
-it returns the initialization status of the specified subsystems.
-
-The return value does not include C<SDL_INIT_NOPARACHUTE>.
-
-=cut
-
     attach(
         init => {
 
@@ -229,194 +269,8 @@ The return value does not include C<SDL_INIT_NOPARACHUTE>.
             SDL_WasInit       => [ ['uint32'] => 'uint32' ]
         }
     );
-
-=head1 Configuration Variables
-
-This category contains functions to set and get configuration hints, as well as
-listing each of them alphabetically.
-
-The convention for naming hints is C<SDL_HINT_X>, where C<SDL_X> is the
-environment variable that can be used to override the default.
-
-In general these hints are just that - they may or may not be supported or
-applicable on any given platform, but they provide a way for an application or
-user to give the library a hint as to how they would like the library to work.
-
-=head2 C<SDL_SetHintWithPriority( ... )>
-
-Set a hint with a specific priority.
-
-	SDL_SetHintWithPriority( SDL_EVENT_LOGGING, 2, SDL_HINT_OVERRIDE );
-
-The priority controls the behavior when setting a hint that already has a
-value. Hints will replace existing hints of their priority and lower.
-Environment variables are considered to have override priority.
-
-Expected parameters include:
-
-=over
-
-=item C<name>
-
-the hint to set
-
-=item C<value>
-
-the value of the hint variable
-
-=item C<priority>
-
-the priority level for the hint
-
-=back
-
-Returns a true if the hint was set, untrue otherwise.
-
-=head2 C<SDL_SetHint( ... )>
-
-Set a hint with normal priority.
-
-	SDL_SetHint( SDL_HINT_XINPUT_ENABLED, 1 );
-
-Hints will not be set if there is an existing override hint or environment
-variable that takes precedence. You can use SDL_SetHintWithPriority() to set
-the hint with override priority instead.
-
-Expected parameters:
-
-=over
-
-=item C<name>
-
-the hint to set
-
-=item C<value>
-
-the value of the hint variable
-
-=back
-
-Returns a true value if the hint was set, untrue otherwise.
-
-=head2 C<SDL_GetHint( ... )>
-
-Get the value of a hint.
-
-	SDL_GetHint( SDL_HINT_XINPUT_ENABLED );
-
-Expected parameters:
-
-=over
-
-=item C<name>
-
-the hint to query
-
-=back
-
-Returns the string value of a hint or an undefined value if the hint isn't set.
-
-=head2 C<SDL_GetHintBoolean( ... )>
-
-Get the boolean value of a hint variable.
-
-	SDL_GetHintBoolean( SDL_HINT_XINPUT_ENABLED, 0);
-
-Expected parameters:
-
-=over
-
-=item C<name>
-
-the name of the hint to get the boolean value from
-
-=item C<default_value>
-
-the value to return if the hint does not exist
-
-=back
-
-Returns the boolean value of a hint or the provided default value if the hint
-does not exist.
-
-=head2 C<SDL_AddHintCallback( ... )>
-
-Add a function to watch a particular hint.
-
-	my $cb = SDL_AddHintCallback(
-		SDL_HINT_XINPUT_ENABLED,
-		sub {
-			my ($userdata, $name, $oldvalue, $newvalue) = @_;
-			...;
-		},
-		{ time => time(), clicks => 3 }
-	);
-
-Expected parameters:
-
-=over
-
-=item C<name>
-
-the hint to watch
-
-=item C<callback>
-
-a code reference that will be called when the hint value changes
-
-=item C<userdata>
-
-a pointer to pass to the callback function
-
-=back
-
-Returns a pointer to a L<FFI::Platypus::Closure> which you may pass to L<<
-C<SDL_DelHintCallback( ... )>|/C<SDL_DelHintCallback( ... )> >>.
-
-=head2 C<SDL_DelHintCallback( ... )>
-
-Remove a callback watching a particular hint.
-
-	SDL_AddHintCallback(
-		SDL_HINT_XINPUT_ENABLED,
-		$cb,
-		{ time => time(), clicks => 3 }
-	);
-
-Expected parameters:
-
-=over
-
-=item C<name>
-
-the hint to watch
-
-=item C<callback>
-
-L<FFI::Platypus::Closure> object returned by L<< C<SDL_AddHintCallback( ...
-)>|/C<SDL_AddHintCallback( ... )> >>
-
-=item C<userdata>
-
-a pointer to pass to the callback function
-
-=back
-
-=head2 C<SDL_ClearHints()>
-
-Clear all hints.
-
-	SDL_ClearHints();
-
-This function is automatically called during L<< C<SDL_Quit( )>|/C<SDL_Quit( )>
->>.
-
-=cut
-
     #
     $ffi->type( '(opaque,string,string,string)->void' => 'SDL_HintCallback' );
-    my $closure = $ffi->closure( sub { print "hello world\n" } );
-    my $opaque  = $ffi->cast( SDL_HintCallback => 'opaque', $closure );
     attach(
         hints => {
             SDL_SetHintWithPriority => [ [ 'string', 'string', 'int' ] => 'bool' ],
@@ -444,111 +298,6 @@ This function is automatically called during L<< C<SDL_Quit( )>|/C<SDL_Quit( )>
             ],
             SDL_ClearHints => [ [] => 'void' ],
         },
-    );
-
-=head1 Error Handling
-
-Functions in this category provide simple error message routines for SDL. L<<
-C<SDL_GetError( )>|/C<SDL_GetError( )> >> can be called for almost all SDL
-functions to determine what problems are occurring. Check the wiki page of each
-specific SDL function to see whether L<< C<SDL_GetError( )>|/C<SDL_GetError( )>
->> is meaningful for them or not.
-
-The SDL error messages are in English.
-
-=head2 C<SDL_SetError( ... )>
-
-Set the SDL error message for the current thread.
-
-Calling this function will replace any previous error message that was set.
-
-This function always returns C<-1>, since SDL frequently uses C<-1> to signify
-an failing result, leading to this idiom:
-
-
-	if ($error_code) {
-		return SDL_SetError( 'This operation has failed: %d', $error_code );
-	}
-
-Expected parameters:
-
-=over
-
-=item C<fmt>
-
-a C<printf()>-style message format string
-
-=item C<@params>
-
-additional parameters matching % tokens in the C<fmt> string, if any
-
-=back
-
-=head2 C<SDL_GetError( )>
-
-Retrieve a message about the last error that occurred on the current thread.
-
-	warn SDL_GetError();
-
-It is possible for multiple errors to occur before calling C<SDL_GetError()>.
-Only the last error is returned.
-
-The message is only applicable when an SDL function has signaled an error. You
-must check the return values of SDL function calls to determine when to
-appropriately call C<SDL_GetError()>. You should B<not> use the results of
-C<SDL_GetError()> to decide if an error has occurred! Sometimes SDL will set an
-error string even when reporting success.
-
-SDL will B<not> clear the error string for successful API calls. You B<must>
-check return values for failure cases before you can assume the error string
-applies.
-
-Error strings are set per-thread, so an error set in a different thread will
-not interfere with the current thread's operation.
-
-The returned string is internally allocated and must not be freed by the
-application.
-
-Returns a message with information about the specific error that occurred, or
-an empty string if there hasn't been an error message set since the last call
-to L<< C<SDL_ClearError()>|/C<SDL_ClearError()> >>. The message is only
-applicable when an SDL function has signaled an error. You must check the
-return values of SDL function calls to determine when to appropriately call
-C<SDL_GetError()>.
-
-=head2 C<SDL_GetErrorMsg( ... )>
-
-Get the last error message that was set for the current thread.
-
-	my $x;
-	warn SDL_GetErrorMsg($x, 300);
-
-This allows the caller to copy the error string into a provided buffer, but
-otherwise operates exactly the same as L<< C<SDL_GetError()>|/C<SDL_GetError()>
->>.
-
-=over
-
-=item C<errstr>
-
-A buffer to fill with the last error message that was set for the current
-thread
-
-=item C<maxlen>
-
-The size of the buffer pointed to by the errstr parameter
-
-=back
-
-Returns the pointer passed in as the C<errstr> parameter.
-
-=head2 C<SDL_ClearError( )>
-
-Clear any previous error message for this thread.
-
-=cut
-
-    attach(
         error => {
             SDL_SetError => [
                 ['string'] => ['int'] =>
@@ -563,54 +312,29 @@ Clear any previous error message for this thread.
                 }
             ],
             SDL_ClearError => [ [] => 'void' ]
+        },
+        log => {
+            SDL_LogSetPriority => [ [ 'int', 'SDL_LogPriority' ] ],
+            SDL_Log            => [
+                ['string'] => ['string'] =>
+                    sub ( $inner, $fmt, @args ) { $inner->( sprintf( $fmt, @args ) ) }
+            ],
         }
     );
-    attach(
-        all => {
 
-            # Unknown...
-            SDL_SetMainReady => [ [] => 'void' ]
-        }
-    );
-
-    # https://wiki.libsdl.org/CategoryLog
-    FFI::C->enum(
-        'SDL_LOG_CATEGORY',
-        [   qw[
-                SDL_LOG_CATEGORY_OFFSET
-                SDL_LOG_CATEGORY_APPLICATION SDL_LOG_CATEGORY_ERROR
-                SDL_LOG_CATEGORY_ASSERT 	 SDL_LOG_CATEGORY_SYSTEM
-                SDL_LOG_CATEGORY_AUDIO 		 SDL_LOG_CATEGORY_VIDEO
-                SDL_LOG_CATEGORY_RENDER		 SDL_LOG_CATEGORY_INPUT
-                SDL_LOG_CATEGORY_TEST		 SDL_LOG_CATEGORY_RESERVED
-                SDL_LOG_CATEGORY_CUSTOM]
-        ]
-    );
-    FFI::C->enum(
-        'SDL_LogPriority',
-        [   qw[
-                SDL_LOG_OFFSET
-                SDL_LOG_PRIORITY_VERBOSE	SDL_LOG_PRIORITY_DEBUG
-                SDL_LOG_PRIORITY_INFO		SDL_LOG_PRIORITY_WARN
-                SDL_LOG_PRIORITY_ERROR		SDL_LOG_PRIORITY_CRITICAL
-                SDL_NUM_LOG_PRIORITIES]
-        ]
-    );
-    $ffi->attach( SDL_Log => ['string'] => ['string'] =>
-            sub ( $inner, $fmt, @args ) { $inner->( sprintf( $fmt, @args ) ) } );
-    $ffi->attach( $_ => [ 'SDL_LOG_CATEGORY', 'string' ] =>
+    # START HERE!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    $ffi->attach( $_ => [ 'SDL_LogCategory', 'string' ] =>
             sub ( $inner, $category, $fmt, @args ) { $inner->( $category, sprintf( $fmt, @args ) ) }
     ) for qw[SDL_LogCritical SDL_LogDebug SDL_LogError SDL_LogInfo SDL_LogVerbose SDL_LogWarn];
     $ffi->attach(
-        SDL_LogMessage => [ 'SDL_LOG_CATEGORY', 'SDL_LogPriority', 'string' ] =>
+        SDL_LogMessage => [ 'SDL_LogCategory', 'SDL_LogPriority', 'string' ] =>
             sub ( $inner, $category, $priority, $fmt, @args ) {
             $inner->( $category, $priority, sprintf( $fmt, @args ) );
         }
     );
     $ffi->attach( SDL_LogResetPriorities => [] );
     $ffi->attach( SDL_LogSetAllPriority  => ['SDL_LogPriority'] );
-    $ffi->attach( SDL_LogSetPriority     => [ 'SDL_LOG_CATEGORY', 'SDL_LogPriority' ] );
-    $ffi->attach( SDL_LogGetPriority     => ['SDL_LOG_CATEGORY'] => 'SDL_LogPriority' );
+    $ffi->attach( SDL_LogGetPriority     => ['SDL_LogCategory'] => 'SDL_LogPriority' );
     $ffi->type( '(opaque, int, int, string)->void' => 'SDL_LogOutputFunction' );
     $ffi->attach(
         SDL_LogSetOutputFunction => [ 'SDL_LogOutputFunction', 'opaque' ],
@@ -1809,13 +1533,23 @@ Clear any previous error message for this thread.
                 SDLK_RIGHT]
         ]
     );
+    attach(
+        all => {
+
+            # Unknown...
+            SDL_SetMainReady => [ [] => 'void' ]
+        }
+    );
 
 #warn SDL2::SDLK_UP();
 #warn SDL2::SDLK_DOWN();
 # https://github.com/libsdl-org/SDL/blob/c59d4dcd38c382a1e9b69b053756f1139a861574/include/SDL_hints.h
 # Export symbols!
-    our @EXPORT_OK = sort
-        keys %{ { map { $_ => 1 } grep {/^SDL_/} keys %SDL2::, map {@$_} values %EXPORT_TAGS } };
+    our @EXPORT_OK = map {@$_} values %EXPORT_TAGS;
+#### REMOVE THIS BEFORE STABLE RELEASE!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! #####
+    @EXPORT_OK = keys
+        %{ { map { $_ => 1 } grep {/^SDL_/} keys %SDL2::FFI::, map {@$_} values %EXPORT_TAGS } };
+####################################################################################################
     $EXPORT_TAGS{default} = [];             # Export nothing by default
     $EXPORT_TAGS{all}     = \@EXPORT_OK;    # Export everything with :all tag
 }
@@ -1832,7 +1566,5 @@ conditions may apply to data transmitted through this module.
 =head1 AUTHOR
 
 Sanko Robinson E<lt>sanko@cpan.orgE<gt>
-
-=for stopwords libSDL
 
 =cut

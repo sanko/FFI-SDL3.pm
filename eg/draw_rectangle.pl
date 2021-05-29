@@ -1,7 +1,6 @@
 use strictures 2;
 use lib '../lib';
-use SDL2 qw[:all];
-use SDL2::Enum qw[:all];
+use SDL2::FFI qw[:all];
 use Data::Dump;
 $|++;
 SDL_SetHintWithPriority( SDL_HINT_EVENT_LOGGING, 2, SDL_HINT_OVERRIDE );
