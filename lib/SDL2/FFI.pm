@@ -13,7 +13,7 @@ package SDL2::FFI 1.0 {
 
     #use FFI::C::StructDef;
     #use FFI::Platypus::Memory qw[malloc free];
-    #use FFI::Platypus::Closure;
+    use FFI::Platypus::Closure;
     #
     use experimental 'signatures';
     use base 'Exporter::Tiny';
@@ -24,30 +24,71 @@ package SDL2::FFI 1.0 {
     FFI::C->ffi($ffi);
 
     # I need these first
-    FFI::C::StructDef->new(
-        $ffi,
-        name    => 'SDL_version',
-        class   => 'SDL2::FFI::Version',
-        members => [ major => 'uint8', minor => 'uint8', patch => 'uint8' ]
-    );
+    class( SDL_version => [ major => 'uint8', minor => 'uint8', patch => 'uint8' ] );
     attach(
         version => {
-            SDL_GetRevision       => [ [] => 'string' ],
-            SDL_GetRevisionNumber => [ [] => 'int' ],
-            SDL_GetVersion        => [ ['SDL_version'] ]
+            SDL_GetVersion => [
+                ['SDL_version'] => [] => sub ($inner) {
+                    my $ver = SDL2::Version->new;
+                    $inner->($ver);
+                    $ver;
+                }
+            ]
         }
     );
-    my $ver = SDL2::FFI::Version->new;
-    SDL_GetVersion($ver);
     #
+    my $ver      = SDL_GetVersion();
     my $platform = $^O;                            # https://perldoc.perl.org/perlport#PLATFORMS
     my $Windows  = !!( $platform eq 'MSWin32' );
     #
     # Export symbols!
     our %EXPORT_TAGS;
-    my %Enums = (
 
-# https://github.com/libsdl-org/SDL/blob/c59d4dcd38c382a1e9b69b053756f1139a861574/include/SDL_hints.h
+    # Sugar
+    sub define (%args) {
+        for my $tag ( keys %args ) {
+
+            #print $_->[0] . ' ' for sort { $a->[0] cmp $b->[0] } @{ $Defines{$tag} };
+            constant->import(
+                ref $_ ? ( $_->[0] => ( ref $_->[1] eq 'CODE' ? $_->[1]->() : $_->[1] ) ) :
+                    ( $_ => $_ ) )
+                for @{ $args{$tag} };
+
+            #constant->import( $_ => $_ ) for @{ $Defines{$tag} };
+            $EXPORT_TAGS{ lc substr $tag, 4 }
+                = [ sort map { ref $_ ? $_->[0] : $_ } @{ $args{$tag} } ];
+        }
+    }
+
+    sub enum (%args) {
+        for my $tag ( keys %args ) {
+            FFI::C->enum( $tag => $args{$tag} );
+            $EXPORT_TAGS{ lc substr $tag, 4 }
+                = [ sort map { ref $_ ? ref $_ eq 'CODE' ? $_->() : $_->[0] : $_ }
+                    @{ $args{$tag} } ];
+        }
+    }
+
+    sub attach (%args) {
+        for my $tag ( keys %args ) {
+            for my $func ( keys %{ $args{$tag} } ) {
+                $ffi->attach( $func => @{ $args{$tag}{$func} } );
+                push @{ $EXPORT_TAGS{$tag} }, $func;
+            }
+        }
+    }
+
+    sub class (%args) {
+        for my $name ( keys %args ) {
+            my $class = $name;
+            $class =~ s[^SDL_(.+)$]['SDL2::' . ucfirst $1 ]e;
+            warn sprintf '%s => %s', $name, $class;
+            FFI::C::StructDef->new( $ffi, name => $name, class => $class, members => $args{$name} );
+        }
+    }
+    #
+    enum(
+        # https://github.com/libsdl-org/SDL/blob/main/include/SDL_hints.h
         SDL_HintPriority => [qw[SDL_HINT_DEFAULT SDL_HINT_NORMAL SDL_HINT_OVERRIDE]],
         SDL_LogCategory  => [
             qw[
@@ -66,9 +107,9 @@ package SDL2::FFI 1.0 {
             [ SDL_LOG_PRIORITY_VERBOSE => 1 ], qw[SDL_LOG_PRIORITY_DEBUG SDL_LOG_PRIORITY_INFO
                 SDL_LOG_PRIORITY_WARN SDL_LOG_PRIORITY_ERROR SDL_LOG_PRIORITY_CRITICAL
                 SDL_NUM_LOG_PRIORITIES]
-        ]
+        ],
     );
-    my %Defines = (
+    define(
         SDL_Init => [
             [ SDL_INIT_TIMER          => 0x00000001 ],
             [ SDL_INIT_AUDIO          => 0x00000010 ],
@@ -87,7 +128,7 @@ package SDL2::FFI 1.0 {
             ]
         ],
 
-# https://github.com/libsdl-org/SDL/blob/c59d4dcd38c382a1e9b69b053756f1139a861574/include/SDL_hints.h
+        # https://github.com/libsdl-org/SDL/blob/main/include/SDL_hints.h
         SDL_Hint => [
             [ SDL_HINT_ACCELEROMETER_AS_JOYSTICK   => 'SDL_ACCELEROMETER_AS_JOYSTICK' ],
             [ SDL_HINT_ALLOW_ALT_TAB_WHILE_GRABBED => 'SDL_ALLOW_ALT_TAB_WHILE_GRABBED' ],
@@ -228,124 +269,295 @@ package SDL2::FFI 1.0 {
             [ SDL_HINT_XINPUT_USE_OLD_JOYSTICK_MAPPING => 'SDL_XINPUT_USE_OLD_JOYSTICK_MAPPING' ]
         ]
     );
-    for my $tag ( keys %Enums ) {
-
-        #warn $tag;
-        FFI::C->enum( $tag => $Enums{$tag} );
-        $EXPORT_TAGS{ lc substr $tag, 4 }
-            = [ sort map { ref $_ ? $_->[0] : $_ } @{ $Enums{$tag} } ];
-    }
-    for my $tag ( keys %Defines ) {
-
-        #print $_->[0] . ' ' for sort { $a->[0] cmp $b->[0] } @{ $Defines{$tag} };
-        constant->import(
-            ref $_ ? ( $_->[0] => ( ref $_->[1] eq 'CODE' ? $_->[1]->() : $_->[1] ) ) :
-                ( $_ => $_ ) )
-            for @{ $Defines{$tag} };
-
-        #constant->import( $_ => $_ ) for @{ $Defines{$tag} };
-        $EXPORT_TAGS{ lc substr $tag, 4 }
-            = [ sort map { ref $_ ? $_->[0] : $_ } @{ $Defines{$tag} } ];
-    }
+    class SDL_Surface => [
+        flags     => 'uint32',
+        format    => 'opaque',    # SDL_PixelFormat*
+        w         => 'int',
+        h         => 'int',
+        pitch     => 'int',
+        pixels    => 'opaque',    # void*
+        userdata  => 'opaque',    # void*
+        locked    => 'int',
+        lock_data => 'opaque',    # void*
+        clip_rect => 'opaque',    # SDL_Rect
+        map       => 'opaque',    # SDL_BlitMap*
+        refcount  => 'int'
+    ];
     #
     # See https://wiki.libsdl.org/APIByCategory
-    # Basics
-    sub attach (%args) {
-        for my $tag ( keys %args ) {
-            for my $func ( keys %{ $args{$tag} } ) {
-                $ffi->attach( $func => @{ $args{$tag}{$func} } );
-                push @{ $EXPORT_TAGS{$tag} }, $func;
-            }
-        }
-    }
-    attach(
-        init => {
-
-            # https://wiki.libsdl.org/CategoryInit
-            SDL_Init          => [ ['uint32'] => 'int' ],
-            SDL_InitSubSystem => [ ['uint32'] => 'int' ],
-            SDL_Quit          => [ []         => 'void' ],
-            SDL_QuitSubSystem => [ ['uint32'] => 'void' ],
-            SDL_WasInit       => [ ['uint32'] => 'uint32' ]
-        }
-    );
+    attach init => {    # https://wiki.libsdl.org/CategoryInit
+        SDL_Init          => [ ['uint32'] => 'int' ],
+        SDL_InitSubSystem => [ ['uint32'] => 'int' ],
+        SDL_Quit          => [ []         => 'void' ],
+        SDL_QuitSubSystem => [ ['uint32'] => 'void' ],
+        SDL_WasInit       => [ ['uint32'] => 'uint32' ]
+    };
     #
     $ffi->type( '(opaque,string,string,string)->void' => 'SDL_HintCallback' );
-    attach(
-        hints => {
-            SDL_SetHintWithPriority => [ [ 'string', 'string', 'int' ] => 'bool' ],
-            SDL_SetHint             => [ [ 'string', 'string' ]        => 'bool' ],
-            SDL_GetHint             => [ ['string']                    => 'string' ],
-            $ver->patch >= 5 ? ( SDL_GetHintBoolean => [ [ 'string', 'bool' ] => 'bool' ] ) : (),
-            SDL_AddHintCallback => [
-                [ 'string', 'SDL_HintCallback', 'opaque' ] => 'void' =>
-                    sub ( $xsub, $name, $callback, $userdata ) {    # Fake void pointer
-                    my $cb = FFI::Platypus::Closure->new(
-                        sub ( $ptr, @etc ) { $callback->( $userdata, @etc ) } );
-                    $cb->sticky;
-                    $xsub->( $name, $cb, $userdata );
-                    return $cb;
-                }
-            ],
-            SDL_DelHintCallback => [
-                [ 'string', 'SDL_HintCallback', 'opaque' ] => 'void' =>
-                    sub ( $xsub, $name, $callback, $userdata ) {    # Fake void pointer
-                    my $cb = $callback;
-                    $cb->unstick;
-                    $xsub->( $name, $cb, $userdata );
-                    return $cb;
-                }
-            ],
-            SDL_ClearHints => [ [] => 'void' ],
+    $ffi->type( '(opaque, int, int, string)->void'    => 'SDL_LogOutputFunction' );
+    attach hints => {
+        SDL_SetHintWithPriority => [ [ 'string', 'string', 'int' ] => 'bool' ],
+        SDL_SetHint             => [ [ 'string', 'string' ]        => 'bool' ],
+        SDL_GetHint             => [ ['string']                    => 'string' ],
+        $ver->patch >= 5 ? ( SDL_GetHintBoolean => [ [ 'string', 'bool' ] => 'bool' ] ) : (),
+        SDL_AddHintCallback => [
+            [ 'string', 'SDL_HintCallback', 'opaque' ] => 'void' =>
+                sub ( $xsub, $name, $callback, $userdata ) {    # Fake void pointer
+                my $cb = FFI::Platypus::Closure->new(
+                    sub ( $ptr, @etc ) { $callback->( $userdata, @etc ) } );
+                $cb->sticky;
+                $xsub->( $name, $cb, $userdata );
+                return $cb;
+            }
+        ],
+        SDL_DelHintCallback => [
+            [ 'string', 'SDL_HintCallback', 'opaque' ] => 'void' =>
+                sub ( $xsub, $name, $callback, $userdata ) {    # Fake void pointer
+                my $cb = $callback;
+                $cb->unstick;
+                $xsub->( $name, $cb, $userdata );
+                return $cb;
+            }
+        ],
+        SDL_ClearHints => [ [] => 'void' ],
         },
         error => {
-            SDL_SetError => [
-                ['string'] => ['int'] =>
-                    sub ( $inner, $fmt, @params ) { $inner->( sprintf( $fmt, @params ) ); }
-            ],
-            SDL_GetError    => [ [] => 'string' ],
-            SDL_GetErrorMsg => [
-                [ 'string', 'int' ] => 'string' =>
-                    sub ( $inner, $errstr, $maxlen = length $errstr ) {
-                    $_[1] = ' ' x $maxlen if !defined $_[1] || length $errstr != $maxlen;
-                    $inner->( $_[1], $maxlen );
-                }
-            ],
-            SDL_ClearError => [ [] => 'void' ]
+        SDL_SetError => [
+            ['string'] => ['int'] =>
+                sub ( $inner, $fmt, @params ) { $inner->( sprintf( $fmt, @params ) ); }
+        ],
+        SDL_GetError    => [ [] => 'string' ],
+        SDL_GetErrorMsg => [
+            [ 'string', 'int' ] => 'string' => sub ( $inner, $errstr, $maxlen = length $errstr ) {
+                $_[1] = ' ' x $maxlen if !defined $_[1] || length $errstr != $maxlen;
+                $inner->( $_[1], $maxlen );
+            }
+        ],
+        SDL_ClearError => [ [] => 'void' ]
         },
         log => {
-            SDL_LogSetPriority => [ [ 'int', 'SDL_LogPriority' ] ],
-            SDL_Log            => [
-                ['string'] => ['string'] =>
-                    sub ( $inner, $fmt, @args ) { $inner->( sprintf( $fmt, @args ) ) }
-            ],
-        }
-    );
+        SDL_LogSetAllPriority  => [ ['SDL_LogPriority'] ],
+        SDL_LogSetPriority     => [ [ 'SDL_LogCategory', 'SDL_LogPriority' ] ],
+        SDL_LogGetPriority     => [ ['SDL_LogCategory'] => 'SDL_LogPriority' ],
+        SDL_LogResetPriorities => [ [] ],
+        SDL_Log                => [
+            ['string'] => ['string'] =>
+                sub ( $inner, $fmt, @args ) { $inner->( sprintf( $fmt, @args ) ) }
+        ],
+        SDL_LogVerbose => => [
+            [ 'SDL_LogCategory', 'string' ] => sub ( $inner, $category, $fmt, @args ) {
+                $inner->( $category, sprintf( $fmt, @args ) );
+            }
+        ],
+        SDL_LogDebug => => [
+            [ 'SDL_LogCategory', 'string' ] => sub ( $inner, $category, $fmt, @args ) {
+                $inner->( $category, sprintf( $fmt, @args ) );
+            }
+        ],
+        SDL_LogInfo => => [
+            [ 'SDL_LogCategory', 'string' ] => sub ( $inner, $category, $fmt, @args ) {
+                $inner->( $category, sprintf( $fmt, @args ) );
+            }
+        ],
+        SDL_LogWarn => => [
+            [ 'SDL_LogCategory', 'string' ] => sub ( $inner, $category, $fmt, @args ) {
+                $inner->( $category, sprintf( $fmt, @args ) );
+            }
+        ],
+        SDL_LogError => => [
+            [ 'SDL_LogCategory', 'string' ] => sub ( $inner, $category, $fmt, @args ) {
+                $inner->( $category, sprintf( $fmt, @args ) );
+            }
+        ],
+        SDL_LogCritical => => [
+            [ 'SDL_LogCategory', 'string' ] => sub ( $inner, $category, $fmt, @args ) {
+                $inner->( $category, sprintf( $fmt, @args ) );
+            }
+        ],
+        SDL_LogMessage => [
+            [ 'SDL_LogCategory', 'SDL_LogPriority', 'string' ] =>
+                sub ( $inner, $category, $priority, $fmt, @args ) {
+                $inner->( $category, $priority, sprintf( $fmt, @args ) );
+            }
+        ],
 
-    # START HERE!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    $ffi->attach( $_ => [ 'SDL_LogCategory', 'string' ] =>
-            sub ( $inner, $category, $fmt, @args ) { $inner->( $category, sprintf( $fmt, @args ) ) }
-    ) for qw[SDL_LogCritical SDL_LogDebug SDL_LogError SDL_LogInfo SDL_LogVerbose SDL_LogWarn];
-    $ffi->attach(
-        SDL_LogMessage => [ 'SDL_LogCategory', 'SDL_LogPriority', 'string' ] =>
-            sub ( $inner, $category, $priority, $fmt, @args ) {
-            $inner->( $category, $priority, sprintf( $fmt, @args ) );
-        }
-    );
-    $ffi->attach( SDL_LogResetPriorities => [] );
-    $ffi->attach( SDL_LogSetAllPriority  => ['SDL_LogPriority'] );
-    $ffi->attach( SDL_LogGetPriority     => ['SDL_LogCategory'] => 'SDL_LogPriority' );
-    $ffi->type( '(opaque, int, int, string)->void' => 'SDL_LogOutputFunction' );
-    $ffi->attach(
-        SDL_LogSetOutputFunction => [ 'SDL_LogOutputFunction', 'opaque' ],
-        sub ( $inner, $callback, $userdata = {} ) {
-            my $closure = $ffi->closure($callback);
-            $closure->sticky;
-            $inner->( $closure, $userdata );
-        }
-    );
+        # TODO
+        SDL_LogGetOutputFunction => [ [ 'SDL_LogOutputFunction', 'opaque' ] ],
+        SDL_LogSetOutputFunction => [
+            [ 'SDL_LogOutputFunction', 'opaque' ] => 'void' => sub ( $xsub, $callback, $userdata )
+            {    # Fake void pointer
+                my $cb = FFI::Platypus::Closure->new(
+                    sub ( $ptr, @etc ) { $callback->( $userdata, @etc ) } );
+                $cb->sticky;
+                $xsub->( $cb, $userdata );
+                return $cb;
+            }
+        ]
+        };
 
-    # Platform and CPU Information
+    # https://github.com/libsdl-org/SDL/blob/main/include/SDL_video.h
+    class
+        SDL_DisplayMode => [
+        format       => 'uint32',
+        w            => 'int',
+        h            => 'int',
+        refresh_rate => 'int',
+        driverdata   => 'opaque'
+        ],
+        SDL_Window => [
+        magic                 => 'opaque',
+        id                    => 'uint32',
+        title                 => 'opaque',         # char *
+        icon                  => 'SDL_Surface',
+        x                     => 'int',
+        y                     => 'int',
+        w                     => 'int',
+        h                     => 'int',
+        min_w                 => 'int',
+        min_h                 => 'int',
+        max_w                 => 'int',
+        max_h                 => 'int',
+        flags                 => 'uint32',
+        last_fullscreen_flags => 'uint32',
+        windowed              => 'opaque',         # SDL_Rect
+        fullscreen_mode       => 'opaque',         # SDL_DisplayMode
+        opacity               => 'float',
+        brightness            => 'float',
+        gamma                 => 'uint16[255]',    # uint16*
+        saved_gamma           => 'uint16[255]',    # uint16*
+        surface               => 'opaque',         # SDL_Surface*
+        surface_valid         => 'bool',
+        is_hiding             => 'bool',
+        is_destroying         => 'bool',
+        is_dropping           => 'bool',
+        shaper                => 'opaque',         # SDL_WindowShaper
+        hit_test              => 'opaque',         # SDL_HitTest
+        hit_test_data         => 'opaque',         # void*
+        data                  => 'opaque',         # SDL_WindowUserData*
+        driverdata            => 'opaque',         # void*
+        prev                  => 'opaque',         # SDL_Window*
+        next                  => 'opaque'          # SDL_Window*
+        ];
+    enum
+        SDL_WindowFlags => [
+        [ SDL_WINDOW_FULLSCREEN         => 0x00000001 ],
+        [ SDL_WINDOW_OPENGL             => 0x00000002 ],
+        [ SDL_WINDOW_SHOWN              => 0x00000004 ],
+        [ SDL_WINDOW_HIDDEN             => 0x00000008 ],
+        [ SDL_WINDOW_BORDERLESS         => 0x00000010 ],
+        [ SDL_WINDOW_RESIZABLE          => 0x00000020 ],
+        [ SDL_WINDOW_MINIMIZED          => 0x00000040 ],
+        [ SDL_WINDOW_MAXIMIZED          => 0x00000080 ],
+        [ SDL_WINDOW_MOUSE_GRABBED      => 0x00000100 ],
+        [ SDL_WINDOW_INPUT_FOCUS        => 0x00000200 ],
+        [ SDL_WINDOW_MOUSE_FOCUS        => 0x00000400 ],
+        [ SDL_WINDOW_FULLSCREEN_DESKTOP => sub { ( SDL_WINDOW_FULLSCREEN() | 0x00001000 ) } ],
+        [ SDL_WINDOW_FOREIGN            => 0x00000800 ],
+        [ SDL_WINDOW_ALLOW_HIGHDPI      => 0x00002000 ],
+        [ SDL_WINDOW_MOUSE_CAPTURE      => 0x00004000 ],
+        [ SDL_WINDOW_ALWAYS_ON_TOP      => 0x00008000 ],
+        [ SDL_WINDOW_SKIP_TASKBAR       => 0x00010000 ],
+        [ SDL_WINDOW_UTILITY            => 0x00020000 ],
+        [ SDL_WINDOW_TOOLTIP            => 0x00040000 ],
+        [ SDL_WINDOW_POPUP_MENU         => 0x00080000 ],
+        [ SDL_WINDOW_KEYBOARD_GRABBED   => 0x00100000 ],
+        [ SDL_WINDOW_VULKAN             => 0x10000000 ],
+        [ SDL_WINDOW_METAL              => 0x20000000 ],
+        [ SDL_WINDOW_INPUT_GRABBED      => sub { SDL_WINDOW_MOUSE_GRABBED() } ],
+        ],
+        SDL_WindowFlags => [
+        qw[
+            SDL_WINDOWEVENT_NONE
+            SDL_WINDOWEVENT_SHOWN
+            SDL_WINDOWEVENT_HIDDEN
+            SDL_WINDOWEVENT_EXPOSED
+            SDL_WINDOWEVENT_MOVED
+            SDL_WINDOWEVENT_RESIZED
+            SDL_WINDOWEVENT_SIZE_CHANGED
+            SDL_WINDOWEVENT_MINIMIZED
+            SDL_WINDOWEVENT_MAXIMIZED
+            SDL_WINDOWEVENT_RESTORED
+            SDL_WINDOWEVENT_ENTER
+            SDL_WINDOWEVENT_LEAVE
+            SDL_WINDOWEVENT_FOCUS_GAINED
+            SDL_WINDOWEVENT_FOCUS_LOST
+            SDL_WINDOWEVENT_CLOSE
+            SDL_WINDOWEVENT_TAKE_FOCUS
+            SDL_WINDOWEVENT_HIT_TEST
+        ]
+        ],
+        SDL_DisplayEventID => [
+        qw[SDL_DISPLAYEVENT_NONE SDL_DISPLAYEVENT_ORIENTATION
+            SDL_DISPLAYEVENT_CONNECTED SDL_DISPLAYEVENT_DISCONNECTED
+        ]
+        ],
+        SDL_DisplayOrientation => [
+        qw[SDL_ORIENTATION_UNKNOWN
+            SDL_ORIENTATION_LANDSCAPE SDL_ORIENTATION_LANDSCAPE_FLIPPED
+            SDL_ORIENTATION_PORTRAIT  SDL_ORIENTATION_PORTRAIT_FLIPPED
+        ]
+        ];
+
+    # An opaque handle to an OpenGL context.
+    class SDL_GLContext => [];
+    enum SDL_GLattr     => [
+        qw[
+            SDL_GL_RED_SIZE
+            SDL_GL_GREEN_SIZE
+            SDL_GL_BLUE_SIZE
+            SDL_GL_ALPHA_SIZE
+            SDL_GL_BUFFER_SIZE
+            SDL_GL_DOUBLEBUFFER
+            SDL_GL_DEPTH_SIZE
+            SDL_GL_STENCIL_SIZE
+            SDL_GL_ACCUM_RED_SIZE
+            SDL_GL_ACCUM_GREEN_SIZE
+            SDL_GL_ACCUM_BLUE_SIZE
+            SDL_GL_ACCUM_ALPHA_SIZE
+            SDL_GL_STEREO
+            SDL_GL_MULTISAMPLEBUFFERS
+            SDL_GL_MULTISAMPLESAMPLES
+            SDL_GL_ACCELERATED_VISUAL
+            SDL_GL_RETAINED_BACKING
+            SDL_GL_CONTEXT_MAJOR_VERSION
+            SDL_GL_CONTEXT_MINOR_VERSION
+            SDL_GL_CONTEXT_EGL
+            SDL_GL_CONTEXT_FLAGS
+            SDL_GL_CONTEXT_PROFILE_MASK
+            SDL_GL_SHARE_WITH_CURRENT_CONTEXT
+            SDL_GL_FRAMEBUFFER_SRGB_CAPABLE
+            SDL_GL_CONTEXT_RELEASE_BEHAVIOR
+            SDL_GL_CONTEXT_RESET_NOTIFICATION
+            SDL_GL_CONTEXT_NO_ERROR
+        ]
+        ],
+        SDL_GLprofile => [
+        [ SDL_GL_CONTEXT_PROFILE_CORE          => 0x0001 ],
+        [ SDL_GL_CONTEXT_PROFILE_COMPATIBILITY => 0x0002 ],
+        [ SDL_GL_CONTEXT_PROFILE_ES            => 0x0004 ]
+        ],
+        SDL_GLcontextFlag => [
+        [ SDL_GL_CONTEXT_DEBUG_FLAG              => 0x0001 ],
+        [ SDL_GL_CONTEXT_FORWARD_COMPATIBLE_FLAG => 0x0002 ],
+        [ SDL_GL_CONTEXT_ROBUST_ACCESS_FLAG      => 0x0004 ],
+        [ SDL_GL_CONTEXT_RESET_ISOLATION_FLAG    => 0x0008 ]
+        ],
+        SDL_GLcontextReleaseFlag => [
+        [ SDL_GL_CONTEXT_RELEASE_BEHAVIOR_NONE  => 0x0000 ],
+        [ SDL_GL_CONTEXT_RELEASE_BEHAVIOR_FLUSH => 0x0001 ]
+        ],
+        SDL_GLContextResetNotification => [
+        [ SDL_GL_CONTEXT_RESET_NO_NOTIFICATION => 0x0000 ],
+        [ SDL_GL_CONTEXT_RESET_LOSE_CONTEXT    => 0x0001 ]
+        ];
+    attach video => {
+        SDL_GetNumVideoDrivers => [ [],         'int' ],
+        SDL_GetVideoDriver     => [ ['int'],    'string' ],
+        SDL_VideoInit          => [ ['string'], 'int' ],
+        SDL_VideoQuit          => [ [] ],
+    };
+
+    # START HERE!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     # https://wiki.libsdl.org/CategoryPlatform
     $ffi->attach( SDL_GetPlatform => [] => 'string' );
 
@@ -381,26 +593,6 @@ package SDL2::FFI 1.0 {
     $ffi->attach( SDL_asin => ['double'] => 'double' );    # Not in wiki
 
     # https://wiki.libsdl.org/CategoryVideo
-    FFI::C::StructDef->new(
-        $ffi,
-        name    => 'SDL_Surface',
-        class   => 'SDL2::Surface',
-        members => [
-            flags     => 'uint32',
-            format    => 'opaque',    # SDL_PixelFormat*
-            w         => 'int',
-            h         => 'int',
-            pitch     => 'int',
-            pixels    => 'opaque',    # void*
-            userdata  => 'opaque',    # void*
-            locked    => 'int',
-            lock_data => 'opaque',    # void*
-            clip_rect => 'opaque',    # SDL_Rect
-            map       => 'opaque',    # SDL_BlitMap*
-            refcount  => 'int'
-        ]
-    );
-
     #FFI::C::StructDef->new(                                # INCOMPLETE
     #    $ffi,
     #    name    => 'SDL_Renderer',
@@ -420,45 +612,6 @@ package SDL2::FFI 1.0 {
     #    class   => 'SDL2::Renderer',
     #    members => [
     #]);
-    FFI::C::StructDef->new(
-        $ffi,
-        name    => 'SDL_Window',
-        class   => 'SDL2::Window',
-        members => [
-            magic                 => 'opaque',
-            id                    => 'uint32',
-            title                 => 'opaque',         # char *
-            icon                  => 'SDL_Surface',
-            x                     => 'int',
-            y                     => 'int',
-            w                     => 'int',
-            h                     => 'int',
-            min_w                 => 'int',
-            min_h                 => 'int',
-            max_w                 => 'int',
-            max_h                 => 'int',
-            flags                 => 'uint32',
-            last_fullscreen_flags => 'uint32',
-            windowed              => 'opaque',         # SDL_Rect
-            fullscreen_mode       => 'opaque',         # SDL_DisplayMode
-            opacity               => 'float',
-            brightness            => 'float',
-            gamma                 => 'uint16[255]',    # uint16*
-            saved_gamma           => 'uint16[255]',    # uint16*
-            surface               => 'opaque',         # SDL_Surface*
-            surface_valid         => 'bool',
-            is_hiding             => 'bool',
-            is_destroying         => 'bool',
-            is_dropping           => 'bool',
-            shaper                => 'opaque',         # SDL_WindowShaper
-            hit_test              => 'opaque',         # SDL_HitTest
-            hit_test_data         => 'opaque',         # void*
-            data                  => 'opaque',         # SDL_WindowUserData*
-            driverdata            => 'opaque',         # void*
-            prev                  => 'opaque',         # SDL_Window*
-            next                  => 'opaque'          # SDL_Window*
-        ]
-    );
     $ffi->attach(
         SDL_CreateWindowAndRenderer => [ 'int', 'int', 'uint32', 'SDL_Window', 'SDL_Renderer' ] =>
             'int' => sub (
@@ -485,28 +638,6 @@ package SDL2::FFI 1.0 {
     sub SDL_WINDOWPOS_CENTERED_DISPLAY ($X) { ( SDL_WINDOWPOS_CENTERED_MASK | ($X) ) }
     sub SDL_WINDOWPOS_CENTERED ()           { SDL_WINDOWPOS_CENTERED_DISPLAY(0) }
     sub SDL_WINDOWPOS_ISCENTERED ($X) { ( ( ($X) & 0xFFFF0000 ) == SDL_WINDOWPOS_CENTERED_MASK ) }
-    #
-    sub SDL_WINDOW_FULLSCREEN ()         {0x00000001}
-    sub SDL_WINDOW_OPENGL ()             {0x00000002}
-    sub SDL_WINDOW_SHOWN ()              {0x00000004}
-    sub SDL_WINDOW_HIDDEN ()             {0x00000008}
-    sub SDL_WINDOW_BORDERLESS ()         {0x00000010}
-    sub SDL_WINDOW_RESIZABLE ()          {0x00000020}
-    sub SDL_WINDOW_MINIMIZED ()          {0x00000040}
-    sub SDL_WINDOW_MAXIMIZED ()          {0x00000080}
-    sub SDL_WINDOW_INPUT_GRABBED ()      {0x00000100}
-    sub SDL_WINDOW_INPUT_FOCUS ()        {0x00000200}
-    sub SDL_WINDOW_MOUSE_FOCUS ()        {0x00000400}
-    sub SDL_WINDOW_FULLSCREEN_DESKTOP () { ( SDL_WINDOW_FULLSCREEN | 0x00001000 ) }
-    sub SDL_WINDOW_FOREIGN ()            {0x00000800}
-    sub SDL_WINDOW_ALLOW_HIGHDPI ()      {0x00002000}
-    sub SDL_WINDOW_MOUSE_CAPTURE ()      {0x00004000}
-    sub SDL_WINDOW_ALWAYS_ON_TOP ()      {0x00008000}
-    sub SDL_WINDOW_SKIP_TASKBAR ()       {0x00010000}
-    sub SDL_WINDOW_UTILITY ()            {0x00020000}
-    sub SDL_WINDOW_TOOLTIP ()            {0x00040000}
-    sub SDL_WINDOW_POPUP_MENU ()         {0x00080000}
-    sub SDL_WINDOW_VULKAN ()             {0x10000000}
 
     # Macros defined in SDL_render.h
     sub SDL_RENDERER_SOFTWARE ()      {0x00000001}
@@ -561,7 +692,7 @@ package SDL2::FFI 1.0 {
     $ffi->attach( SDL_RenderDrawRect  => [ 'SDL_Renderer', 'SDL_Rect' ]                 => 'int' );
 
     # https://wiki.libsdl.org/CategoryTimer
-    $ffi->attach( SDL_Delay => ['uint32'] );
+    attach all => { SDL_Delay => [ ['uint32'] ] };
 
     # https://wiki.libsdl.org/CategoryPixels
     FFI::C::StructDef->new(
@@ -1547,8 +1678,8 @@ package SDL2::FFI 1.0 {
 # Export symbols!
     our @EXPORT_OK = map {@$_} values %EXPORT_TAGS;
 #### REMOVE THIS BEFORE STABLE RELEASE!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! #####
-    @EXPORT_OK = keys
-        %{ { map { $_ => 1 } grep {/^SDL_/} keys %SDL2::FFI::, map {@$_} values %EXPORT_TAGS } };
+    #@EXPORT_OK = keys
+    #    %{ { map { $_ => 1 } grep {/^SDL_/} keys %SDL2::FFI::, map {@$_} values %EXPORT_TAGS } };
 ####################################################################################################
     $EXPORT_TAGS{default} = [];             # Export nothing by default
     $EXPORT_TAGS{all}     = \@EXPORT_OK;    # Export everything with :all tag

@@ -467,11 +467,433 @@ Expected parameters:
 
 =item C<priority>
 
-The SDL_LogPriority to assign.
+The SDL_LogPriority to assign. These may be imported with the L<<
+C<:logpriority>|/C<:logpriority> >> tag.
 
 =back
 
+=head2 C<SDL_LogSetPriority( ... )>
+
+Set the priority of all log categories.
+
+	SDL_LogSetPriority( SDL_LOG_CATEGORY_APPLICATION, SDL_LOG_PRIORITY_WARN );
+
+Expected parameters:
+
+=over
+
+=item C<category>
+
+The category to assign a priority to. These may be improted with the L<<
+C<:logcategory>|/C<:logcategory> >> tag.
+
+=item C<priority>
+
+The SDL_LogPriority to assign. These may be imported with the L<<
+C<:logpriority>|/C<:logpriority> >> tag.
+
+=back
+
+=head2 C<SDL_LogGetPriority( ... )>
+
+Get the priority of a particular log category.
+
+	SDL_LogGetPriority( SDL_LOG_CATEGORY_ERROR );
+
+Expected parameters:
+
+=over
+
+=item C<category>
+
+The SDL_LogCategory to query. These may be imported with the L<<
+C<:logcategory>|/C<:logcategory> >> tag.
+
+=back
+
+=head2 C<SDL_LogGetPriority( ... )>
+
+Get the priority of a particular log category.
+
+	SDL_LogGetPriority( SDL_LOG_CATEGORY_ERROR );
+
+Expected parameters:
+
+=over
+
+=item C<category>
+
+The SDL_LogCategory to query. These may be imported with the L<<
+C<:logcategory>|/C<:logcategory> >> tag.
+
+=back
+
+=head2 C<SDL_LogResetPriorities( )>
+
+Reset all priorities to default.
+
+	SDL_LogResetPriorities( );
+
+This is called by L<< C<SDL_Quit( )>|/C<SDL_Quit( )> >>.
+
+=head2 C<SDL_Log( ... )>
+
+Log a message with C<SDL_LOG_CATEGORY_APPLICATION> and
+C<SDL_LOG_PRIORITY_INFO>.
+
+	SDL_Log( 'HTTP Status: %s', $http->status );
+
+Expected parameters:
+
+=over
+
+=item C<fmt>
+
+A C<sprintf( )> style message format string.
+
+=item C<...>
+
+Any additional parameters matching C<%> tokens in the C<fmt> string, if any.
+
+=back
+
+=head2 C<SDL_LogVerbose( ... )>
+
+Log a message with C<SDL_LOG_PRIORITY_VERBOSE>.
+
+	SDL_LogVerbose( 'Current time: %s [%ds exec]', +localtime(), time - $^T );
+
+Expected parameters:
+
+=over
+
+=item C<category>
+
+The category of the message.
+
+=item C<fmt>
+
+A C<sprintf()> style message format string.
+
+=item C<...>
+
+Additional parameters matching C<%> tokens in the C<fmt> string, if any.
+
+=back
+
+=head2 C<SDL_LogDebug( ... )>
+
+Log a message with C<SDL_LOG_PRIORITY_DEBUG>.
+
+	SDL_LogDebug( 'Current time: %s [%ds exec]', +localtime(), time - $^T );
+
+Expected parameters:
+
+=over
+
+=item C<category>
+
+The category of the message.
+
+=item C<fmt>
+
+A C<sprintf()> style message format string.
+
+=item C<...>
+
+Additional parameters matching C<%> tokens in the C<fmt> string, if any.
+
+=back
+
+=head2 C<SDL_LogInfo( ... )>
+
+Log a message with C<SDL_LOG_PRIORITY_INFO>.
+
+	SDL_LogInfo( 'Current time: %s [%ds exec]', +localtime(), time - $^T );
+
+Expected parameters:
+
+=over
+
+=item C<category>
+
+The category of the message.
+
+=item C<fmt>
+
+A C<sprintf()> style message format string.
+
+=item C<...>
+
+Additional parameters matching C<%> tokens in the C<fmt> string, if any.
+
+=back
+
+=head2 C<SDL_LogWarn( ... )>
+
+Log a message with C<SDL_LOG_PRIORITY_WARN>.
+
+	SDL_LogWarn( 'Current time: %s [%ds exec]', +localtime(), time - $^T );
+
+Expected parameters:
+
+=over
+
+=item C<category>
+
+The category of the message.
+
+=item C<fmt>
+
+A C<sprintf()> style message format string.
+
+=item C<...>
+
+Additional parameters matching C<%> tokens in the C<fmt> string, if any.
+
+=back
+
+=head2 C<SDL_LogError( ... )>
+
+Log a message with C<SDL_LOG_PRIORITY_ERROR>.
+
+	SDL_LogError( 'Current time: %s [%ds exec]', +localtime(), time - $^T );
+
+Expected parameters:
+
+=over
+
+=item C<category>
+
+The category of the message.
+
+=item C<fmt>
+
+A C<sprintf()> style message format string.
+
+=item C<...>
+
+Additional parameters matching C<%> tokens in the C<fmt> string, if any.
+
+=back
+
+=head2 C<SDL_LogCritical( ... )>
+
+Log a message with C<SDL_LOG_PRIORITY_CRITICAL>.
+
+	SDL_LogCritical( 'Current time: %s [%ds exec]', +localtime(), time - $^T );
+
+Expected parameters:
+
+=over
+
+=item C<category>
+
+The category of the message.
+
+=item C<fmt>
+
+A C<sprintf()> style message format string.
+
+=item C<...>
+
+Additional parameters matching C<%> tokens in the C<fmt> string, if any.
+
+=back
+
+=head2 C<SDL_LogMessage( ... )>
+
+Log a message with the specified category and priority.
+
+	SDL_LogMessage( SDL_LOG_CATEGORY_APPLICATION, SDL_LOG_PRIORITY_CRITICAL,
+					'Current time: %s [%ds exec]', +localtime(), time - $^T );
+
+Expected parameters:
+
+=over
+
+=item C<category>
+
+The category of the message.
+
+=item C<priority>
+
+The priority of the message.
+
+=item C<fmt>
+
+A C<sprintf()> style message format string.
+
+=item C<...>
+
+Additional parameters matching C<%> tokens in the C<fmt> string, if any.
+
+=back
+
+=head2 C<SDL_LogSetOutputFunction( ... )>
+
+Replace the default log output function with one of your own.
+
+	my $cb = SDL_LogSetOutputFunction( sub { ... }, {} );
+
+Expected parameters:
+
+=over
+
+=item C<callback>
+
+A coderef to call instead of the default callback.
+
+This coderef should expect the following parameters:
+
+=over
+
+=item C<userdata>
+
+What was passed as C<userdata> to C<SDL_LogSetOutputFunction( )>.
+
+=item C<category>
+
+The category of the message.
+
+=item C<priority>
+
+The priority of the message.
+
+=item C<message>
+
+The message being output.
+
+=back
+
+=item C<userdata>
+
+Data passed to the C<callback>.
+
+=back
+
+=head1 Querying SDL Version
+
+These functions are used to collect or display information about the version of
+SDL that is currently being used by the program or that it was compiled
+against.
+
+The version consists of three segments (C<X.Y.Z>)
+
+=over
+
+=item X - Major Version, which increments with massive changes, additions, and enhancements
+
+=item Y - Minor Version, which increments with backwards-compatible changes to the major revision
+
+=item Z - Patchlevel, which increments with fixes to the minor revision
+
+=back
+
+Example: The first version of SDL 2 was 2.0.0
+
+The version may also be reported as a 4-digit numeric value where the thousands
+place represents the major version, the hundreds place represents the minor
+version, and the tens and ones places represent the patchlevel (update
+version).
+
+Example: The first version number of SDL 2 was 2000
+
+=head2 C<SDL_GetVersion( )>
+
+Get the version of SDL that is linked against your program.
+
+If you are linking to SDL dynamically, then it is possible that the current
+version will be different than the version you compiled against. This function
+returns the current version, while SDL_VERSION() is a macro that tells you what
+version you compiled with.
+
+This function may be called safely at any time, even before L<< C<SDL_Init(
+)>|/C<SDL_Init( )> >>.
+
+Return value is a L<SDL2::FFI::Version> object.
+
+=head1 Display and Window Management
+
+This category contains functions for handling display and window actions.
+
+These functions may be imported with the C<:video> tag.
+
+=head2 C<SDL_GetNumVideoDrivers( )>
+
+	my $num = SDL_GetNumVideoDrivers( );
+
+Get the number of video drivers compiled into SDL.
+
+Returns a number >= 1 on success or a negative error code on failure; call L<<
+C<SDL_GetError( )>|/C<SDL_GetError( )> >> for more information.
+
+=head2 C<SDL_GetVideoDriver( ... )>
+
+Get the name of a built in video driver.
+
+    CORE::say SDL_GetVideoDriver($_) for 0 .. SDL_GetNumVideoDrivers() - 1;
+
+The video drivers are presented in the order in which they are normally checked
+during initialization.
+
+Expected parameters include:
+
+=over
+
+=item C<index> - the index of a video driver
+
+=back
+
+Returns the name of the video driver with the given C<index>.
+
 =cut
+
+=head2 C<SDL_VideoInit( ... )>
+
+Initialize the video subsystem, optionally specifying a video driver.
+
+	SDL_VideoInit( 'x11' );
+
+This function initializes the video subsystem, setting up a connection to the
+window manager, etc, and determines the available display modes and pixel
+formats, but does not initialize a window or graphics mode.
+
+If you use this function and you haven't used the SDL_INIT_VIDEO flag with
+either SDL_Init() or SDL_InitSubSystem(), you should call SDL_VideoQuit()
+before calling SDL_Quit().
+
+It is safe to call this function multiple times. SDL_VideoInit() will call
+SDL_VideoQuit() itself if the video subsystem has already been initialized.
+
+You can use SDL_GetNumVideoDrivers() and SDL_GetVideoDriver() to find a
+specific `driver_name`.
+
+Expected parameters include:
+
+=over
+
+=item C<driver_name> - the name of a video driver to initialize, or undef for the default driver
+
+=back
+
+Returns C<0> on success or a negative error code on failure; call L<<
+C<SDL_GetError( )>|/C<SDL_GetError( )> >> for more information.
+
+=head2 C<SDL_VideoQuit( )>
+
+Shut down the video subsystem, if initialized with L<< C<SDL_VideoInit(
+)>|/C<SDL_VideoInit( )> >>.
+
+	SDL_VideoQuit( );
+
+This function closes all windows, and restores the original video mode.
+
+
+
+
+
+
 
 
 
@@ -2649,30 +3071,246 @@ The predefined log priorities.
 
 =back
 
+=head2 C<:windowflags>
 
+The flags on a window.
 
+=over
 
+=item C<SDL_WINDOW_FULLSCREEN> - Fullscreen window
 
+=item C<SDL_WINDOW_OPENGL> - Window usable with OpenGL context
 
+=item C<SDL_WINDOW_SHOWN> - Window is visible
 
+=item C<SDL_WINDOW_HIDDEN> - Window is not visible
 
+=item C<SDL_WINDOW_BORDERLESS> - No window decoration
 
+=item C<SDL_WINDOW_RESIZABLE> - Window can be resized
 
+=item C<SDL_WINDOW_MINIMIZED> - Window is minimized
 
+=item C<SDL_WINDOW_MAXIMIZED> - Window is maximized
 
+=item C<SDL_WINDOW_MOUSE_GRABBED> - Window has grabbed mouse input
 
+=item C<SDL_WINDOW_INPUT_FOCUS> - Window has input focus
 
+=item C<SDL_WINDOW_MOUSE_FOCUS> - Window has mouse focus
 
+=item C<SDL_WINDOW_FULLSCREEN_DESKTOP> - Fullscreen window without frame
 
+=item C<SDL_WINDOW_FOREIGN> - Window not created by SDL
 
+=item C<SDL_WINDOW_ALLOW_HIGHDPI> - Window should be created in high-DPI mode if supported.
 
+On macOS NSHighResolutionCapable must be set true in the application's
+Info.plist for this to have any effect.
 
+=item C<SDL_WINDOW_MOUSE_CAPTURE> - Window has mouse captured (unrelated to C<MOUSE_GRABBED>)
 
+=item C<SDL_WINDOW_ALWAYS_ON_TOP> - Window should always be above others 
 
+=item C<SDL_WINDOW_SKIP_TASKBAR> - Window should not be added to the taskbar 
 
+=item C<SDL_WINDOW_UTILITY> - Window should be treated as a utility window 
 
+=item C<SDL_WINDOW_TOOLTIP> - Window should be treated as a tooltip 
 
+=item C<SDL_WINDOW_POPUP_MENU> - Window should be treated as a popup menu 
 
+=item C<SDL_WINDOW_KEYBOARD_GRABBED> - Window has grabbed keyboard input 
+
+=item C<SDL_WINDOW_VULKAN> - Window usable for Vulkan surface 
+
+=item C<SDL_WINDOW_METAL> - Window usable for Metal view
+
+=item C<SDL_WINDOW_INPUT_GRABBED> - Equivalent to C<SDL_WINDOW_MOUSE_GRABBED> for compatibility
+
+=back
+
+=head2 C<:windowEventID>
+
+Event subtype for window events.
+
+=over
+
+=item C<SDL_WINDOWEVENT_NONE> - Never used
+
+=item C<SDL_WINDOWEVENT_SHOWN> - Window has been shown 
+
+=item C<SDL_WINDOWEVENT_HIDDEN> - Window has been hidden 
+
+=item C<SDL_WINDOWEVENT_EXPOSED> - Window has been exposed and should be redrawn
+
+=item C<SDL_WINDOWEVENT_MOVED> - Window has been moved to data1, data2
+
+=item C<SDL_WINDOWEVENT_RESIZED> - Window has been resized to data1xdata2 
+
+=item C<SDL_WINDOWEVENT_SIZE_CHANGED> - The window size has changed, either as a result of an API call or through the system or user changing the window size. 
+
+=item C<SDL_WINDOWEVENT_MINIMIZED> - Window has been minimized 
+
+=item C<SDL_WINDOWEVENT_MAXIMIZED> - Window has been maximized 
+
+=item C<SDL_WINDOWEVENT_RESTORED> - Window has been restored to normal size and position 
+
+=item C<SDL_WINDOWEVENT_ENTER> - Window has gained mouse focus 
+
+=item C<SDL_WINDOWEVENT_LEAVE> - Window has lost mouse focus 
+
+=item C<SDL_WINDOWEVENT_FOCUS_GAINED> - Window has gained keyboard focus
+
+=item C<SDL_WINDOWEVENT_FOCUS_LOST> - Window has lost keyboard focus
+
+=item C<SDL_WINDOWEVENT_CLOSE> - The window manager requests that the window be closed
+
+=item C<SDL_WINDOWEVENT_TAKE_FOCUS> - Window is being offered a focus (should C<SetWindowInputFocus()> on itself or a subwindow, or ignore)
+
+=item C<SDL_WINDOWEVENT_HIT_TEST> - Window had a hit test that wasn't C<SDL_HITTEST_NORMAL>.
+
+=back
+
+=head2 C<:displayEventID>
+
+Event subtype for display events.
+
+=over
+
+=item C<SDL_DISPLAYEVENT_NONE> - Never used
+
+=item C<SDL_DISPLAYEVENT_ORIENTATION> - Display orientation has changed to data1
+
+=item C<SDL_DISPLAYEVENT_CONNECTED> - Display has been added to the system
+    
+=item C<SDL_DISPLAYEVENT_DISCONNECTED> - Display has been removed from the system
+
+=back
+
+=head2 C<:displayOrientation>
+
+=over
+
+=item C<SDL_ORIENTATION_UNKNOWN> - The display orientation can't be determined
+
+=item C<SDL_ORIENTATION_LANDSCAPE> - The display is in landscape mode, with the right side up, relative to portrait mode
+
+=item C<SDL_ORIENTATION_LANDSCAPE_FLIPPED> - The display is in landscape mode, with the left side up, relative to portrait mode
+
+=item C<SDL_ORIENTATION_PORTRAIT> - The display is in portrait mode
+
+=item C<SDL_ORIENTATION_PORTRAIT_FLIPPED> - The display is in portrait mode, upside down
+
+=back
+
+=head2 C<:glAttr>
+
+OpenGL configuration attributes.
+
+=over
+
+=item C<SDL_GL_RED_SIZE>
+
+=item C<SDL_GL_GREEN_SIZE>
+
+=item C<SDL_GL_BLUE_SIZE>
+
+=item C<SDL_GL_ALPHA_SIZE>
+
+=item C<SDL_GL_BUFFER_SIZE>
+
+=item C<SDL_GL_DOUBLEBUFFER>
+
+=item C<SDL_GL_DEPTH_SIZE>
+
+=item C<SDL_GL_STENCIL_SIZE>
+
+=item C<SDL_GL_ACCUM_RED_SIZE>
+
+=item C<SDL_GL_ACCUM_GREEN_SIZE>
+
+=item C<SDL_GL_ACCUM_BLUE_SIZE>
+
+=item C<SDL_GL_ACCUM_ALPHA_SIZE>
+
+=item C<SDL_GL_STEREO>
+
+=item C<SDL_GL_MULTISAMPLEBUFFERS>
+
+=item C<SDL_GL_MULTISAMPLESAMPLES>
+
+=item C<SDL_GL_ACCELERATED_VISUAL>
+
+=item C<SDL_GL_RETAINED_BACKING>
+
+=item C<SDL_GL_CONTEXT_MAJOR_VERSION>
+
+=item C<SDL_GL_CONTEXT_MINOR_VERSION>
+
+=item C<SDL_GL_CONTEXT_EGL>
+
+=item C<SDL_GL_CONTEXT_FLAGS>
+
+=item C<SDL_GL_CONTEXT_PROFILE_MASK>
+
+=item C<SDL_GL_SHARE_WITH_CURRENT_CONTEXT>
+
+=item C<SDL_GL_FRAMEBUFFER_SRGB_CAPABLE>
+
+=item C<SDL_GL_CONTEXT_RELEASE_BEHAVIOR>
+
+=item C<SDL_GL_CONTEXT_RESET_NOTIFICATION>
+
+=item C<SDL_GL_CONTEXT_NO_ERROR>
+
+=back
+
+=head2 C<:glProfile>
+
+=over
+
+=item C<SDL_GL_CONTEXT_PROFILE_CORE>
+
+=item C<SDL_GL_CONTEXT_PROFILE_COMPATIBILITY>
+
+=item C<SDL_GL_CONTEXT_PROFILE_ES>
+
+=back
+
+=head2 C<:glContextFlag>
+
+=over
+
+=item C<SDL_GL_CONTEXT_DEBUG_FLAG>
+
+=item C<SDL_GL_CONTEXT_FORWARD_COMPATIBLE_FLAG>
+
+=item C<SDL_GL_CONTEXT_ROBUST_ACCESS_FLAG>
+
+=item C<SDL_GL_CONTEXT_RESET_ISOLATION_FLAG>
+
+=back
+
+=head2 C<:glContextReleaseFlag>
+
+=over
+
+=item C<SDL_GL_CONTEXT_RELEASE_BEHAVIOR_NONE>
+
+=item C<SDL_GL_CONTEXT_RELEASE_BEHAVIOR_FLUSH>
+
+=back
+
+=head2 C<:glContextResetNotification>
+
+=over
+
+=item C<SDL_GL_CONTEXT_RESET_NO_NOTIFICATION>
+ 
+=item C<SDL_GL_CONTEXT_RESET_LOSE_CONTEXT>
+
+=back
 
 
 

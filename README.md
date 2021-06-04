@@ -399,7 +399,350 @@ Expected parameters:
 
 - `priority`
 
-    The SDL\_LogPriority to assign.
+    The SDL\_LogPriority to assign. These may be imported with the [`:logpriority`](#logpriority) tag.
+
+## `SDL_LogSetPriority( ... )`
+
+Set the priority of all log categories.
+
+        SDL_LogSetPriority( SDL_LOG_CATEGORY_APPLICATION, SDL_LOG_PRIORITY_WARN );
+
+Expected parameters:
+
+- `category`
+
+    The category to assign a priority to. These may be improted with the [`:logcategory`](#logcategory) tag.
+
+- `priority`
+
+    The SDL\_LogPriority to assign. These may be imported with the [`:logpriority`](#logpriority) tag.
+
+## `SDL_LogGetPriority( ... )`
+
+Get the priority of a particular log category.
+
+        SDL_LogGetPriority( SDL_LOG_CATEGORY_ERROR );
+
+Expected parameters:
+
+- `category`
+
+    The SDL\_LogCategory to query. These may be imported with the [`:logcategory`](#logcategory) tag.
+
+## `SDL_LogGetPriority( ... )`
+
+Get the priority of a particular log category.
+
+        SDL_LogGetPriority( SDL_LOG_CATEGORY_ERROR );
+
+Expected parameters:
+
+- `category`
+
+    The SDL\_LogCategory to query. These may be imported with the [`:logcategory`](#logcategory) tag.
+
+## `SDL_LogResetPriorities( )`
+
+Reset all priorities to default.
+
+        SDL_LogResetPriorities( );
+
+This is called by [`SDL_Quit( )`](#sdl_quit).
+
+## `SDL_Log( ... )`
+
+Log a message with `SDL_LOG_CATEGORY_APPLICATION` and
+`SDL_LOG_PRIORITY_INFO`.
+
+        SDL_Log( 'HTTP Status: %s', $http->status );
+
+Expected parameters:
+
+- `fmt`
+
+    A `sprintf( )` style message format string.
+
+- `...`
+
+    Any additional parameters matching `%` tokens in the `fmt` string, if any.
+
+## `SDL_LogVerbose( ... )`
+
+Log a message with `SDL_LOG_PRIORITY_VERBOSE`.
+
+        SDL_LogVerbose( 'Current time: %s [%ds exec]', +localtime(), time - $^T );
+
+Expected parameters:
+
+- `category`
+
+    The category of the message.
+
+- `fmt`
+
+    A `sprintf()` style message format string.
+
+- `...`
+
+    Additional parameters matching `%` tokens in the `fmt` string, if any.
+
+## `SDL_LogDebug( ... )`
+
+Log a message with `SDL_LOG_PRIORITY_DEBUG`.
+
+        SDL_LogDebug( 'Current time: %s [%ds exec]', +localtime(), time - $^T );
+
+Expected parameters:
+
+- `category`
+
+    The category of the message.
+
+- `fmt`
+
+    A `sprintf()` style message format string.
+
+- `...`
+
+    Additional parameters matching `%` tokens in the `fmt` string, if any.
+
+## `SDL_LogInfo( ... )`
+
+Log a message with `SDL_LOG_PRIORITY_INFO`.
+
+        SDL_LogInfo( 'Current time: %s [%ds exec]', +localtime(), time - $^T );
+
+Expected parameters:
+
+- `category`
+
+    The category of the message.
+
+- `fmt`
+
+    A `sprintf()` style message format string.
+
+- `...`
+
+    Additional parameters matching `%` tokens in the `fmt` string, if any.
+
+## `SDL_LogWarn( ... )`
+
+Log a message with `SDL_LOG_PRIORITY_WARN`.
+
+        SDL_LogWarn( 'Current time: %s [%ds exec]', +localtime(), time - $^T );
+
+Expected parameters:
+
+- `category`
+
+    The category of the message.
+
+- `fmt`
+
+    A `sprintf()` style message format string.
+
+- `...`
+
+    Additional parameters matching `%` tokens in the `fmt` string, if any.
+
+## `SDL_LogError( ... )`
+
+Log a message with `SDL_LOG_PRIORITY_ERROR`.
+
+        SDL_LogError( 'Current time: %s [%ds exec]', +localtime(), time - $^T );
+
+Expected parameters:
+
+- `category`
+
+    The category of the message.
+
+- `fmt`
+
+    A `sprintf()` style message format string.
+
+- `...`
+
+    Additional parameters matching `%` tokens in the `fmt` string, if any.
+
+## `SDL_LogCritical( ... )`
+
+Log a message with `SDL_LOG_PRIORITY_CRITICAL`.
+
+        SDL_LogCritical( 'Current time: %s [%ds exec]', +localtime(), time - $^T );
+
+Expected parameters:
+
+- `category`
+
+    The category of the message.
+
+- `fmt`
+
+    A `sprintf()` style message format string.
+
+- `...`
+
+    Additional parameters matching `%` tokens in the `fmt` string, if any.
+
+## `SDL_LogMessage( ... )`
+
+Log a message with the specified category and priority.
+
+        SDL_LogMessage( SDL_LOG_CATEGORY_APPLICATION, SDL_LOG_PRIORITY_CRITICAL,
+                                        'Current time: %s [%ds exec]', +localtime(), time - $^T );
+
+Expected parameters:
+
+- `category`
+
+    The category of the message.
+
+- `priority`
+
+    The priority of the message.
+
+- `fmt`
+
+    A `sprintf()` style message format string.
+
+- `...`
+
+    Additional parameters matching `%` tokens in the `fmt` string, if any.
+
+## `SDL_LogSetOutputFunction( ... )`
+
+Replace the default log output function with one of your own.
+
+        my $cb = SDL_LogSetOutputFunction( sub { ... }, {} );
+
+Expected parameters:
+
+- `callback`
+
+    A coderef to call instead of the default callback.
+
+    This coderef should expect the following parameters:
+
+    - `userdata`
+
+        What was passed as `userdata` to `SDL_LogSetOutputFunction( )`.
+
+    - `category`
+
+        The category of the message.
+
+    - `priority`
+
+        The priority of the message.
+
+    - `message`
+
+        The message being output.
+
+- `userdata`
+
+    Data passed to the `callback`.
+
+# Querying SDL Version
+
+These functions are used to collect or display information about the version of
+SDL that is currently being used by the program or that it was compiled
+against.
+
+The version consists of three segments (`X.Y.Z`)
+
+- X - Major Version, which increments with massive changes, additions, and enhancements
+- Y - Minor Version, which increments with backwards-compatible changes to the major revision
+- Z - Patchlevel, which increments with fixes to the minor revision
+
+Example: The first version of SDL 2 was 2.0.0
+
+The version may also be reported as a 4-digit numeric value where the thousands
+place represents the major version, the hundreds place represents the minor
+version, and the tens and ones places represent the patchlevel (update
+version).
+
+Example: The first version number of SDL 2 was 2000
+
+## `SDL_GetVersion( )`
+
+Get the version of SDL that is linked against your program.
+
+If you are linking to SDL dynamically, then it is possible that the current
+version will be different than the version you compiled against. This function
+returns the current version, while SDL\_VERSION() is a macro that tells you what
+version you compiled with.
+
+This function may be called safely at any time, even before [`SDL_Init(
+)`](#sdl_init).
+
+Return value is a [SDL2::FFI::Version](https://metacpan.org/pod/SDL2%3A%3AFFI%3A%3AVersion) object.
+
+# Display and Window Management
+
+This category contains functions for handling display and window actions.
+
+These functions may be imported with the `:video` tag.
+
+## `SDL_GetNumVideoDrivers( )`
+
+        my $num = SDL_GetNumVideoDrivers( );
+
+Get the number of video drivers compiled into SDL.
+
+Returns a number >= 1 on success or a negative error code on failure; call [`SDL_GetError( )`](#sdl_geterror) for more information.
+
+## `SDL_GetVideoDriver( ... )`
+
+Get the name of a built in video driver.
+
+    CORE::say SDL_GetVideoDriver($_) for 0 .. SDL_GetNumVideoDrivers() - 1;
+
+The video drivers are presented in the order in which they are normally checked
+during initialization.
+
+Expected parameters include:
+
+- `index` - the index of a video driver
+
+Returns the name of the video driver with the given `index`.
+
+## `SDL_VideoInit( ... )`
+
+Initialize the video subsystem, optionally specifying a video driver.
+
+        SDL_VideoInit( 'x11' );
+
+This function initializes the video subsystem, setting up a connection to the
+window manager, etc, and determines the available display modes and pixel
+formats, but does not initialize a window or graphics mode.
+
+If you use this function and you haven't used the SDL\_INIT\_VIDEO flag with
+either SDL\_Init() or SDL\_InitSubSystem(), you should call SDL\_VideoQuit()
+before calling SDL\_Quit().
+
+It is safe to call this function multiple times. SDL\_VideoInit() will call
+SDL\_VideoQuit() itself if the video subsystem has already been initialized.
+
+You can use SDL\_GetNumVideoDrivers() and SDL\_GetVideoDriver() to find a
+specific \`driver\_name\`.
+
+Expected parameters include:
+
+- `driver_name` - the name of a video driver to initialize, or undef for the default driver
+
+Returns `0` on success or a negative error code on failure; call [`SDL_GetError( )`](#sdl_geterror) for more information.
+
+## `SDL_VideoQuit( )`
+
+Shut down the video subsystem, if initialized with [`SDL_VideoInit(
+)`](#sdl_videoinit).
+
+        SDL_VideoQuit( );
+
+This function closes all windows, and restores the original video mode.
 
 # Imports
 
@@ -2302,6 +2645,133 @@ The predefined log priorities.
 - `SDL_LOG_PRIORITY_ERROR`
 - `SDL_LOG_PRIORITY_CRITICAL`
 - `SDL_NUM_LOG_PRIORITIES`
+
+## `:windowflags`
+
+The flags on a window.
+
+- `SDL_WINDOW_FULLSCREEN` - Fullscreen window
+- `SDL_WINDOW_OPENGL` - Window usable with OpenGL context
+- `SDL_WINDOW_SHOWN` - Window is visible
+- `SDL_WINDOW_HIDDEN` - Window is not visible
+- `SDL_WINDOW_BORDERLESS` - No window decoration
+- `SDL_WINDOW_RESIZABLE` - Window can be resized
+- `SDL_WINDOW_MINIMIZED` - Window is minimized
+- `SDL_WINDOW_MAXIMIZED` - Window is maximized
+- `SDL_WINDOW_MOUSE_GRABBED` - Window has grabbed mouse input
+- `SDL_WINDOW_INPUT_FOCUS` - Window has input focus
+- `SDL_WINDOW_MOUSE_FOCUS` - Window has mouse focus
+- `SDL_WINDOW_FULLSCREEN_DESKTOP` - Fullscreen window without frame
+- `SDL_WINDOW_FOREIGN` - Window not created by SDL
+- `SDL_WINDOW_ALLOW_HIGHDPI` - Window should be created in high-DPI mode if supported.
+
+    On macOS NSHighResolutionCapable must be set true in the application's
+    Info.plist for this to have any effect.
+
+- `SDL_WINDOW_MOUSE_CAPTURE` - Window has mouse captured (unrelated to `MOUSE_GRABBED`)
+- `SDL_WINDOW_ALWAYS_ON_TOP` - Window should always be above others 
+- `SDL_WINDOW_SKIP_TASKBAR` - Window should not be added to the taskbar 
+- `SDL_WINDOW_UTILITY` - Window should be treated as a utility window 
+- `SDL_WINDOW_TOOLTIP` - Window should be treated as a tooltip 
+- `SDL_WINDOW_POPUP_MENU` - Window should be treated as a popup menu 
+- `SDL_WINDOW_KEYBOARD_GRABBED` - Window has grabbed keyboard input 
+- `SDL_WINDOW_VULKAN` - Window usable for Vulkan surface 
+- `SDL_WINDOW_METAL` - Window usable for Metal view
+- `SDL_WINDOW_INPUT_GRABBED` - Equivalent to `SDL_WINDOW_MOUSE_GRABBED` for compatibility
+
+## `:windowEventID`
+
+Event subtype for window events.
+
+- `SDL_WINDOWEVENT_NONE` - Never used
+- `SDL_WINDOWEVENT_SHOWN` - Window has been shown 
+- `SDL_WINDOWEVENT_HIDDEN` - Window has been hidden 
+- `SDL_WINDOWEVENT_EXPOSED` - Window has been exposed and should be redrawn
+- `SDL_WINDOWEVENT_MOVED` - Window has been moved to data1, data2
+- `SDL_WINDOWEVENT_RESIZED` - Window has been resized to data1xdata2 
+- `SDL_WINDOWEVENT_SIZE_CHANGED` - The window size has changed, either as a result of an API call or through the system or user changing the window size. 
+- `SDL_WINDOWEVENT_MINIMIZED` - Window has been minimized 
+- `SDL_WINDOWEVENT_MAXIMIZED` - Window has been maximized 
+- `SDL_WINDOWEVENT_RESTORED` - Window has been restored to normal size and position 
+- `SDL_WINDOWEVENT_ENTER` - Window has gained mouse focus 
+- `SDL_WINDOWEVENT_LEAVE` - Window has lost mouse focus 
+- `SDL_WINDOWEVENT_FOCUS_GAINED` - Window has gained keyboard focus
+- `SDL_WINDOWEVENT_FOCUS_LOST` - Window has lost keyboard focus
+- `SDL_WINDOWEVENT_CLOSE` - The window manager requests that the window be closed
+- `SDL_WINDOWEVENT_TAKE_FOCUS` - Window is being offered a focus (should `SetWindowInputFocus()` on itself or a subwindow, or ignore)
+- `SDL_WINDOWEVENT_HIT_TEST` - Window had a hit test that wasn't `SDL_HITTEST_NORMAL`.
+
+## `:displayEventID`
+
+Event subtype for display events.
+
+- `SDL_DISPLAYEVENT_NONE` - Never used
+- `SDL_DISPLAYEVENT_ORIENTATION` - Display orientation has changed to data1
+- `SDL_DISPLAYEVENT_CONNECTED` - Display has been added to the system
+- `SDL_DISPLAYEVENT_DISCONNECTED` - Display has been removed from the system
+
+## `:displayOrientation`
+
+- `SDL_ORIENTATION_UNKNOWN` - The display orientation can't be determined
+- `SDL_ORIENTATION_LANDSCAPE` - The display is in landscape mode, with the right side up, relative to portrait mode
+- `SDL_ORIENTATION_LANDSCAPE_FLIPPED` - The display is in landscape mode, with the left side up, relative to portrait mode
+- `SDL_ORIENTATION_PORTRAIT` - The display is in portrait mode
+- `SDL_ORIENTATION_PORTRAIT_FLIPPED` - The display is in portrait mode, upside down
+
+## `:glAttr`
+
+OpenGL configuration attributes.
+
+- `SDL_GL_RED_SIZE`
+- `SDL_GL_GREEN_SIZE`
+- `SDL_GL_BLUE_SIZE`
+- `SDL_GL_ALPHA_SIZE`
+- `SDL_GL_BUFFER_SIZE`
+- `SDL_GL_DOUBLEBUFFER`
+- `SDL_GL_DEPTH_SIZE`
+- `SDL_GL_STENCIL_SIZE`
+- `SDL_GL_ACCUM_RED_SIZE`
+- `SDL_GL_ACCUM_GREEN_SIZE`
+- `SDL_GL_ACCUM_BLUE_SIZE`
+- `SDL_GL_ACCUM_ALPHA_SIZE`
+- `SDL_GL_STEREO`
+- `SDL_GL_MULTISAMPLEBUFFERS`
+- `SDL_GL_MULTISAMPLESAMPLES`
+- `SDL_GL_ACCELERATED_VISUAL`
+- `SDL_GL_RETAINED_BACKING`
+- `SDL_GL_CONTEXT_MAJOR_VERSION`
+- `SDL_GL_CONTEXT_MINOR_VERSION`
+- `SDL_GL_CONTEXT_EGL`
+- `SDL_GL_CONTEXT_FLAGS`
+- `SDL_GL_CONTEXT_PROFILE_MASK`
+- `SDL_GL_SHARE_WITH_CURRENT_CONTEXT`
+- `SDL_GL_FRAMEBUFFER_SRGB_CAPABLE`
+- `SDL_GL_CONTEXT_RELEASE_BEHAVIOR`
+- `SDL_GL_CONTEXT_RESET_NOTIFICATION`
+- `SDL_GL_CONTEXT_NO_ERROR`
+
+## `:glProfile`
+
+- `SDL_GL_CONTEXT_PROFILE_CORE`
+- `SDL_GL_CONTEXT_PROFILE_COMPATIBILITY`
+- `SDL_GL_CONTEXT_PROFILE_ES`
+
+## `:glContextFlag`
+
+- `SDL_GL_CONTEXT_DEBUG_FLAG`
+- `SDL_GL_CONTEXT_FORWARD_COMPATIBLE_FLAG`
+- `SDL_GL_CONTEXT_ROBUST_ACCESS_FLAG`
+- `SDL_GL_CONTEXT_RESET_ISOLATION_FLAG`
+
+## `:glContextReleaseFlag`
+
+- `SDL_GL_CONTEXT_RELEASE_BEHAVIOR_NONE`
+- `SDL_GL_CONTEXT_RELEASE_BEHAVIOR_FLUSH`
+
+## `:glContextResetNotification`
+
+- `SDL_GL_CONTEXT_RESET_NO_NOTIFICATION`
+- `SDL_GL_CONTEXT_RESET_LOSE_CONTEXT`
 
 # LICENSE
 
