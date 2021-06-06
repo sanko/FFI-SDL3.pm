@@ -6,10 +6,10 @@ SDL2::FFI - FFI Wrapper for SDL (Simple DirectMedia Layer) Development Library
 # SYNOPSIS
 
     use SDL2::FFI qw[:all];
-    die 'Error initializing SDL: ' . SDL_GetError() unless SDL_Init(SDL_INIT_VIDEO) == 0;
+    die 'Error initializing SDL: ' . SDL_GetError( ) unless SDL_Init(SDL_INIT_VIDEO) == 0;
     my $win = SDL_CreateWindow( 'Example window!',
         SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 640, 480, SDL_WINDOW_RESIZABLE );
-    die 'Could not create window: ' . SDL_GetError() unless $win;
+    die 'Could not create window: ' . SDL_GetError( ) unless $win;
     my $event = SDL2::Event->new;
     SDL_Init(SDL_INIT_VIDEO);
     my $renderer = SDL_CreateRenderer( $win, -1, 0 );
@@ -743,6 +743,1407 @@ Shut down the video subsystem, if initialized with [`SDL_VideoInit(
         SDL_VideoQuit( );
 
 This function closes all windows, and restores the original video mode.
+
+## `SDL_GetCurrentVideoDriver( )`
+
+Get the name of the currently initialized video driver.
+
+        my $driver = SDL_GetCurrentVideoDriver( );
+
+Returns the name of the current video driver or NULL if no driver has been
+initialized.
+
+## `SDL_GetNumVideoDisplays( )`
+
+Get the number of available video displays.
+
+        my $screens = SDL_GetNumVideoDisplays( );
+
+Returns a number >= 1 or a negative error code on failure; call [`SDL_GetError( )`](#sdl_geterror) for more information.
+
+## `SDL_GetDisplayName( ... )`
+
+Get the name of a display in UTF-8 encoding.
+
+        my $screen = SDL_GetDisplayName( 0 );
+
+Expected parameters include:
+
+- `displayIndex` - the index of display from which the name should be queried
+
+Returns the name of a display or undefined for an invalid display index or
+failure; call [`SDL_GetError( )`](#sdl_geterror) for more
+information.
+
+## `SDL_GetDisplayBounds( ... )`
+
+Get the desktop area represented by a display.
+
+        my $rect = SDL_GetDisplayBounds( 0 );
+
+The primary display (`displayIndex == 0`) is always located at 0,0.
+
+Expected parameters include:
+
+- `displayIndex` - the index of the display to query
+
+Returns the SDL2::Rect structure filled in with the display bounds on success
+or a negative error code on failure; call [`SDL_GetError(
+)`](#sdl_geterror) for more information.
+
+## `SDL_GetDisplayUsableBounds( ... )`
+
+Get the usable desktop area represented by a display.
+
+        my $rect = SDL_GetDisplayUsableBounds( 0 );
+
+The primary display (`displayIndex == 0`) is always located at 0,0.
+
+This is the same area as [`SDL_GetDisplayBounds( ...
+)`](#sdl_getdisplaybounds) reports, but with portions reserved by
+the system removed. For example, on Apple's macOS, this subtracts the area
+occupied by the menu bar and dock.
+
+Setting a window to be fullscreen generally bypasses these unusable areas, so
+these are good guidelines for the maximum space available to a non-fullscreen
+window.
+
+Expected parameters include:
+
+- `displayIndex` - the index of the display to query
+
+Returns the SDL2::Rect structure filled in with the display bounds on success
+or a negative error code on failure; call [`SDL_GetError(
+)`](#sdl_geterror) for more information. This function also returns
+`-1` if the parameter `displayIndex` is out of range.
+
+## `SDL_GetDisplayDPI( ... )`
+
+Get the dots/pixels-per-inch for a display.
+
+        my ( $ddpi, $hdpi, $vdpi ) = SDL_GetDisplayDPI( 0 );
+
+Diagonal, horizontal and vertical DPI can all be optionally returned if the
+appropriate parameter is non-NULL.
+
+A failure of this function usually means that either no DPI information is
+available or the `displayIndex` is out of range.
+
+Expected parameters include:
+
+- `displayIndex` - the index of the display from which DPI information should be queried
+
+Returns `[ddpi, hdpi, vdip]` on success or a negative error code on failure;
+call [`SDL_GetError( )`](#sdl_geterror) for more information.
+
+`ddpi` is the diagonal DPI of the display, `hdpi` is the horizontal DPI of
+the display, `vdpi` is the vertical DPI of the display.
+
+## `SDL_GetDisplayOrientation( ... )`
+
+Get the orientation of a display.
+
+        my $orientation = SDL_GetDisplayOrientation( 0 );
+
+Expected parameters include:
+
+- `displayIndex` - the index of the display to query
+
+Returns a value which may be imported with `:displayOrientation` or
+`SDL_ORIENTATION_UNKNOWN` if it isn't available.
+
+## `SDL_GetNumDisplayModes( ... )`
+
+Get the number of available display modes.
+
+        my $modes = SDL_GetNumDisplayModes( 0 );
+
+The `displayIndex` needs to be in the range from `0` to
+`SDL_GetNumVideoDisplays( ) - 1`.
+
+Expected parameters include:
+
+- `displayIndex` - the index of the display to query
+
+Returns a number >= 1 on success or a negative error code on failure; call [`SDL_GetError( )`](#sdl_geterror) for more information.
+
+## `SDL_GetDisplayMode( ... )`
+
+Get information about a specific display mode.
+
+        my $mode = SDL_GetDisplayMode( 0, 0 );
+
+The display modes are sorted in this priority:
+
+- width - largest to smallest
+- height - largest to smallest
+- bits per pixel - more colors to fewer colors
+- packed pixel layout - largest to smallest
+- refresh rate - highest to lowest
+
+Expected parameters include:
+
+- `displayIndex` - the index of the display to query
+- `modeIndex` - the index of the display mode to query
+
+Returns an [SDL2::DisplayMode](https://metacpan.org/pod/SDL2%3A%3ADisplayMode) structure filled in with the mode at
+`modeIndex` on success or a negative error code on failure; call [`SDL_GetError( )`](#sdl_geterror) for more information.
+
+## `SDL_GetDesktopDisplayMode( ... )`
+
+Get information about the desktop's display mode.
+
+        my $mode = SDL_GetDesktopDisplayMode( 0 );
+
+There's a difference between this function and [`SDL_GetCurrentDisplayMode(
+... )`](#sdl_getcurrentdisplaymode) when SDL runs fullscreen and has
+changed the resolution. In that case this function will return the previous
+native display mode, and not the current display mode.
+
+Expected parameters include:
+
+- `displayIndex` - the index of the display to query
+
+Returns an [SDL2::DisplayMode](https://metacpan.org/pod/SDL2%3A%3ADisplayMode) structure filled in with the current display
+mode on success or a negative error code on failure; call [`SDL_GetError(
+)`](#sdl_geterror) for more information.
+
+## `SDL_GetCurrentDisplayMode( ... )`
+
+        my $mode = SDL_GetCurrentDisplayMode( 0 );
+
+There's a difference between this function and [`SDL_GetDesktopDisplayMode(
+... )`](#sdl_getdesktopdisplaymode) when SDL runs fullscreen and has
+changed the resolution. In that case this function will return the current
+display mode, and not the previous native display mode.
+
+Expected parameters include:
+
+- `displayIndex` - the index of the display to query
+
+Returns an [SDL2::DisplayMode](https://metacpan.org/pod/SDL2%3A%3ADisplayMode) structure filled in with the current display
+mode on success or a negative error code on failure; call [`SDL_GetError(
+)`](#sdl_geterror) for more information.
+
+## `SDL_GetClosestDisplayMode( ... )`
+
+Get the closes match to the requested display mode.
+
+        $mode = SDL_GetClosestDisplayMode( 0, $mode );
+
+The available display modes are scanned and he closest mode matching the
+requested mode is returned. The mode format and refresh rate default to the
+desktop mode if they are set to 0. The modes are scanned with size being first
+priority, format being second priority, and finally checking the refresh rate.
+If all the available modes are too small, then an undefined value is returned.
+
+Expected parameters include:
+
+- `displayIndex` - index of the display to query
+- `mode` - an [SDL2::DisplayMode](https://metacpan.org/pod/SDL2%3A%3ADisplayMode) structure containing the desired display mode
+- `closest` - an [SDL2::DisplayMode](https://metacpan.org/pod/SDL2%3A%3ADisplayMode) structure filled in with the closest match of the available display modes
+
+Returns the passed in value `closest` or an undefined value if no matching
+video mode was available; call [`SDL_GetError( )`](#sdl_geterror)
+for more information.
+
+## `SDL_GetWindowDisplayIndex( ... )`
+
+Get the index of the display associated with a window.
+
+        my $index = SDL_GetWindowDisplayIndex( $window );
+
+Expected parameters include:
+
+- `window`	- the window to query
+
+Returns the index of the display containing the center of the window on success
+or a negative error code on failure; call  [`SDL_GetError(
+)`](#sdl_geterror) for more information.
+
+## `SDL_SetWindowDisplayMode( ... )`
+
+Set the display mode to use when a window is visible at fullscreen.
+
+        my $ok = !SDL_SetWindowDisplayMode( $window, $mode );
+
+This only affects the display mode used when the window is fullscreen. To
+change the window size when the window is not fullscreen, use [`SDL_SetWindowSize( ... )`](#sdl_setwindowsize).
+
+## `SDL_GetWindowDisplayMode( ... )`
+
+Query the display mode to use when a window is visible at fullscreen.
+
+        my $mode = SDL_GetWindowDisplayMode( $window );
+
+Expected parameters include:
+
+- `window` - the window to query
+
+Returns a [SDL2::DisplayMode](https://metacpan.org/pod/SDL2%3A%3ADisplayMode) structure on success or a negative error code on
+failure; call [`SDL_GetError( )`](#sdl_geterror) for more
+information.
+
+## `SDL_GetWindowPixelFormat( ... )`
+
+Get teh pixel format associated with the window.
+
+        my $format = SDL_GetWindowPixelFormat( $window );
+
+Expected parameters include:
+
+- `window` - the window to query
+
+Returns the pixel format of the window on success or `SDL_PIXELFORMAT_UNKNOWN`
+on failure; call [`SDL_GetError( )`](#sdl_geterror) for more
+information.
+
+## `SDL_CreateWindow( ... )`
+
+Create a window with the specified position, dimensions, and flags.
+
+    my $window = SDL_CreateWindow( 'Example',
+        SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
+        1280, 720,
+        SDL_WINDOW_SHOWN
+    );
+
+`flags` may be any of the following OR'd together:
+
+- `SDL_WINDOW_FULLSCREEN` - fullscreen window
+- `SDL_WINDOW_FULLSCREEN_DESKTOP` - fullscreen window at desktop resolution
+- `SDL_WINDOW_OPENGL` - window usable with an OpenGL context
+- `SDL_WINDOW_VULKAN` - window usable with a Vulkan instance
+- `SDL_WINDOW_METAL` - window usable with a Metal instance
+- `SDL_WINDOW_HIDDEN` - window is not visible
+- `SDL_WINDOW_BORDERLESS` - no window decoration
+- `SDL_WINDOW_RESIZABLE` - window can be resized
+- `SDL_WINDOW_MINIMIZED` - window is minimized
+- `SDL_WINDOW_MAXIMIZED` - window is maximized
+- `SDL_WINDOW_INPUT_GRABBED` - window has grabbed input focus
+- `SDL_WINDOW_ALLOW_HIGHDPI` - window should be created in high-DPI mode if supported (>= SDL 2.0.1)
+
+`SDL_WINDOW_SHOWN` is ignored by `SDL_CreateWindow( ... )`. The SDL\_Window is
+implicitly shown if `SDL_WINDOW_HIDDEN` is not set. `SDL_WINDOW_SHOWN` may be
+queried later using [`SDL_GetWindowFlags( ... )`](#sdl_getwindowflags).
+
+On Apple's macOS, you **must** set the NSHighResolutionCapable Info.plist
+property to YES, otherwise you will not receive a High-DPI OpenGL canvas.
+
+If the window is created with the `SDL_WINDOW_ALLOW_HIGHDPI` flag, its size in
+pixels may differ from its size in screen coordinates on platforms with
+high-DPI support (e.g. iOS and macOS). Use [`SDL_GetWindowSize( ...
+)`](#sdl_getwindowsize) to query the client area's size in screen
+coordinates, and [`SDL_GL_GetDrawableSize( )`](#sdl_gl_getdrawablesize) or [`SDL_GetRendererOutputSize( )`](#sdl_getrendereroutputsize)
+to query the drawable size in pixels.
+
+If the window is set fullscreen, the width and height parameters `w` and `h`
+will not be used. However, invalid size parameters (e.g. too large) may still
+fail. Window size is actually limited to 16384 x 16384 for all platforms at
+window creation.
+
+If the window is created with any of the `SDL_WINDOW_OPENGL` or
+`SDL_WINDOW_VULKAN` flags, then the corresponding LoadLibrary function
+(SDL\_GL\_LoadLibrary or SDL\_Vulkan\_LoadLibrary) is called and the corresponding
+UnloadLibrary function is called by [`SDL_DestroyWindow( ...
+)`](#sdl_destroywindow).
+
+If `SDL_WINDOW_VULKAN` is specified and there isn't a working Vulkan driver,
+`SDL_CreateWindow( ... )` will fail because [`SDL_Vulkan_LoadLibrary(
+)`](#sdl_vulkan_loadlibrary) will fail.
+
+If `SDL_WINDOW_METAL` is specified on an OS that does not support Metal,
+`SDL_CreateWindow( ... )` will fail.
+
+On non-Apple devices, SDL requires you to either not link to the Vulkan loader
+or link to a dynamic library version. This limitation may be removed in a
+future version of SDL.
+
+Expected parameters include:
+
+- `title` - the title of the window, in UTF-8 encoding
+- `x` - the x position of the window, `SDL_WINDOWPOS_CENTERED`, or `SDL_WINDOWPOS_UNDEFINED`
+- `y` - the y position of the window, `SDL_WINDOWPOS_CENTERED`, or `SDL_WINDOWPOS_UNDEFINED`
+- `w` - the width of the window, in screen coordinates
+- `h` - the height of the window, in screen coordinates
+- `flags` - 0, or one or more `SDL_WindowFlags` OR'd together
+
+Returns the window that was created or an undefined value on failure; call [`SDL_GetError( )`](#sdl_geterror) for more information.
+
+## `SDL_CreateWindowFrom( ... )`
+
+Create an SDL window from an existing native window.
+
+        my $window = SDL_CreateWindowFrom( $data );
+
+In some cases (e.g. OpenGL) and on some platforms (e.g. Microsoft Windows) the
+hint `SDL_HINT_VIDEO_WINDOW_SHARE_PIXEL_FORMAT` needs to be configured before
+using `SDL_CreateWindowFrom( ... )`.
+
+Expected parameters include:
+
+- `data` - driver-dependant window creation data, typically your native window
+
+Returns the window that was created or an undefined value on failure; call [`SDL_GetError( )`](#sdl_geterror) for more information.
+
+## `SDL_GetWindowID( ... )`
+
+Get the numeric ID of a window.
+
+        my $id = SDL_GetWindowID( $window );
+
+The numeric ID is what [SDL2::WindowEvent](https://metacpan.org/pod/SDL2%3A%3AWindowEvent) references, and is necessary to map
+these events to specific [SDL2::Window](https://metacpan.org/pod/SDL2%3A%3AWindow) objects.
+
+Expected parameters include:
+
+- `window` - the window to query
+
+Returns the ID of the window on success or `0` on failure; call [`SDL_GetError( )`](#sdl_geterror) for more information.
+
+## `SDL_GetWindowFromID( ... )`
+
+Get a window from a stored ID.
+
+        my $window = SDL_GetWindowFromID( 2 );
+
+The numeric ID is what [SDL::WindowEvent](https://metacpan.org/pod/SDL%3A%3AWindowEvent) references, and is necessary to map
+these events to specific [SDL::Window](https://metacpan.org/pod/SDL%3A%3AWindow) objects.
+
+Expected parameters include:
+
+- `id` - the ID of the window
+
+Returns the window associated with `id` or an undefined value if it doesn't
+exist; call [`SDL_GetError( )`](#sdl_geterror) for more information.
+
+## `SDL_GetWindowFlags( ... )`
+
+Get the window flags.
+
+        my $id = SDL_GetWindowFlags( $window );
+
+The numeric ID is what [SDL2::WindowEvent](https://metacpan.org/pod/SDL2%3A%3AWindowEvent) references, and is necessary to map
+these events to specific [SDL2::Window](https://metacpan.org/pod/SDL2%3A%3AWindow) objects.
+
+Expected parameters include:
+
+- `window` - the window to query
+
+Returns a mask of the SDL\_WindowFlags associated with `window`.
+
+## `SDL_SetWindowTitle( ... )`
+
+Set the title of a window.
+
+        SDL_SetWindowTitle( $window, 'Untitle file *' );
+
+This string is expected to be in UTF-8 encoding.
+
+Expected parameters include:
+
+- `window` - the window to change
+- `title` - the desired window title in UTF-8 format
+
+## `SDL_GetWindowTitle( ... )`
+
+Get the title of a window.
+
+        my $title = SDL_GetWindowTitle( $window );
+
+Expected parameters include:
+
+- `window` - the window to query
+
+Returns the title of the window in UTF-8 format or `""` (an empty string) if
+there is no title.
+
+## `SDL_SetWindowIcon( ... )`
+
+Set the icon for a window.
+
+        SDL_SetWindowIcon( $window, $icon );
+
+Expected parameters include:
+
+- `window` - the window to change
+- `icon` - an [SDL2::Surface](https://metacpan.org/pod/SDL2%3A%3ASurface) structure containig the icon for the window
+
+## `SDL_SetWindowData( ... )`
+
+Associate an arbitrary named pointer with a window.
+
+        my $prev = SDL_SetWindowData( $window, 'test', $data );
+
+Expected parameters include:
+
+- `window` - the window to change
+- `name` - the name of the pointer
+- `userdata` - the associated pointer
+
+Returns the previous value associated with `name`.
+
+## `SDL_GetWindowData( ... )`
+
+Retrieve the data pointer associated with a window.
+
+        my $data = SDL_SetWindowData( $window, 'test' );
+
+Expected parameters include:
+
+- `window` - the window to query
+- `name` - the name of the pointer
+
+Returns the value associated with `name`.
+
+## `SDL_SetWindowPosition( ... )`
+
+Set the position of a window.
+
+        SDL_SetWindowPosition( $window, 100, 100 );
+
+The window coordinate origin is the upper left of the display.
+
+Expected parameters include:
+
+- `window` - the window to reposition
+- `x` - the x coordinate of the window in screen coordinates, or `SDL_WINDOWPOS_CENTERED` or `SDL_WINDOWPOS_UNDEFINED`
+- `y` - the y coordinate of the window in screen coordinates, or `SDL_WINDOWPOS_CENTERED` or `SDL_WINDOWPOS_UNDEFINED`
+
+## `SDL_GetWindowPosition( ... )`
+
+Get the position of a window.
+
+        my ($x, $y) = SDL_GetWindowPosition( $window );
+
+Expected parameters include:
+
+- `window` - the window to query
+
+Returns the `x` and `y` positions of the window, in screen coordinates,
+either of which may be undefined.
+
+## `SDL_SetWindowSize( ... )`
+
+Set the size of a window's client area.
+
+        SDL_SetWindowSize( $window, 100, 100 );
+
+The window size in screen coordinates may differ from the size in pixels, if
+the window was created with `SDL_WINDOW_ALLOW_HIGHDPI` on a platform with
+high-dpi support (e.g. iOS or macOS). Use [`SDL_GL_GetDrawableSize( ...
+)`](https://metacpan.org/pod/SDL_GL_GetDrawableSize%28%20...%20%29) or [`SDL_GetRendererOutputSize( ...
+)`](#sdl_getrendereroutputsize) to get the real client area size in
+pixels.
+
+Fullscreen windows automatically match the size of the display mode, and you
+should use [`SDL_SetWindowDisplayMode( ... )`](#sdl_setwindowdisplaymode) to change their size.
+
+Expected parameters include:
+
+- `window` - the window to change
+- `w` - the width of the window in pixels, in screen coordinates, must be > 0
+- `h` - the height of the window in pixels, in screen coordinates, must be > 0
+
+## `SDL_GetWindowSize( ... )`
+
+Get the position of a window.
+
+        my ($w, $h) = SDL_GetWindowSize( $window );
+
+The window size in screen coordinates may differ from the size in pixels, if
+the window was created with `SDL_WINDOW_ALLOW_HIGHDPI` on a platform with
+high-dpi support (e.g. iOS or macOS). Use [`SDL_GL_GetDrawableSize( ...
+)`](https://metacpan.org/pod/SDL_GL_GetDrawableSize%28%20...%20%29), [`SDL_Vulkan_GetDrawableSize( ...
+)`](#sdl_vulkan_getdrawablesize), or [`SDL_GetRendererOutputSize( ... )`](#sdl_getrendereroutputsize) to
+get the real client area size in pixels.
+
+Expected parameters include:
+
+- `window` - the window to query the width and height from
+
+Returns the `width` and `height` of the window, in screen coordinates, either
+of which may be undefined.
+
+## `SDL_GetWindowBordersSize( ... )`
+
+Get the size of a window's borders (decorations) around the client area.
+
+        my ($top, $left, $bottom, $right) = SDL_GetWindowBorderSize( $window );
+
+Expected parameters include:
+
+- `window` - the window to query the size values of the border (decorations) from
+
+Returns the `top`, `left`, `bottom`, and `right` size values, any of which
+may be undefined.
+
+Note: If this function fails (returns -1), the size values will be initialized
+to `0, 0, 0, 0`, as if the window in question was borderless.
+
+Note: This function may fail on systems where the window has not yet been
+decorated by the display server (for example, immediately after calling [`SDL_CreateWindow( ...  )`](#sdl_createwindow) ). It is
+recommended that you wait at least until the window has been presented and
+composited, so that the window system has a chance to decorate the window and
+provide the border dimensions to SDL.
+
+This function also returns `-1` if getting the information is not supported.
+
+## `SDL_SetWindowMinimumSize( ... )`
+
+Set the minimum size of a window's client area.
+
+        SDL_SetWindowMinimumSize( $window, 100, 100 );
+
+Expected parameters include:
+
+- `window` - the window to change
+- `w` - the minimum width of the window in pixels
+- `h` - the minimum height of the window in pixels
+
+## `SDL_GetWindowMinimumSize( ... )`
+
+Get the minimum size of a window's client area.
+
+        my ($w, $h) = SDL_GetWindowMinimumSize( $window );
+
+Expected parameters include:
+
+- `window` - the window to query the minimum width and minimum height from
+
+Returns the minimum `width` and minimum `height` of the window, either of
+which may be undefined.
+
+## `SDL_SetWindowMaximumSize( ... )`
+
+Set the maximum size of a window's client area.
+
+        SDL_SetWindowMaximumSize( $window, 100, 100 );
+
+Expected parameters include:
+
+- `window` - the window to change
+- `w` - the maximum width of the window in pixels
+- `h` - the maximum height of the window in pixels
+
+## `SDL_GetWindowMaximumSize( ... )`
+
+Get the maximum size of a window's client area.
+
+        my ($w, $h) = SDL_GetWindowMaximumSize( $window );
+
+Expected parameters include:
+
+- `window` - the window to query the maximum width and maximum height from
+
+Returns the maximum `width` and maximum `height` of the window, either of
+which may be undefined.
+
+## `SDL_SetWindowBordered( ... )`
+
+Set the border state of a window.
+
+        SDL_SetWindowBordered( $window, 1 );
+
+This will add or remove the window's `SDL_WINDOW_BORDERLESS` flag and add or
+remove the border from the actual window. This is a no-op if the window's
+border already matches the requested state.
+
+You can't change the border state of a fullscreen window.
+
+Expected parameters include:
+
+- `window` - the window of which to change the border state
+- `bordered` - false value to remove border, true value to add border
+
+## `SDL_SetWindowResizable( ... )`
+
+Set the user-resizable state of a window.
+
+        SDL_SetWindowResizable( $window, 1 );
+
+This will add or remove the window's `SDL_WINDOW_RESIZABLE` flag and
+allow/disallow user resizing of the window. This is a no-op if the window's
+resizable state already matches the requested state.
+
+You can't change the resizable state of a fullscreen window.
+
+Expected parameters include:
+
+- `window` - the window of which to change the border state
+- `bordered` - true value to allow resizing, false value to disallow
+
+## `SDL_ShowWindow( ... )`
+
+Show a window.
+
+        SDL_ShowWindow( $window );
+
+Expected parameters include:
+
+- `window` - the window to show
+
+## `SDL_HideWindow( ... )`
+
+Hide a window.
+
+        SDL_HideWindow( $window );
+
+Expected parameters include:
+
+- `window` - the window to hide
+
+## `SDL_RaiseWindow( ... )`
+
+Raise a window above other windows and set the input focus.
+
+        SDL_RaiseWindow( $window );
+
+Expected parameters include:
+
+- `window` - the window to raise
+
+## `SDL_MaximizeWindow( ... )`
+
+Make a window as large as possible.
+
+        SDL_MaximizeWindow( $window );
+
+Expected parameters include:
+
+- `window` - the window to maximize
+
+## `SDL_MinimizeWindow( ... )`
+
+Minimize a window to an iconic representation.
+
+        SDL_MinimizeWindow( $window );
+
+Expected parameters include:
+
+- `window` - the window to minimize
+
+## `SDL_RestoreWindow( ... )`
+
+Restore the size and position of a minimized or maximized window.
+
+        SDL_RestoreWindow( $window );
+
+Expected parameters include:
+
+- `window` - the window to restore
+
+## `SDL_SetWindowFullscreen( ... )`
+
+Set a window's fullscreen state.
+
+        SDL_SetWindowFullscreen( $window, SDL_WINDOW_FULLSCREEN );
+
+Expected parameters include:
+
+- `window` - the window to change
+- `flags` - `SDL_WINDOW_FULLSCREEN`, `SDL_WINDOW_FULLSCREEN_DESKTOP` or 0
+
+Returns  0 on success or a negative error code on failure; call [`SDL_GetError( )`](#sdl_geterror) for more information.
+
+## `SDL_GetWindowSurface( ... )`
+
+Get the SDL surface associated with the window.
+
+        my $surface = SDL_GetWindowSurface( $window );
+
+A new surface will be created with the optimal format for the window, if
+necessary. This surface will be freed when the window is destroyed. Do not free
+this surface.
+
+This surface will be invalidated if the window is resized. After resizing a
+window this function must be called again to return a valid surface.
+
+You may not combine this with 3D or the rendering API on this window.
+
+This function is affected by `SDL_HINT_FRAMEBUFFER_ACCELERATION`.
+
+Expected parameters include:
+
+- `window` - the window to query
+
+Returns the surface associated with the window, or an undefined on failure;
+call [`SDL_GetError( )`](#sdl_geterror) for more information.
+
+## `SDL_UpdateWindowSurface( ... )`
+
+Copy the window surface to the screen.
+
+        my $ok = !SDL_UpdateWindowSurface( $window );
+
+This is the function you use to reflect any changes to the surface on the
+screen.
+
+Expected parameters include:
+
+- `window` - the window to query
+
+Returns `0` on success or a negative error code on failure; call [`SDL_GetError( )`](#sdl_geterror) for more information.
+
+## `SDL_UpdateWindowSurfaceRects( ... )`
+
+Copy areas of the window surface to the screen.
+
+        SDL_UpdateWindowSurfaceRects( $window, @recs );
+
+This is the function you use to reflect changes to portions of the surface on
+the screen.
+
+Expected parameters include:
+
+- `window` - the window to update
+- `rects` - an array of [SDL2::Rect](https://metacpan.org/pod/SDL2%3A%3ARect) structures representing areas of the surface to copy
+
+Returns `0` on success or a negative error code on failure; call [`SDL_GetError( )`](#sdl_geterror) for more information.
+
+## `SDL_SetWindowGrab( ... )`
+
+Set a window's input grab mode.
+
+        SDL_SetWindowGrab( $window, 1 );
+
+When input is grabbed the mouse is confined to the window.
+
+If the caller enables a grab while another window is currently grabbed, the
+other window loses its grab in favor of the caller's window.
+
+Expected parameters include:
+
+- `window` - the window for which the input grab mode should be set
+- `grabbed` - a true value to grab input or a false value to release input
+
+## `SDL_SetWindowKeyboardGrab( ... )`
+
+Set a window's keyboard grab mode.
+
+        SDL_SetWindowKeyboardGrab( $window, 1 );
+
+If the caller enables a grab while another window is currently grabbed, the
+other window loses its grab in favor of the caller's window.
+
+Expected parameters include:
+
+- `window` - The window for which the keyboard grab mode should be set.
+- `grabbed` - This is true to grab keyboard, and false to release.
+
+## `SDL_SetWindowMouseGrab( ... )`
+
+Set a window's mouse grab mode.
+
+        SDL_SetWindowMouseGrab( $window, 1 );
+
+Expected parameters include:
+
+- `window` - The window for which the mouse grab mode should be set.
+- `grabbed` - This is true to grab mouse, and false to release.
+
+If the caller enables a grab while another window is currently grabbed, the
+other window loses its grab in favor of the caller's window.
+
+## `SDL_GetWindowGrab( ... )`
+
+Get a window's input grab mode.
+
+        my $grabbing = SDL_GetWindowGrab( $window );
+
+Expected parameters include:
+
+- `window` - the window to query
+
+Returns true if input is grabbed, false otherwise.
+
+## `SDL_GetWindowKeyboardGrab( ... )`
+
+Get a window's keyboard grab mode.
+
+        my $keyboard = SDL_GetWindowKeyboardGrab( $window );
+
+Expected parameters include:
+
+- `window` - the window to query
+
+Returns true if keyboard is grabbed, and false otherwise.
+
+## `SDL_GetWindowMouseGrab( ... )`
+
+Get a window's mouse grab mode.
+
+        my $mouse = SDL_GetWindowMouseGrab( $window );
+
+Expected parameters include:
+
+- `window` - the window to query
+
+This returns true if mouse is grabbed, and false otherwise.
+
+## `SDL_GetGrabbedWindow( )`
+
+Get the window that currently has an input grab enabled.
+
+        my $window = SDL_GetGrabbedWindow( );
+
+Returns the window if input is grabbed or undefined otherwise.
+
+## `SDL_SetWindowBrightness( ... )`
+
+Set the brightness (gamma multiplier) for a given window's display.
+
+        my $ok = !SDL_SetWindowBrightness( $window, 2 );
+
+Despite the name and signature, this method sets the brightness of the entire
+display, not an individual window. A window is considered to be owned by the
+display that contains the window's center pixel. (The index of this display can
+be retrieved using [`SDL_GetWindowDisplayIndex( ...
+)`](#sdl_getwindowdisplayindex).) The brightness set will not follow
+the window if it is moved to another display.
+
+Many platforms will refuse to set the display brightness in modern times. You
+are better off using a shader to adjust gamma during rendering, or something
+similar.
+
+Expected parameters includes:
+
+- `window` - the window used to select the display whose brightness will be changed
+- `brightness` - the brightness (gamma multiplier) value to set where 0.0 is completely dark and 1.0 is normal brightness
+
+Returns `0` on success or a negative error code on failure; call [`SDL_GetError( )`](#sdl_geterror)() for more information.
+
+## `SDL_GetWindowBrightness( ... )`
+
+Get the brightness (gamma multiplier) for a given window's display.
+
+        my $gamma = SDL_GetWindowBrightness( $window );
+
+Despite the name and signature, this method retrieves the brightness of the
+entire display, not an individual window. A window is considered to be owned by
+the display that contains the window's center pixel. (The index of this display
+can be retrieved using [`SDL_GetWindowDisplayIndex( ...
+)`](#sdl_getwindowdisplayindex).)
+
+Expected parameters include:
+
+- `window` - the window used to select the display whose brightness will be queried
+
+Returns the brightness for the display where 0.0 is completely dark and `1.0`
+is normal brightness.
+
+## `SDL_SetWindowOpacity( ... )`
+
+Set the opacity for a window.
+
+        SDL_SetWindowOpacity( $window, .5 );
+
+The parameter `opacity` will be clamped internally between `0.0`
+(transparent) and `1.0` (opaque).
+
+This function also returns `-1` if setting the opacity isn't supported.
+
+Expected parameters include:
+
+- `window` - the window which will be made transparent or opaque
+- `opacity` - the opacity value (0.0 - transparent, 1.0 - opaque)
+
+Returns `0` on success or a negative error code on failure; call [`SDL_GetError( )`](#sdl_geterror)() for more information.
+
+## `SDL_GetWindowOpacity( ... )`
+
+Get the opacity of a window.
+
+        my $opacity = SDL_GetWindowOpacity( $window );
+
+If transparency isn't supported on this platform, opacity will be reported as
+1.0 without error.
+
+The parameter `opacity` is ignored if it is undefined.
+
+This function also returns `-1` if an invalid window was provided.
+
+Expected parameters include:
+
+- `window` - the window to get the current opacity value from
+
+Returns the current opacity on success or a negative error code on failure;
+call [`SDL_GetError( )`](#sdl_geterror)() for more information.
+
+## `SDL_SetWindowModalFor( ... )`
+
+Set the window as a modal for another window.
+
+        my $ok = !SDL_SetWindowModalFor( $winodw, $parent );
+
+Expected parameters include:
+
+- `modal_window` - the window that should be set modal
+- `parent_window` - the parent window for the modal window
+
+Returns `0` on success or a negative error code on failure; call [`SDL_GetError( )`](#sdl_geterror)() for more information.
+
+## `SDL_SetWindowInputFocus( ... )`
+
+Explicitly set input focus to the window.
+
+        SDL_SetWindowInputFocus( $window );
+
+You almost certainly want [`SDL_RaiseWindow( ... )`](#sdl_raisewindow) instead of this function. Use this with caution, as you might give focus
+to a window that is completely obscured by other windows.
+
+Expected parameters include:
+
+- `window` - the window that should get the input focus
+
+Returns `0` on success or a negative error code on failure; call [`SDL_GetError( )`](#sdl_geterror)() for more information.
+
+## `SDL_SetWindowGammaRamp( ... )`
+
+Set the gamma ramp for the display that owns a given window.
+
+        my $ok = !SDL_SetWindowGammaRamp( $window, \@red, \@green, \@blue );
+
+Set the gamma translation table for the red, green, and blue channels of the
+video hardware. Each table is an array of 256 16-bit quantities, representing a
+mapping between the input and output for that channel. The input is the index
+into the array, and the output is the 16-bit gamma value at that index, scaled
+to the output color precision. Despite the name and signature, this method sets
+the gamma ramp of the entire display, not an individual window. A window is
+considered to be owned by the display that contains the window's center pixel.
+(The index of this display can be retrieved using [`SDL_GetWindowDisplayIndex( ... )`](#sdl_getwindowdisplayindex).)
+The gamma ramp set will not follow the window if it is moved to another
+display.
+
+Expected parameters include:
+
+- `window` - the window used to select the display whose gamma ramp will be changed
+- `red` - a 256 element array of 16-bit quantities representing the translation table for the red channel, or NULL
+- `green` - a 256 element array of 16-bit quantities representing the translation table for the green channel, or NULL
+- `blue` - a 256 element array of 16-bit quantities representing the translation table for the blue channel, or NULL
+
+Returns `0` on success or a negative error code on failure; call [`SDL_GetError( )`](#sdl_geterror)() for more information.
+
+## `SDL_GetWindowGammaRamp( ... )`
+
+Get the gamma ramp for a given window's display.
+
+        my ($red, $green, $blue) = SDL_GetWindowGammaRamp( $window );
+
+Despite the name and signature, this method retrieves the gamma ramp of the
+entire display, not an individual window. A window is considered to be owned by
+the display that contains the window's center pixel. (The index of this display
+can be retrieved using [`SDL_GetWindowDisplayIndex( ...
+)`](#sdl_getwindowdisplayindex).)
+
+Expected parameters include:
+
+- `window` - the window used to select the display whose gamma ramp will be queried
+
+Returns three 256 element arrays of 16-bit quantities filled in with the
+translation table for the red, gree, and blue channels on success or a negative
+error code on failure; call [`SDL_GetError( )`](#sdl_geterror)() for
+more information.
+
+## `SDL_SetWindowHitTest( ... )`
+
+Provide a callback that decides if a window region has special properties.
+
+        SDL_SetWindowHitTest( $window, sub ($win, $point, $data) {
+        warn sprintf 'Click at x:%d y:%d', $point->x, $point->y;
+        ...;
+        });
+
+Normally, windows are dragged and resized by decorations provided by the system
+window manager (a title bar, borders, etc), but for some apps, it makes sense
+to drag them from somewhere else inside the window itself; for example, one
+might have a borderless window that wants to be draggable from any part, or
+simulate its own title bar, etc.
+
+This function lets the app provide a callback that designates pieces of a given
+window as special. This callback is run during event processing if we need to
+tell the OS to treat a region of the window specially; the use of this callback
+is known as "hit testing."
+
+Mouse input may not be delivered to your application if it is within a special
+area; the OS will often apply that input to moving the window or resizing the
+window and not deliver it to the application.
+
+Specifying undef for a callback disables hit-testing. Hit-testing is disabled
+by default.
+
+Platforms that don't support this functionality will return `-1`
+unconditionally, even if you're attempting to disable hit-testing.
+
+Your callback may fire at any time, and its firing does not indicate any
+specific behavior (for example, on Windows, this certainly might fire when the
+OS is deciding whether to drag your window, but it fires for lots of other
+reasons, too, some unrelated to anything you probably care about **and when the
+mouse isn't actually at the location it is testing**). Since this can fire at
+any time, you should try to keep your callback efficient, devoid of
+allocations, etc.
+
+Expected parameters include:
+
+- `window` - the window to set hit-testing on
+- `callback` - the function to call when doing a hit-test
+- `callback_data` - an app-defined void pointer passed to `callback`
+
+Returns `0` on success or `-1` on error (including unsupported); call [`SDL_GetError( )`](#sdl_geterror)() for more information.
+
+## `SDL_FlashWindow( ... )`
+
+Request a window to give a signal, e.g. a visual signal, to demand attention
+from the user.
+
+        SDL_FlashWindow( $window, 10 );
+
+Expected parameters include:
+
+- `window` - the window to request the flashing for
+- `flash_count` - number of times the window gets flashed on systems that support flashing the window multiple times, like Windows, else it is ignored
+
+Returns `0` on success or a negative error code on failure; call [`SDL_GetError( )`](#sdl_geterror)() for more information.
+
+## `SDL_DestroyWindow( ... )`
+
+Destroy a window.
+
+        SDL_DestoryWindow( $window );
+
+If `window` is undefined, this function will return immediately after setting
+the SDL error message to "Invalid window". See [`SDL_GetError(
+)`](#sdl_geterror)().
+
+Expected parameters include:
+
+- `window` - the window to destroy
+
+## `SDL_IsScreenSaverEnabled( ... )`
+
+Check whether the screensaver is currently enabled.
+
+        my $enabled = SDL_IsScreenSaverEnabled( );
+
+The screensaver is disabled by default since SDL 2.0.2. Before SDL 2.0.2 the
+screensaver was enabled by default.
+
+The default can also be changed using `SDL_HINT_VIDEO_ALLOW_SCREENSAVER`.
+
+Returns true if the screensaver is enabled, false if it is disabled.
+
+## `SDL_EnableScreenSaver( ... )`
+
+Allow the screen to be blanked by a screen saver.
+
+        SDL_EnableScreenSaver( );
+
+## `SDL_DisableScreenSaver( ... )`
+
+Prevent the screen from being blanked by a screen saver.
+
+        SDL_DisableScreenSaver( );
+
+If you disable the screensaver, it is automatically re-enabled when SDL quits.
+
+# OpenGL Support Functions
+
+These may be imported with the `:opengl` tag.
+
+## `SDL_GL_LoadLibrary( ... )`
+
+Dynamically load an OpenGL library.
+
+        my $ok = SDL_GL_LoadLibrary( );
+
+This should be done after initializing the video driver, but before creating
+any OpenGL windows. If no OpenGL library is loaded, the default library will be
+loaded upon creation of the first OpenGL window.
+
+If you do this, you need to retrieve all of the GL functions used in your
+program from the dynamic library using [`SDL_GL_GetProcAddress(
+)`](#sdl_gl_getprocaddress).
+
+Expected parameters include:
+
+- `path` - the platform dependent OpenGL library name, or undef to open the default OpenGL library
+
+Returns `0` on success or a negative error code on failure; call [`SDL_GetError( )`](#sdl_geterror)() for more information.
+
+## `SDL_GL_GetProcAddress( ... )`
+
+Get an OpenGL function by name.
+
+        my $ptr = SDL_GL_GetProcAddress( 'glGenBuffers' );
+        ...; # TODO
+        # TODO: In the future, this should return an XSUB loaded with FFI.
+
+If the GL library is loaded at runtime with [`SDL_GL_LoadLibrary( ...
+)`](#sdl_gl_loadlibrary), then all GL functions must be retrieved
+this way. Usually this is used to retrieve function pointers to OpenGL
+extensions.
+
+There are some quirks to looking up OpenGL functions that require some extra
+care from the application. If you code carefully, you can handle these quirks
+without any platform-specific code, though:
+
+- On Windows, function pointers are specific to the current GL context;
+this means you need to have created a GL context and made it current before
+calling SDL\_GL\_GetProcAddress(). If you recreate your context or create a
+second context, you should assume that any existing function pointers
+aren't valid to use with it. This is (currently) a Windows-specific
+limitation, and in practice lots of drivers don't suffer this limitation,
+but it is still the way the wgl API is documented to work and you should
+expect crashes if you don't respect it. Store a copy of the function
+pointers that comes and goes with context lifespan.
+- On X11, function pointers returned by this function are valid for any
+context, and can even be looked up before a context is created at all. This
+means that, for at least some common OpenGL implementations, if you look up
+a function that doesn't exist, you'll get a non-NULL result that is \_NOT\_
+safe to call. You must always make sure the function is actually available
+for a given GL context before calling it, by checking for the existence of
+the appropriate extension with [`SDL_GL_ExtensionSupported( ... )`](https://metacpan.org/pod/SDL_GL_ExtensionSupported%28%20...%20%29), or verifying
+that the version of OpenGL you're using offers the function as core
+functionality.
+- Some OpenGL drivers, on all platforms, **will** return undef if a function
+isn't supported, but you can't count on this behavior. Check for extensions
+you use, and if you get an undef anyway, act as if that extension wasn't
+available. This is probably a bug in the driver, but you can code
+defensively for this scenario anyhow.
+- Just because you're on Linux/Unix, don't assume you'll be using X11.
+Next-gen display servers are waiting to replace it, and may or may not make
+the same promises about function pointers.
+- OpenGL function pointers must be declared `APIENTRY` as in the example
+code. This will ensure the proper calling convention is followed on
+platforms where this matters (Win32) thereby avoiding stack corruption.
+
+Expected parameters include:
+
+- `proc` - the name of an OpenGL function
+
+Returns a pointer to the named OpenGL function. The returned pointer should be
+cast to the appropriate function signature.
+
+## `SDL_GL_UnloadLibrary( )`
+
+Unload the OpenGL library previously loaded by [`SDL_GL_LoadLibrary( ...
+)`](#sdl_gl_loadlibrary).
+
+## `SDL_GL_ExtensionSupported( ... )`
+
+Check if an OpenGL extension is supported for the current context.
+
+        my $ok = SDL_GL_ExtensionSupported( 'GL_ARB_texture_rectangle' );
+
+This function operates on the current GL context; you must have created a
+context and it must be current before calling this function. Do not assume that
+all contexts you create will have the same set of extensions available, or that
+recreating an existing context will offer the same extensions again.
+
+While it's probably not a massive overhead, this function is not an O(1)
+operation. Check the extensions you care about after creating the GL context
+and save that information somewhere instead of calling the function every time
+you need to know.
+
+Expected parameters include:
+
+- `extension` - the name of the extension to check
+
+Returns true if the extension is supported, false otherwise.
+
+## `SDL_GL_ResetAttributes( )`
+
+Reset all previously set OpenGL context attributes to their default values.
+
+        SDL_GL_ResetAttributes( );
+
+## `SDL_GL_SetAttribute( ... )`
+
+Set an OpenGL window attribute before window creation.
+
+        SDL_GL_SetAttribute(SDL_GL_RED_SIZE, 5);
+        SDL_GL_SetAttribute(SDL_GL_GREEN_SIZE, 5);
+        SDL_GL_SetAttribute(SDL_GL_BLUE_SIZE, 5);
+        SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 16);
+        SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
+
+This function sets the OpenGL attribute `attr` to `value`. The requested
+attributes should be set before creating an OpenGL window. You should use [`SDL_GL_GetAttribute( ... )`](#sdl_gl_getattribute) to check the
+values after creating the OpenGL context, since the values obtained can differ
+from the requested ones.
+
+Expected parameters include:
+
+- `attr` - an SDL\_GLattr enum value specifying the OpenGL attribute to set
+- `value` - the desired value for the attribute
+
+Returns `0` on success or a negative error code on failure; call [`SDL_GetError( )`](#sdl_geterror)() for more information.
+
+## `SDL_GL_GetAttribute( ... )`
+
+Get the actual value for an attribute from the current context.
+
+        my $value = SDL_GL_GetAttribute(SDL_GL_DOUBLEBUFFER);
+
+Expected parameters include:
+
+- `attr` - an SDL\_GLattr enum value specifying the OpenGL attribute to get
+
+Returns the value on success or a negative error code on failure; call [`SDL_GetError( )`](#sdl_geterror)() for more information.
+
+## `SDL_GL_CreateContext( ... )`
+
+Create an OpenGL context for an OpenGL window, and make it current.
+
+          # Window mode MUST include SDL_WINDOW_OPENGL for use with OpenGL.
+          my $window = SDL_CreateWindow(
+          'SDL2/OpenGL Demo', 0, 0, 640, 480, 
+          SDL_WINDOW_OPENGL|SDL_WINDOW_RESIZABLE);
+    
+          # Create an OpenGL context associated with the window
+          my $glcontext = SDL_GL_CreateContext( $window );
+
+          # now you can make GL calls.
+          glClearColor( 0, 0, 0 ,1 );
+          glClear( GL_COLOR_BUFFER_BIT );
+          SDL_GL_SwapWindow( $window );
+
+          # Once finished with OpenGL functions, the SDL_GLContext can be deleted.
+          SDL_GL_DeleteContext( $glcontext );
+
+Windows users new to OpenGL should note that, for historical reasons, GL
+functions added after OpenGL version 1.1 are not available by default. Those
+functions must be loaded at run-time, either with an OpenGL extension-handling
+library or with [`SDL_GL_GetProcAddress( ... )`](#sdl_gl_getprocaddress) and its related functions.
+
+SDL::GLContext is opaque to the application.
+
+Expected parameters include:
+
+- `window` - the window to associate with the context
+
+Returns the OpenGL context associated with `window` or undef on error; call
+[`SDL_GetError( )`](#sdl_geterror)() for more details.
+
+## `SDL_GL_MakeCurrent( ... )`
+
+Set up an OpenGL context for rendering into an OpenGL window.
+
+        SDL_GL_MakeCurrent( $window, $gl );
+
+The context must have been created with a compatible window.
+
+Expected parameters include:
+
+- `window` - the window to associate with the context
+- `context` - the OpenGL context to associate with the window
+
+Returns `0` on success or a negative error code on failure; call [`SDL_GetError( )`](#sdl_geterror)() for more information.
+
+## `SDL_GL_GetCurrentWindow( )`
+
+Get the currently active OpenGL window.
+
+        my $window = SDL_GL_GetCurrentWindow( );
+
+Returns the currently active OpenGL window on success or undef on failure; call
+[`SDL_GetError( )`](#sdl_geterror)() for more information.
+
+## `SDL_GL_GetCurrentContext( )`
+
+Get the currently active OpenGL context.
+
+        my $gl = SDL_GL_GetCurrentContext( );
+
+Returns the currently active OpenGL context or NULL on failure; call [`SDL_GetError( )`](#sdl_geterror)() for more information.
+
+## `SDL_GL_GetDrawableSize( ... )`
+
+Get the size of a window's underlying drawable in pixels.
+
+        my ($w, $h) = SDL_GL_GetDrawableSize( $window );
+
+This returns info useful for calling `glViewport( ... )`.
+
+This may differ from [`SDL_GetWindowSize( ... )`](#sdl_getwindowsize) if we're rendering to a high-DPI drawable, i.e. the window was created
+with `SDL_WINDOW_ALLOW_HIGHDPI` on a platform with high-DPI support (Apple
+calls this "Retina"), and not disabled by the
+`SDL_HINT_VIDEO_HIGHDPI_DISABLED` hint.
+
+Expected parameters include:
+
+- `window` - the window from which the drawable size should be queried
+
+Returns the width and height in pixels, either of which may be undefined.
+
+## `SDL_GL_SetSwapInterval( ... )`
+
+Set the swap interval for the current OpenGL context.
+
+        my $ok = !SDL_GL_SetSwapInterval( 1 );
+
+Some systems allow specifying `-1` for the interval, to enable adaptive vsync.
+Adaptive vsync works the same as vsync, but if you've already missed the
+vertical retrace for a given frame, it swaps buffers immediately, which might
+be less jarring for the user during occasional framerate drops. If application
+requests adaptive vsync and the system does not support it, this function will
+fail and return `-1`. In such a case, you should probably retry the call with
+`1` for the interval.
+
+Adaptive vsync is implemented for some glX drivers with
+`GLX_EXT_swap_control_tear`:
+[https://www.opengl.org/registry/specs/EXT/glx\_swap\_control\_tear.txt](https://www.opengl.org/registry/specs/EXT/glx_swap_control_tear.txt) and for
+some Windows drivers with `WGL_EXT_swap_control_tear`:
+[https://www.opengl.org/registry/specs/EXT/wgl\_swap\_control\_tear.txt](https://www.opengl.org/registry/specs/EXT/wgl_swap_control_tear.txt)
+
+Read more on the Khronos wiki:
+[https://www.khronos.org/opengl/wiki/Swap\_Interval#Adaptive\_Vsync](https://www.khronos.org/opengl/wiki/Swap_Interval#Adaptive_Vsync)
+
+Expected parameters include:
+
+- `interval` - 0 for immediate updates, 1 for updates synchronized with the vertical retrace, -1 for adaptive vsync
+
+Returns `0` on success or `-1` if setting the swap interval is not supported;
+call [`SDL_GetError( )`](#sdl_geterror)() for more information.
+
+## `SDL_GL_GetSwapInterval( )`
+
+Get the swap interval for the current OpenGL context.
+
+        my $interval = SDL_GL_GetSwapInterval( );
+
+If the system can't determine the swap interval, or there isn't a valid current
+context, this function will return 0 as a safe default.
+
+Returns `0` if there is no vertical retrace synchronization, `1` if the
+buffer swap is synchronized with the vertical retrace, and `-1` if late swaps
+happen immediately instead of waiting for the next retrace; call [`SDL_GetError( )`](#sdl_geterror)() for more information.
+
+## `SDL_GL_SwapWindow( ... )`
+
+Update a window with OpenGL rendering.
+
+        SDL_GL_SwapWindow( $window );
+
+This is used with double-buffered OpenGL contexts, which are the default.
+
+On macOS, make sure you bind 0 to the draw framebuffer before swapping the
+window, otherwise nothing will happen. If you aren't using `glBindFramebuffer(
+)`, this is the default and you won't have to do anything extra.
+
+Expected parameters include:
+
+- `window` - the window to change
+
+## `SDL_GL_DeleteContext( ... )`
+
+Delete an OpenGL context.
+
+        SDL_GL_DeleteContext( $context );
+
+Expected parameters include:
+
+- `context` - the OpenGL context to be deleted
 
 # Imports
 
@@ -2669,13 +4070,13 @@ The flags on a window.
     Info.plist for this to have any effect.
 
 - `SDL_WINDOW_MOUSE_CAPTURE` - Window has mouse captured (unrelated to `MOUSE_GRABBED`)
-- `SDL_WINDOW_ALWAYS_ON_TOP` - Window should always be above others 
-- `SDL_WINDOW_SKIP_TASKBAR` - Window should not be added to the taskbar 
-- `SDL_WINDOW_UTILITY` - Window should be treated as a utility window 
-- `SDL_WINDOW_TOOLTIP` - Window should be treated as a tooltip 
-- `SDL_WINDOW_POPUP_MENU` - Window should be treated as a popup menu 
-- `SDL_WINDOW_KEYBOARD_GRABBED` - Window has grabbed keyboard input 
-- `SDL_WINDOW_VULKAN` - Window usable for Vulkan surface 
+- `SDL_WINDOW_ALWAYS_ON_TOP` - Window should always be above others
+- `SDL_WINDOW_SKIP_TASKBAR` - Window should not be added to the taskbar
+- `SDL_WINDOW_UTILITY` - Window should be treated as a utility window
+- `SDL_WINDOW_TOOLTIP` - Window should be treated as a tooltip
+- `SDL_WINDOW_POPUP_MENU` - Window should be treated as a popup menu
+- `SDL_WINDOW_KEYBOARD_GRABBED` - Window has grabbed keyboard input
+- `SDL_WINDOW_VULKAN` - Window usable for Vulkan surface
 - `SDL_WINDOW_METAL` - Window usable for Metal view
 - `SDL_WINDOW_INPUT_GRABBED` - Equivalent to `SDL_WINDOW_MOUSE_GRABBED` for compatibility
 
@@ -2684,17 +4085,17 @@ The flags on a window.
 Event subtype for window events.
 
 - `SDL_WINDOWEVENT_NONE` - Never used
-- `SDL_WINDOWEVENT_SHOWN` - Window has been shown 
-- `SDL_WINDOWEVENT_HIDDEN` - Window has been hidden 
+- `SDL_WINDOWEVENT_SHOWN` - Window has been shown
+- `SDL_WINDOWEVENT_HIDDEN` - Window has been hidden
 - `SDL_WINDOWEVENT_EXPOSED` - Window has been exposed and should be redrawn
 - `SDL_WINDOWEVENT_MOVED` - Window has been moved to data1, data2
-- `SDL_WINDOWEVENT_RESIZED` - Window has been resized to data1xdata2 
-- `SDL_WINDOWEVENT_SIZE_CHANGED` - The window size has changed, either as a result of an API call or through the system or user changing the window size. 
-- `SDL_WINDOWEVENT_MINIMIZED` - Window has been minimized 
-- `SDL_WINDOWEVENT_MAXIMIZED` - Window has been maximized 
-- `SDL_WINDOWEVENT_RESTORED` - Window has been restored to normal size and position 
-- `SDL_WINDOWEVENT_ENTER` - Window has gained mouse focus 
-- `SDL_WINDOWEVENT_LEAVE` - Window has lost mouse focus 
+- `SDL_WINDOWEVENT_RESIZED` - Window has been resized to data1xdata2
+- `SDL_WINDOWEVENT_SIZE_CHANGED` - The window size has changed, either as a result of an API call or through the system or user changing the window size.
+- `SDL_WINDOWEVENT_MINIMIZED` - Window has been minimized
+- `SDL_WINDOWEVENT_MAXIMIZED` - Window has been maximized
+- `SDL_WINDOWEVENT_RESTORED` - Window has been restored to normal size and position
+- `SDL_WINDOWEVENT_ENTER` - Window has gained mouse focus
+- `SDL_WINDOWEVENT_LEAVE` - Window has lost mouse focus
 - `SDL_WINDOWEVENT_FOCUS_GAINED` - Window has gained keyboard focus
 - `SDL_WINDOWEVENT_FOCUS_LOST` - Window has lost keyboard focus
 - `SDL_WINDOWEVENT_CLOSE` - The window manager requests that the window be closed
