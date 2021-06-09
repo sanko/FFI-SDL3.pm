@@ -12,7 +12,8 @@ package SDL2::FFI 1.0 {
     use FFI::C;
 
     #use FFI::C::StructDef;
-    #use FFI::Platypus::Memory qw[malloc free];
+    use FFI::Platypus::Memory qw[malloc strcpy free];
+    use FFI::C::ArrayDef;
     use FFI::Platypus::Closure;
     #
     use experimental 'signatures';
@@ -279,7 +280,31 @@ package SDL2::FFI 1.0 {
         SDL_Point  => [ x => 'int',   y => 'int' ],
         SDL_FPoint => [ x => 'float', y => 'float' ],
         SDL_Rect   => [ x => 'int',   y => 'int',   w => 'int',   h => 'int' ],
-        SDL_Rect   => [ x => 'float', y => 'float', w => 'float', h => 'float' ];
+        SDL_FRect  => [ x => 'float', y => 'float', w => 'float', h => 'float' ];
+    FFI::C::ArrayDef->new(    # Used sparingly when I need to pass a list of SDL_Point objects
+        $ffi,
+        name    => 'SDLx_PointList',
+        class   => 'SDL2x::PointList',
+        members => ['SDL_Point'],
+    );
+    FFI::C::ArrayDef->new(    # Used sparingly when I need to pass a list of SDL_Point objects
+        $ffi,
+        name    => 'SDLx_FPointList',
+        class   => 'SDL2x::FPointList',
+        members => ['SDL_Point'],
+    );
+    FFI::C::ArrayDef->new(    # Used sparingly when I need to pass a list of SDL_Rect objects
+        $ffi,
+        name    => 'SDLx_RectList',
+        class   => 'SDL2x::RectList',
+        members => ['SDL_Rect'],
+    );
+    FFI::C::ArrayDef->new(    # Used sparingly when I need to pass a list of SDL_Rect objects
+        $ffi,
+        name    => 'SDLx_FRectList',
+        class   => 'SDL2x::FRectList',
+        members => ['SDL_FRect'],
+    );
     class SDL_Surface => [
         flags     => 'uint32',
         format    => 'opaque',     # SDL_PixelFormat*
@@ -788,10 +813,447 @@ package SDL2::FFI 1.0 {
         SDL_GL_SwapWindow      => [ ['SDL_Window'] ],
         SDL_GL_DeleteContext   => [ ['SDL_GLContext'] ]
         };
+    enum SDL_RendererFlags => [
+        [ SDL_RENDERER_SOFTWARE      => 0x00000001 ],
+        [ SDL_RENDERER_ACCELERATED   => 0x00000002 ],
+        [ SDL_RENDERER_PRESENTVSYNC  => 0x00000004 ],
+        [ SDL_RENDERER_TARGETTEXTURE => 0x00000008 ]
+    ];
+    class SDL_RendererInfo => [
+        name                => 'opaque',       # string
+        flags               => 'uint32',
+        num_texture_formats => 'uint32',
+        texture_formats     => 'uint32[16]',
+        max_texture_width   => 'int',
+        max_texture_height  => 'int'
+    ];
+    enum
+        SDL_ScaleMode     => [qw[SDL_SCALEMODENEAREST SDL_SCALEMODELINEAR SDL_SCALEMODEBEST]],
+        SDL_TextureAccess =>
+        [qw[SDL_TEXTUREACCESS_STATIC SDL_TEXTUREACCESS_STREAMING SDL_TEXTUREACCESS_TARGET]],
+        SDL_TextureModulate => [
+        [ SDL_TEXTUREMODULATE_NONE  => 0x00000000 ],
+        [ SDL_TEXTUREMODULATE_COLOR => 0x00000001 ],
+        [ SDL_TEXTUREMODULATE_ALPHA => 0x00000002 ]
+        ],
+        SDL_RendererFlip => [
+        [ SDL_FLIP_NONE       => 0x00000000 ],
+        [ SDL_FLIP_HORIZONTAL => 0x00000001 ],
+        [ SDL_FLIP_VERTICAL   => 0x00000002 ]
+        ],
+        SDL_BlendMode => [
+        [ SDL_BLENDMODE_NONE    => 0x00000000 ],
+        [ SDL_BLENDMODE_BLEND   => 0x00000001 ],
+        [ SDL_BLENDMODE_ADD     => 0x00000002, ],
+        [ SDL_BLENDMODE_MOD     => 0x00000004, ],
+        [ SDL_BLENDMODE_MUL     => 0x00000008, ],
+        [ SDL_BLENDMODE_INVALID => 0x7FFFFFFF ]
+        ],
+        SDL_BlendOperation => [
+        [ SDL_BLENDOPERATION_ADD          => 0x1 ],
+        [ SDL_BLENDOPERATION_SUBTRACT     => 0x2 ],
+        [ SDL_BLENDOPERATION_REV_SUBTRACT => 0x3 ],
+        [ SDL_BLENDOPERATION_MINIMUM      => 0x4 ],
+        [ SDL_BLENDOPERATION_MAXIMUM      => 0x5 ]
+        ],
+        SDL_BlendFactor => [
+        [ SDL_BLENDFACTOR_ZERO                => 0x1 ],
+        [ SDL_BLENDFACTOR_ONE                 => 0x2 ],
+        [ SDL_BLENDFACTOR_SRC_COLOR           => 0x3 ],
+        [ SDL_BLENDFACTOR_ONE_MINUS_SRC_COLOR => 0x4 ],
+        [ SDL_BLENDFACTOR_SRC_ALPHA           => 0x5 ],
+        [ SDL_BLENDFACTOR_ONE_MINUS_SRC_ALPHA => 0x6 ],
+        [ SDL_BLENDFACTOR_DST_COLOR           => 0x7 ],
+        [ SDL_BLENDFACTOR_ONE_MINUS_DST_COLOR => 0x8 ],
+        [ SDL_BLENDFACTOR_DST_ALPHA           => 0x9 ],
+        [ SDL_BLENDFACTOR_ONE_MINUS_DST_ALPHA => 0xA ]
+        ];
+    class
+        SDL_Renderer => [],
+        SDL_Texture  => [];
+    attach rendering => {
+        SDL_GetNumRenderDrivers => [ [], 'int' ],
+        SDL_GetRenderDriverInfo => [
+            [ 'int', 'SDL_RendererInfo' ],
+            'int',
+            sub ( $inner, $index ) {
+                my $info = SDL2::RendererInfo->new();
+                my $ok   = $inner->( $index, $info );
+                $ok == 0 ? $info : $ok;
+            }
+        ],
+        SDL_CreateWindowAndRenderer => [
+            [ 'int', 'int', 'uint32', 'opaque*', 'opaque*' ],
+            'int' => sub ( $inner, $width, $height, $window_flags ) {
+                my $window   = SDL2::Window->new;
+                my $renderer = SDL2::Renderer->new;
+                my $ok       = $inner->( $width, $height, $window_flags, \$window, \$renderer );
+                $ok == 0 ? (
+                    $ffi->cast( 'opaque' => 'SDL_Window',   $window ),
+                    $ffi->cast( 'opaque' => 'SDL_Renderer', $renderer ),
+                    ) :
+                    $ok;
+            }
+        ],
+        SDL_CreateRenderer         => [ [ 'SDL_Window', 'int', 'uint32' ], 'SDL_Renderer' ],
+        SDL_CreateSoftwareRenderer => [ ['SDL_Renderer'],                  'SDL_Surface' ],
+        SDL_GetRenderer            => [ ['SDL_Window'],                    'SDL_Renderer' ],
+        SDL_GetRendererInfo        => [
+            [ 'SDL_Renderer', 'SDL_RendererInfo' ],
+            'int' => sub ( $inner, $renderer ) {
+                my $info = SDL2::RendererInfo->new();
+                my $ok   = $inner->( $renderer, $info );
+                $ok == 0 ? $info : $ok;
+            }
+        ],
+        SDL_GetRendererOutputSize => [
+            [ 'SDL_Renderer', 'int*', 'int*' ],
+            'int' => sub ( $inner, $renderer ) {
+                my ( $w, $h );
+                my $ok = $inner->( $renderer, \$w, \$h );
+                $ok == 0 ? ( $w, $h ) : $ok;
+            }
+        ],
+        SDL_CreateTexture => [ [ 'SDL_Renderer', 'uint32', 'int', 'int', 'int' ], 'SDL_Texture' ],
+        SDL_CreateTextureFromSurface => [ [ 'SDL_Renderer', 'SDL_Surface' ], 'SDL_Texture' ],
+        SDL_QueryTexture             => [
+            [ 'SDL_Texture', 'uint32*', 'int*', 'int*', 'int*' ],
+            'int' => sub ( $inner, $texture ) {
+                my ( $format, $access, $w, $h );
+                my $ok = $inner->( $texture, \$format, \$access, \$w, \$h );
+                $ok == 0 ? ( $format, $access, $w, $h ) : $ok;
+            }
+        ],
+        SDL_SetTextureColorMod => [ [ 'SDL_Texture', 'uint8', 'uint8', 'uint8' ], 'int' ],
+        SDL_GetTextureColorMod => [
+            [ 'SDL_Texture', 'uint8*', 'uint8*', 'uint8*' ],
+            'int' => sub ( $inner, $texture ) {
+                my ( $r, $g, $b );
+                my $ok = $inner->( $texture, \$r, \$g, \$b );
+                $ok == 0 ? ( $r, $g, $b ) : $ok;
+            }
+        ],
+        SDL_SetTextureAlphaMod => [ [ 'SDL_Texture', 'uint8' ], 'int' ],
+        SDL_GetTextureAlphaMod => [
+            [ 'SDL_Texture', 'uint8*' ],
+            'int' => sub ( $inner, $texture ) {
+                my $alpha;
+                my $ok = $inner->( $texture, \$alpha );
+                $ok == 0 ? $alpha : $ok;
+            }
+        ],
+        SDL_SetTextureBlendMode => [ [ 'SDL_Texture', 'SDL_BlendMode' ], 'int' ],
+        SDL_GetTextureBlendMode => [
+            [ 'SDL_Texture', 'int*' ],
+            'int' => sub ( $inner, $texture ) {
+                my $blendMode;
+                my $ok = $inner->( $texture, \$blendMode );
+                $ok == 0 ? $blendMode : $ok;
+            }
+        ],
+        SDL_UpdateTexture    => [ [ 'SDL_Texture', 'SDL_Rect', 'opaque*', 'int' ], 'int' ],
+        SDL_UpdateYUVTexture => [
+            [ 'SDL_Texture', 'SDL_Rect', 'uint8*', 'int', 'uint8*', 'int', 'uint8*', 'int' ], 'int'
+        ], (
+            $ver->patch >= 15 ?
+                ( SDL_UpdateNVTexture =>
+                    [ [ 'SDL_Texture', 'SDL_Rect', 'uint8*', 'int', 'uint8*', 'int' ], 'int' ] ) :
+                ()
+        ),
+        SDL_LockTexture          => [ [ 'SDL_Texture', 'SDL_Rect', 'opaque*' ], 'int' ],
+        SDL_LockTextureToSurface => [
+            [ 'SDL_Texture', 'SDL_Rect', 'SDL_Surface' ],
+            'int' => sub ( $inner, $texture, $rect ) {
+                my $surface = SDL2::Surface->new();
+                my $ok      = $inner->( $texture, $rect, $surface );
+                $ok == 0 ? $surface : $ok;
+            }
+        ],
+        SDL_UnlockTexture         => [ ['SDL_Texture'] ],
+        SDL_RenderTargetSupported => [ ['SDL_Renderer'],                  'bool' ],
+        SDL_SetRenderTarget       => [ [ 'SDL_Renderer', 'SDL_Texture' ], 'int' ],
+        SDL_GetRenderTarget       => [ ['SDL_Renderer'],                  'SDL_Texture' ],
+        SDL_RenderSetLogicalSize  => [ [ 'SDL_Renderer', 'int', 'int' ],  'int' ],
+        SDL_RenderGetLogicalSize  => [
+            [ 'SDL_Renderer', 'int*', 'int*' ],
+            'int' => sub ( $inner, $renderer ) {
+                my ( $w, $h );
+                $inner->( $renderer, \$w, \$h );
+                ( $w, $h );
+            }
+        ],
+        SDL_RenderSetIntegerScale => [ [ 'SDL_Renderer', 'bool' ],     'int' ],
+        SDL_RenderGetIntegerScale => [ ['SDL_Renderer'],               'bool' ],
+        SDL_RenderSetViewport     => [ [ 'SDL_Renderer', 'SDL_Rect' ], 'int' ],
+        SDL_RenderGetViewport     => [
+            [ 'SDL_Renderer', 'SDL_Rect' ],
+            'int' => sub ( $inner, $renderer ) {
+                my $rect = SDL2::Rect->new();
+                $inner->( $renderer, $rect );
+                $rect;
+            }
+        ],
+        SDL_RenderSetClipRect => [ [ 'SDL_Renderer', 'SDL_Rect' ], 'int' ],
+        SDL_RenderGetClipRect => [
+            [ 'SDL_Renderer', 'SDL_Rect' ] => sub ( $inner, $renderer ) {
+                my $rect = SDL2::Rect->new();
+                $inner->( $renderer, $rect );
+                $rect;
+            }
+        ],
+        SDL_RenderIsClipEnabled => [ ['SDL_Renderer'],                     'bool' ],
+        SDL_RenderSetScale      => [ [ 'SDL_Renderer', 'float', 'float' ], 'int' ],
+        SDL_RenderGetScale      => [
+            [ 'SDL_Renderer', 'float*', 'float*' ],
+            sub ( $inner, $renderer ) {
+                my ( $scaleX, $scaleY );
+                $inner->( $renderer, \$scaleX, \$scaleY );
+                ( $scaleX, $scaleY );
+            }
+        ],
+        SDL_SetRenderDrawColor => [ [ 'SDL_Renderer', 'uint8', 'uint8', 'uint8', 'uint8' ], 'int' ],
+        SDL_GetRenderDrawColor => [
+            [ 'SDL_Renderer', 'uint8*', 'uint8*', 'uint8*', 'uint8*' ],
+            'int' => sub ( $inner, $renderer ) {
+                my ( $r, $g, $b, $a );
+                my $ok = $inner->( $renderer, \$r, \$g, \$b, \$a );
+                $ok == 0 ? ( $r, $g, $b, $a ) : $ok;
+            }
+        ],
+        SDL_SetRenderDrawBlendMode => [ [ 'SDL_Renderer', 'SDL_BlendMode' ], 'int' ],
+        SDL_GetRenderDrawBlendMode => [
+            [ 'SDL_Renderer', 'int*' ],
+            'int' => sub ( $inner, $renderer ) {
+                my $blendMode;
+                my $ok = $inner->( $renderer, \$blendMode );
+                $ok == 0 ? $blendMode : $ok;
+            }
+        ],
+        SDL_RenderClear      => [ ['SDL_Renderer'],                 'int' ],
+        SDL_RenderDrawPoint  => [ [ 'SDL_Renderer', 'int', 'int' ], 'int' ],
+        SDL_RenderDrawPoints => [
+            [ 'SDL_Renderer', 'SDLx_PointList', 'int' ],
+            'int' => sub ( $inner, $renderer, @points ) {
+
+          # XXX - This is a workaround for FFI::C::Array not being able to accept a list of objects
+          # XXX - I can rethink this map when https://github.com/PerlFFI/FFI-C/issues/53 is resolved
+                $inner->(
+                    $renderer,
+                    SDL2x::PointList->new(
+                        [ map { ref $_ eq 'HASH' ? $_ : { x => $_->x, y => $_->y } } @points ]
+                    ),
+                    scalar @points
+                );
+            }
+        ],
+        SDL_RenderDrawLine  => [ [ 'SDL_Renderer', 'int', 'int', 'int', 'int' ], 'int' ],
+        SDL_RenderDrawLines => [
+            [ 'SDL_Renderer', 'SDLx_PointList', 'int' ],
+            'int' => sub ( $inner, $renderer, @points ) {
+
+          # XXX - This is a workaround for FFI::C::Array not being able to accept a list of objects
+          # XXX - I can rethink this map when https://github.com/PerlFFI/FFI-C/issues/53 is resolved
+                $inner->(
+                    $renderer,
+                    SDL2x::PointList->new(
+                        [ map { ref $_ eq 'HASH' ? $_ : { x => $_->x, y => $_->y } } @points ]
+                    ),
+                    scalar @points
+                );
+            }
+        ],
+        SDL_RenderDrawRect  => [ [ 'SDL_Renderer', 'SDL_Rect' ], 'int' ],
+        SDL_RenderDrawRects => [
+            [ 'SDL_Renderer', 'SDLx_RectList', 'int' ],
+            'int' => sub ( $inner, $renderer, @rects ) {
+
+          # XXX - This is a workaround for FFI::C::Array not being able to accept a list of objects
+          # XXX - I can rethink this map when https://github.com/PerlFFI/FFI-C/issues/53 is resolved
+                $inner->(
+                    $renderer,
+                    SDL2x::RectList->new(
+                        [   map {
+                                ref $_ eq 'HASH' ? $_ :
+                                    { x => $_->x, y => $_->y, w => $_->w, h => $_->h }
+                            } @rects
+                        ]
+                    ),
+                    scalar @rects
+                );
+            }
+        ],
+        SDL_RenderFillRect  => [ [ 'SDL_Renderer', 'SDL_Rect' ], 'int' ],
+        SDL_RenderFillRects => [
+            [ 'SDL_Renderer', 'SDLx_RectList', 'int' ],
+            'int' => sub ( $inner, $renderer, @rects ) {
+
+          # XXX - This is a workaround for FFI::C::Array not being able to accept a list of objects
+          # XXX - I can rethink this map when https://github.com/PerlFFI/FFI-C/issues/53 is resolved
+                $inner->(
+                    $renderer,
+                    SDL2x::RectList->new(
+                        [   map {
+                                ref $_ eq 'HASH' ? $_ :
+                                    { x => $_->x, y => $_->y, w => $_->w, h => $_->h }
+                            } @rects
+                        ]
+                    ),
+                    scalar @rects
+                );
+            }
+        ],
+        SDL_RenderCopy => [ [ 'SDL_Renderer', 'SDL_Texture', 'SDL_Rect', 'SDL_Rect' ], 'int' ],
+
+        # XXX - I do not have an example for this function in docs
+        SDL_RenderCopyEx => [
+            [   'SDL_Renderer', 'SDL_Texture', 'SDL_Rect', 'SDL_Rect',
+                'double',       'SDL_Point',   'SDL_RendererFlip'
+            ],
+            'int'
+        ],
+        SDL_RenderDrawPointF  => [ [ 'SDL_Renderer', 'float', 'float' ], 'int' ],
+        SDL_RenderDrawPointsF => [
+            [ 'SDL_Renderer', 'SDLx_FPointList', 'int' ],
+            'int' => sub ( $inner, $renderer, @points ) {
+
+          # XXX - This is a workaround for FFI::C::Array not being able to accept a list of objects
+          # XXX - I can rethink this map when https://github.com/PerlFFI/FFI-C/issues/53 is resolved
+                $inner->(
+                    $renderer,
+                    SDL2x::PointFList->new(
+                        [ map { ref $_ eq 'HASH' ? $_ : { x => $_->x, y => $_->y } } @points ]
+                    ),
+                    scalar @points
+                );
+            }
+        ],
+        SDL_RenderDrawLineF  => [ [ 'SDL_Renderer', 'float', 'float', 'float', 'float' ], 'int' ],
+        SDL_RenderDrawLinesF => [
+            [ 'SDL_Renderer', 'SDLx_FPointList', 'int' ],
+            'int' => sub ( $inner, $renderer, @points ) {
+
+          # XXX - This is a workaround for FFI::C::Array not being able to accept a list of objects
+          # XXX - I can rethink this map when https://github.com/PerlFFI/FFI-C/issues/53 is resolved
+                $inner->(
+                    $renderer,
+                    SDL2x::FPointList->new(
+                        [ map { ref $_ eq 'HASH' ? $_ : { x => $_->x, y => $_->y } } @points ]
+                    ),
+                    scalar @points
+                );
+            }
+        ],
+        SDL_RenderDrawRectF => [
+            [ 'SDL_Renderer', 'SDLx_FRectList', 'int' ],
+            'int' => sub ( $inner, $renderer, @rects ) {
+
+          # XXX - This is a workaround for FFI::C::Array not being able to accept a list of objects
+          # XXX - I can rethink this map when https://github.com/PerlFFI/FFI-C/issues/53 is resolved
+                $inner->(
+                    $renderer,
+                    SDL2x::FRectList->new(
+                        [   map {
+                                ref $_ eq 'HASH' ? $_ :
+                                    { x => $_->x, y => $_->y, w => $_->w, h => $_->h }
+                            } @rects
+                        ]
+                    ),
+                    scalar @rects
+                );
+            }
+        ],
+        SDL_RenderDrawRectsF => [
+            [ 'SDL_Renderer', 'SDLx_FRectList', 'int' ],
+            'int' => sub ( $inner, $renderer, @rects ) {
+
+          # XXX - This is a workaround for FFI::C::Array not being able to accept a list of objects
+          # XXX - I can rethink this map when https://github.com/PerlFFI/FFI-C/issues/53 is resolved
+                $inner->(
+                    $renderer,
+                    SDL2x::FRectList->new(
+                        [   map {
+                                ref $_ eq 'HASH' ? $_ :
+                                    { x => $_->x, y => $_->y, w => $_->w, h => $_->h }
+                            } @rects
+                        ]
+                    ),
+                    scalar @rects
+                );
+            }
+        ],
+        SDL_RenderFillRectsF => [
+            [ 'SDL_Renderer', 'SDLx_FRectList', 'int' ],
+            'int' => sub ( $inner, $renderer, @rects ) {
+
+          # XXX - This is a workaround for FFI::C::Array not being able to accept a list of objects
+          # XXX - I can rethink this map when https://github.com/PerlFFI/FFI-C/issues/53 is resolved
+                $inner->(
+                    $renderer,
+                    SDL2x::FRectList->new(
+                        [   map {
+                                ref $_ eq 'HASH' ? $_ :
+                                    { x => $_->x, y => $_->y, w => $_->w, h => $_->h }
+                            } @rects
+                        ]
+                    ),
+                    scalar @rects
+                );
+            }
+        ],
+
+        # XXX - I do not have an example for this function in docs
+        SDL_RenderCopyF => [ [ 'SDL_Renderer', 'SDL_Texture', 'SDL_Rect', 'SDL_FRect' ], 'int' ],
+
+        # XXX - I do not have an example for this function in docs
+        SDL_RenderCopyExF => [
+            [   'SDL_Renderer', 'SDL_Texture', 'SDL_Rect', 'SDL_FRect',
+                'double',       'SDL_FPoint',  'SDL_RendererFlip'
+            ],
+            'int'
+        ],
+        SDL_RenderReadPixels =>
+            [ [ 'SDL_Renderer', 'SDL_Rect', 'uint32', 'opaque', 'int' ], 'int' ],
+        SDL_RenderPresent   => [ ['SDL_Renderer'] ],
+        SDL_DestroyTexture  => [ ['SDL_Texture'] ],
+        SDL_DestroyRenderer => [ ['SDL_Renderer'] ],
+        SDL_RenderFlush     => [ ['SDL_Renderer'], 'int' ],
+        SDL_GL_BindTexture  => [
+            [ 'SDL_Texture', 'float*', 'float*' ],
+            'int' => sub ( $inner, $texture ) {
+                my ( $texw, $texh );
+                my $ok = $inner->( $texture, \$texw, \$texh );
+                $ok == 0 ? ( $texw, $texh ) : $ok;
+            }
+        ],
+        SDL_GL_UnbindTexture             => [ ['SDL_Texture'],  'int' ],
+        SDL_RenderGetMetalLayer          => [ ['SDL_Renderer'], 'opaque' ],
+        SDL_RenderGetMetalCommandEncoder => [ ['SDL_Renderer'], 'opaque' ]
+    };
 
     # START HERE!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     # https://wiki.libsdl.org/CategoryPlatform
+    #
+    class SDL_RWops => [];
+    $ffi->attach( SDL_RWFromFile  => [ 'string', 'string' ], 'SDL_RWops' );
+    $ffi->attach( SDL_FreeSurface => ['SDL_Surface'] );
+    $ffi->attach( SDL_SaveBMP_RW  => [ 'SDL_Surface', 'SDL_RWops', 'int' ], 'int' );
+    attach future => {
+        SDL_ComposeCustomBlendMode => [
+            [   'SDL_BlendFactor',    'SDL_BlendFactor',
+                'SDL_BlendOperation', 'SDL_BlendFactor',
+                'SDL_BlendFactor',    'SDL_BlendOperation'
+            ],
+            'SDL_BlendMode'
+        ],
+    };
+
+    sub SDL_SaveBMP ( $surface, $file ) {
+        SDL_SaveBMP_RW( $surface, SDL_RWFromFile( $file, 'wb' ), 1 );
+    }
     $ffi->attach( SDL_GetPlatform => [] => 'string' );
+    $ffi->attach( SDL_CreateRGBSurface =>
+            [ 'uint32', 'int', 'int', 'int', 'uint32', 'uint32', 'uint32', 'uint32' ] =>
+            'SDL_Surface' );
 
     # https://wiki.libsdl.org/CategoryCPU
     $ffi->attach( SDL_GetCPUCacheLineSize => [] => 'int' );
@@ -825,36 +1287,6 @@ package SDL2::FFI 1.0 {
     $ffi->attach( SDL_asin => ['double'] => 'double' );    # Not in wiki
 
     # https://wiki.libsdl.org/CategoryVideo
-    #FFI::C::StructDef->new(                                # INCOMPLETE
-    #    $ffi,
-    #    name    => 'SDL_Renderer',
-    #    class   => 'SDL2::Renderer',
-    #    members => [
-    #		magic => 'opaque',
-    #		viewport_queued => 'bool'
-    #	]
-    #);
-    # src/render/SDL_sysrender.h
-    $ffi->type( 'opaque' => 'SDL_Renderer' );
-    $ffi->type( 'opaque' => 'SDL_Texture' );
-
-    #FFI::C::StructDef->new(
-    #    $ffi,
-    #    name    => 'SDL_Renderer',
-    #    class   => 'SDL2::Renderer',
-    #    members => [
-    #]);
-    $ffi->attach(
-        SDL_CreateWindowAndRenderer => [ 'int', 'int', 'uint32', 'SDL_Window', 'SDL_Renderer' ] =>
-            'int' => sub (
-            $inner, $width, $height, $window_flags,
-            $window = SDL2::Window->new,
-            $renderer = SDL2::Renderer->new
-            ) {
-            $inner->( $width, $height, $window_flags, $window, $renderer );
-        }
-    );
-
     # Macros defined in SDL_video.h
     sub SDL_WINDOWPOS_UNDEFINED_MASK ()      {0x1FFF0000}
     sub SDL_WINDOWPOS_UNDEFINED_DISPLAY ($X) { ( SDL_WINDOWPOS_UNDEFINED_MASK | ($X) ) }
@@ -865,32 +1297,6 @@ package SDL2::FFI 1.0 {
     sub SDL_WINDOWPOS_CENTERED_DISPLAY ($X) { ( SDL_WINDOWPOS_CENTERED_MASK | ($X) ) }
     sub SDL_WINDOWPOS_CENTERED ()           { SDL_WINDOWPOS_CENTERED_DISPLAY(0) }
     sub SDL_WINDOWPOS_ISCENTERED ($X) { ( ( ($X) & 0xFFFF0000 ) == SDL_WINDOWPOS_CENTERED_MASK ) }
-
-    # Macros defined in SDL_render.h
-    sub SDL_RENDERER_SOFTWARE ()      {0x00000001}
-    sub SDL_RENDERER_ACCELERATED ()   {0x00000002}
-    sub SDL_RENDERER_PRESENTVSYNC ()  {0x00000004}
-    sub SDL_RENDERER_TARGETTEXTURE () {0x00000008}
-
-    # SDL_TextureAccess
-    sub SDL_TEXTUREACCESS_STATIC ()   {0}
-    sub SDL_TEXTUREACCESS_STREAMING() {1}
-    sub SDL_TEXTUREACCESS_TARGET()    {1}
-    #
-    $ffi->attach(
-        SDL_CreateTexture => [ 'SDL_Renderer', 'uint32', 'int', 'int', 'int' ] => 'SDL_Texture' );
-
-    # https://wiki.libsdl.org/CategoryRender
-    $ffi->attach( SDL_CreateRenderer  => [ 'SDL_Window', 'int', 'uint32' ] => 'SDL_Renderer' );
-    $ffi->attach( SDL_DestroyRenderer => ['SDL_Renderer'] );
-    $ffi->attach(
-        SDL_SetRenderDrawColor => [ 'SDL_Renderer', 'uint8', 'uint8', 'uint8', 'uint8' ] => 'int' );
-    $ffi->attach( SDL_RenderClear     => ['SDL_Renderer']               => 'int' );
-    $ffi->attach( SDL_RenderFillRect  => [ 'SDL_Renderer', 'SDL_Rect' ] => 'int' );
-    $ffi->attach( SDL_RenderPresent   => ['SDL_Renderer'] );
-    $ffi->attach( SDL_RenderDrawLine  => [ 'SDL_Renderer', 'int', 'int', 'int', 'int' ] => 'int' );
-    $ffi->attach( SDL_RenderDrawLines => [ 'SDL_Renderer', 'opaque[]', 'int' ]          => 'int' );
-    $ffi->attach( SDL_RenderDrawRect  => [ 'SDL_Renderer', 'SDL_Rect' ]                 => 'int' );
 
     # https://wiki.libsdl.org/CategoryTimer
     attach all => { SDL_Delay => [ ['uint32'] ] };
@@ -1846,10 +2252,6 @@ package SDL2::FFI 1.0 {
 
     # include/SDL_stdinc.h
     sub SDL_FOURCC ( $A, $B, $C, $D ) { $A << 0 | $B << 8 | $C << 16 | $D << 24 }
-
-    # Unsorted
-    $ffi->attach( SDL_UpdateTexture => [ 'SDL_Texture', 'opaque', 'opaque[]', 'int' ] => 'int' );
-    $ffi->attach( SDL_RenderDrawPoint => [ 'SDL_Renderer', 'int', 'int' ] => 'int' );
 
 # Unsorted - https://github.com/libsdl-org/SDL/blob/c59d4dcd38c382a1e9b69b053756f1139a861574/include/SDL_keycode.h
 #    https://github.com/libsdl-org/SDL/blob/c59d4dcd38c382a1e9b69b053756f1139a861574/include/SDL_scancode.h#L151

@@ -2145,6 +2145,1368 @@ Expected parameters include:
 
 - `context` - the OpenGL context to be deleted
 
+## 2D Accelerated Rendering
+
+This category contains functions for 2D accelerated rendering. You may import
+these functions with the `:rendering` tag.
+
+This API supports the following features:
+
+- single pixel points
+- single pixel lines
+- filled rectangles
+- texture images
+
+All of these may be drawn in opaque, blended, or additive modes.
+
+The texture images can have an additional color tint or alpha modulation
+applied to them, and may also be stretched with linear interpolation, rotated
+or flipped/mirrored.
+
+For advanced functionality like particle effects or actual 3D you should use
+SDL's OpenGL/Direct3D support or one of the many available 3D engines.
+
+This API is not designed to be used from multiple threads, see [SDL issue
+\#986](https://github.com/libsdl-org/SDL/issues/986) for details.
+
+## `SDL_GetNumRenderDrivers( )`
+
+Get the number of 2D rendering drivers available for the current display.
+
+        my $drivers = SDL_GetNumRenderDrivers( );
+
+A render driver is a set of code that handles rendering and texture management
+on a particular display. Normally there is only one, but some drivers may have
+several available with different capabilities.
+
+There may be none if SDL was compiled without render support.
+
+Returns a number >= 0 on success or a negative error code on failure; call [`SDL_GetError( )`](#sdl_geterror)() for more information.
+
+## `SDL_GetRenderDriverInfo( ... )`
+
+Get info about a specific 2D rendering driver for the current display.
+
+        my $info = !SDL_GetRendererDriverInfo( );
+
+Expected parameters include:
+
+- `index` - the index of the driver to query information about
+
+Returns an [SDL2::RendererInfo](https://metacpan.org/pod/SDL2%3A%3ARendererInfo) structure on success or a negative error code
+on failure; call [`SDL_GetError( )`](#sdl_geterror)() for more
+information.
+
+## `SDL_CreateWindowAndRenderer( ... )`
+
+Create a window and default renderer.
+
+        my ($window, $renderer) = SDL_CreateWindowAndRenderer(640, 480, 0);
+
+Expected parameters include:
+
+- `width` - the width of the window
+- `height` - the height of the window
+- `window_flags` - the flags used to create the window (see [`SDL_CreateWindow( ... )`](#sdl_createwindow))
+
+Returns a [SDL2::Window](https://metacpan.org/pod/SDL2%3A%3AWindow) and [SDL2::Renderer](https://metacpan.org/pod/SDL2%3A%3ARenderer) objects on success, or -1 on
+error; call [`SDL_GetError( )`](#sdl_geterror)() for more
+information.
+
+## `SDL_CreateRenderer( ... )`
+
+Create a 2D rendering context for a window.
+
+        my $renderer = SDL_CreateRenderer( $window, -1, 0);
+
+Expected parameters include:
+
+- `window` - the window where rendering is displayed
+- `index` - the index of the rendering driver to initialize, or `-1` to initialize the first one supporting the requested flags
+- `flags` - `0`, or one or more `SDL_RendererFlags` OR'd together
+
+Returns a valid rendering context or undefined if there was an error; call [`SDL_GetError( )`](#sdl_geterror)() for more information.
+
+## `SDL_CreateSoftwareRenderer( ... )`
+
+Create a 2D software rendering context for a surface.
+
+        my $renderer = SDL_CreateSoftwareRenderer( $surface );
+
+Two other API which can be used to create SDL\_Renderer:
+
+[`SDL_CreateRenderer( ... )`](#sdl_createrenderer) and [`SDL_CreateWindowAndRenderer( ... )`](#sdl_createwindowandrenderer). These can **also** create a software renderer, but they are intended to be
+used with an [SDL2::Window](https://metacpan.org/pod/SDL2%3A%3AWindow) as the final destination and not an
+[SDL2::Surface](https://metacpan.org/pod/SDL2%3A%3ASurface).
+
+Expected parameters include:
+
+- `surface` - the [SDL2::Surface](https://metacpan.org/pod/SDL2%3A%3ASurface) structure representing the surface where rendering is done
+
+Returns a valid rendering context or undef if there was an error; call [`SDL_GetError( )`](#sdl_geterror)() for more information.
+
+## `SDL_GetRenderer( ... )`
+
+Get the renderer associated with a window.
+
+        my $renderer = SDL_GetRenderer( $window );
+
+Expected parameters include:
+
+- `window` - the window to query
+
+Returns the rendering context on success or undef on failure; call [`SDL_GetError( )`](#sdl_geterror)() for more information.
+
+## `SDL_GetRendererInfo( ... )`
+
+Get information about a rendering context.
+
+        my $info = !SDL_GetRendererInfo( $renderer );
+
+Expected parameters include:
+
+- `renderer` - the rendering context
+
+Returns an [SDL2::RendererInfo](https://metacpan.org/pod/SDL2%3A%3ARendererInfo) structure on success or a negative error code
+on failure; call [`SDL_GetError( )`](#sdl_geterror)() for more
+information.
+
+## `SDL_GetRendererOutputSize( ... )`
+
+Get the output size in pixels of a rendering context.
+
+        my ($w, $h) = SDL_GetRendererOutputSize( $renderer );
+
+Due to high-dpi displays, you might end up with a rendering context that has
+more pixels than the window that contains it, so use this instead of [`SDL_GetWindowSize( ... )`](#sdl_getwindowsize) to decide how much
+drawing area you have.
+
+Expected parameters include:
+
+- `renderer` - the rendering context
+
+Returns the width and height on success or a negative error code on failure;
+call [`SDL_GetError( )`](#sdl_geterror)() for more information.
+
+## `SDL_CreateTexture( ... )`
+
+Create a texture for a rendering context.
+
+    my $texture = SDL_CreateTexture( $renderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_TARGET, 1024, 768);
+
+You can set the texture scaling method by setting
+`SDL_HINT_RENDER_SCALE_QUALITY` before creating the texture.
+
+Expected parameters include:
+
+- `renderer` - the rendering context
+- `format` - one of the enumerated values in `:pixelFormatEnum`
+- `access` - one of the enumerated values in `:textureAccess`
+- `w` - the width of the texture in pixels
+- `h` - the height of the texture in pixels
+
+Returns a pointer to the created texture or undefined if no rendering context
+was active, the format was unsupported, or the width or height were out of
+range; call [`SDL_GetError( )`](#sdl_geterror)() for more
+information.
+
+## `SDL_CreateTextureFromSurface( ... )`
+
+Create a texture from an existing surface.
+
+        use Config;
+        my ($rmask, $gmask, $bmask, $amask) = 
+        $Config{byteorder} == 4321 ? (0xff000000,0x00ff0000,0x0000ff00,0x000000ff) :
+                                                         (0x000000ff,0x0000ff00,0x00ff0000,0xff000000);
+        my $surface = SDL_CreateRGBSurface( 0, 640, 480, 32, $rmask, $gmask, $bmask, $amask );
+        my $texture = SDL_CreateTextureFromSurface( $renderer, $surface );
+
+The surface is not modified or freed by this function.
+
+The SDL\_TextureAccess hint for the created texture is
+`SDL_TEXTUREACCESS_STATIC`.
+
+The pixel format of the created texture may be different from the pixel format
+of the surface. Use [`SDL_QueryTexture( ... )`](#sdl_querytexture) to query the pixel format of the texture.
+
+Expected parameters include:
+
+- `renderer` - the rendering context
+- `surface` - the [SDL2::Surface](https://metacpan.org/pod/SDL2%3A%3ASurface) structure containing pixel data used to fill the texture
+
+Returns the created texture or undef on failure; call [`SDL_GetError(
+)`](#sdl_geterror)() for more information.
+
+## `SDL_QueryTexture( ... )`
+
+Query the attributes of a texture.
+
+        my ( $format, $access, $w, $h ) = SDL_QueryTexture( $texture );
+
+Expected parameters include:
+
+- `texture` - the texture to query
+
+Returns the following on success...
+
+- `format` - a pointer filled in with the raw format of the texture; the
+actual format may differ, but pixel transfers will use this
+format (one of the [`:pixelFormatEnum`](#pixelformatenum) values)
+- `access` - a pointer filled in with the actual access to the texture (one of the [`:textureAccess`](#textureaccess) values)
+- `w` - a pointer filled in with the width of the texture in pixels
+- `h` - a pointer filled in with the height of the texture in pixels
+
+...or a negative error code on failure; call [`SDL_GetError(
+)`](#sdl_geterror)() for more information.
+
+## `SDL_SetTextureColorMod( ... )`
+
+Set an additional color value multiplied into render copy operations.
+
+        my $ok = !SDL_SetTextureColorMod( $texture, 64, 64, 64 );
+
+When this texture is rendered, during the copy operation each source color
+channel is modulated by the appropriate color value according to the following
+formula:
+
+        srcC = srcC * (color / 255)
+
+Color modulation is not always supported by the renderer; it will return `-1`
+if color modulation is not supported.
+
+Expected parameters include:
+
+- `texture` - the texture to update
+- `r` - the red color value multiplied into copy operations
+- `g` - the green color value multiplied into copy operations
+- `b` - the blue color value multiplied into copy operations
+
+Returns `0` on success or a negative error code on failure; call [`SDL_GetError( )`](#sdl_geterror)() for more information.
+
+## `SDL_GetTextureColorMod( ... )`
+
+Get the additional color value multiplied into render copy operations.
+
+        my ( $r, $g, $b ) = SDL_GetTextureColorMod( $texture );
+
+Expected parameters include:
+
+- `texture` - the texture to query
+
+Returns the current red, green, and blue color values on success or a negative
+error code on failure; call [`SDL_GetError( )`](#sdl_geterror)() for
+more information.
+
+## `SDL_SetTextureAlphaMod( ... )`
+
+Set an additional alpha value multiplied into render copy operations.
+
+        SDL_SetTextureAlphaMod( $texture, 100 );
+
+When this texture is rendered, during the copy operation the source alpha
+
+value is modulated by this alpha value according to the following formula:
+
+        srcA = srcA * (alpha / 255)
+
+Alpha modulation is not always supported by the renderer; it will return `-1`
+if alpha modulation is not supported.
+
+Expected parameters include:
+
+- `texture` - the texture to update
+- `alpha` - the source alpha value multiplied into copy operations
+
+Returns `0` on success or a negative error code on failure; call [`SDL_GetError( )`](#sdl_geterror)() for more information.
+
+## `SDL_GetTextureAlphaMod( ... )`
+
+Get the additional alpha value multiplied into render copy operations.
+
+        my $alpha = SDL_GetTextureAlphaMod( $texture );
+
+Expected parameters include:
+
+- `texture` - the texture to query
+
+Returns the current alpha value on success or a negative error code on failure;
+call [`SDL_GetError( )`](#sdl_geterror)() for more information.
+
+## `SDL_SetTextureBlendMode( ... )`
+
+Set the blend mode for a texture, used by [`SDL_RenderCopy( ...
+)`](#sdl_rendercopy).
+
+If the blend mode is not supported, the closest supported mode is chosen and
+this function returns `-1`.
+
+Expected parameters include:
+
+- `texture` - the texture to update
+- `blendMode` - the [`:blendMode`](#blendmode) to use for texture blending
+
+Returns 0 on success or a negative error code on failure; call [`SDL_GetError( )`](#sdl_geterror)() for more information.
+
+## `SDL_GetTextureBlendMode( ... )`
+
+Get the blend mode used for texture copy operations.
+
+        SDL_GetTextureBlendMode( $texture, SDL_BLENDMODE_ADD );
+
+Expected parameters include:
+
+- `texture` - the texture to query
+
+Returns the current `:blendMode` on success or a negative error code on
+failure; call [`SDL_GetError( )`](#sdl_geterror)() for more
+information.
+
+## `SDL_SetTextureScaleMode( ... )`
+
+Set the scale mode used for texture scale operations.
+
+        SDL_SetTextureScaleMode( $texture, $scaleMode );
+
+If the scale mode is not supported, the closest supported mode is chosen.
+
+Expected parameters include:
+
+- `texture` - The texture to update.
+- `scaleMode` - the SDL\_ScaleMode to use for texture scaling.
+
+Returns `0` on success, or `-1` if the texture is not valid.
+
+## `SDL_GetTextureScaleMode( ... )`
+
+Get the scale mode used for texture scale operations.
+
+        my $ok = SDL_GetTextureScaleMode( $texture );
+
+Expected parameters include:
+
+- `texture` - the texture to query.
+
+Returns the current scale mode on success, or `-1` if the texture is not
+valid.
+
+## `SDL_UpdateTexture( ... )`
+
+Update the given texture rectangle with new pixel data.
+
+        my $rect = SDL2::Rect->new( { x => 0, y => ..., w => $surface->w, h => $surface->h } );
+        SDL_UpdateTexture( $texture, $rect, $surface->pixels, $surface->pitch );
+
+The pixel data must be in the pixel format of the texture. Use [`SDL_QueryTexture( ... )`](#sdl_querytexture) to query the pixel
+format of the texture.
+
+This is a fairly slow function, intended for use with static textures that do
+not change often.
+
+If the texture is intended to be updated often, it is preferred to create the
+texture as streaming and use the locking functions referenced below. While this
+function will work with streaming textures, for optimization reasons you may
+not get the pixels back if you lock the texture afterward.
+
+Expected parameters include:
+
+- `texture` - the texture to update
+- `rect` - an [SDL2::Rect](https://metacpan.org/pod/SDL2%3A%3ARect) structure representing the area to update, or undef to update the entire texture
+- `pixels` - the raw pixel data in the format of the texture
+- `pitch` - the number of bytes in a row of pixel data, including padding between lines
+
+Returns `0` on success or a negative error code on failure; call [`SDL_GetError( )`](#sdl_geterror)() for more information.
+
+## `SDL_UpdateYUVTexture( ... )`
+
+Update a rectangle within a planar YV12 or IYUV texture with new pixel data.
+
+        SDL_UpdateYUVTexture( $texture, $rect, $yPlane, $yPitch, $uPlane, $uPitch, $vPlane, $vPitch );
+
+You can use [`SDL_UpdateTexture( ... )`](#sdl_updatetexture) as
+long as your pixel data is a contiguous block of Y and U/V planes in the proper
+order, but this function is available if your pixel data is not contiguous.
+
+Expected parameters include:
+
+- `texture` - the texture to update
+- `rect` - a pointer to the rectangle of pixels to update, or undef to update the entire texture
+- `Yplane` - the raw pixel data for the Y plane
+- `Ypitch` - the number of bytes between rows of pixel data for the Y plane
+- `Uplane` - the raw pixel data for the U plane
+- `Upitch` - the number of bytes between rows of pixel data for the U plane
+- `Vplane` - the raw pixel data for the V plane
+- `Vpitch` - the number of bytes between rows of pixel data for the V plane
+
+Returns `0` on success or -1 if the texture is not valid; call [`SDL_GetError( )`](#sdl_geterror)() for more information.
+
+## `SDL_UpdateNVTexture( ... )`
+
+Update a rectangle within a planar NV12 or NV21 texture with new pixels.
+
+        SDL_UpdateNVTexture( $texture, $rect, $yPlane, $yPitch, $uPlane, $uPitch );
+
+You can use [`SDL_UpdateTexture( ... )`](#sdl_updatetexture) as
+long as your pixel data is a contiguous block of NV12/21 planes in the proper
+order, but this function is available if your pixel data is not contiguous.
+
+Expected parameters include:
+
+- `texture` - the texture to update
+- `rect` - a pointer to the rectangle of pixels to update, or undef to update the entire texture.
+- `Yplane` - the raw pixel data for the Y plane.
+- `Ypitch` - the number of bytes between rows of pixel data for the Y plane.
+- `UVplane` - the raw pixel data for the UV plane.
+- `UVpitch` - the number of bytes between rows of pixel data for the UV plane.
+
+Returns `0` on success, or `-1` if the texture is not valid.
+
+## `SDL_LockTexture( ... )`
+
+Lock a portion of the texture for **write-only** pixel access.
+
+        SDL_LockTexture( $texture, $rect, $pixels, $pitch );
+
+As an optimization, the pixels made available for editing don't necessarily
+contain the old texture data. This is a write-only operation, and if you need
+to keep a copy of the texture data you should do that at the application level.
+
+You must use [`SDL_UpdateTexture( ... )`](#sdl_updatetexture) to
+unlock the pixels and apply any changes.
+
+Expected parameters include:
+
+- `texture` - the texture to lock for access, which was created with `SDL_TEXTUREACCESS_STREAMING`
+- `rect` - an [SDL2::Rect](https://metacpan.org/pod/SDL2%3A%3ARect) structure representing the area to lock for access; undef to lock the entire texture
+- `pixels` - this is filled in with a pointer to the locked pixels, appropriately offset by the locked area
+- `pitch` - this is filled in with the pitch of the locked pixels; the pitch is the length of one row in bytes
+
+Returns 0 on success or a negative error code if the texture is not valid or
+was not created with \`SDL\_TEXTUREACCESS\_STREAMING\`; call [`SDL_GetError(
+)`](#sdl_geterror)() for more information.
+
+## `SDL_LockTextureToSurface( ... )`
+
+Lock a portion of the texture for **write-only** pixel access, and expose it as
+a SDL surface.
+
+        my $surface = SDL_LockTextureSurface( $texture, $rect );
+
+Besides providing an [SDL2::Surface](https://metacpan.org/pod/SDL2%3A%3ASurface) instead of raw pixel data, this function
+operates like [SDL2::LockTexture](https://metacpan.org/pod/SDL2%3A%3ALockTexture).
+
+As an optimization, the pixels made available for editing don't necessarily
+contain the old texture data. This is a write-only operation, and if you need
+to keep a copy of the texture data you should do that at the application level.
+
+You must use [`SDL_UnlockTexture( ... )`](#sdl_unlocktexture) to
+unlock the pixels and apply any changes.
+
+The returned surface is freed internally after calling [`SDL_UnlockTexture(
+... )`](#sdl_unlocktexture) or [`SDL_DestroyTexture( ...
+)`](#sdl_destroytexture). The caller should not free it.
+
+Expected parameters include:
+
+- `texture` - the texture to lock for access, which was created with `SDL_TEXTUREACCESS_STREAMING`
+- `rect` - a pointer to the rectangle to lock for access. If the rect is undef, the entire texture will be locked
+
+Returns the [SDL2::Surface](https://metacpan.org/pod/SDL2%3A%3ASurface) structure on success, or `-1` if the texture is
+not valid or was not created with `SDL_TEXTUREACCESS_STREAMING`.
+
+## `SDL_UnlockTexture( ... )`
+
+Unlock a texture, uploading the changes to video memory, if needed.
+
+        SDL_UnlockTexture( $texture );
+
+**Warning**: Please note that [`SDL_LockTexture( ... )`](#sdl_locktexture) is intended to be write-only; it will notguarantee the previous
+contents of the texture will be provided. You must fully initialize any area of
+a texture that you lock before unlocking it, as the pixels might otherwise be
+uninitialized memory.
+
+Which is to say: locking and immediately unlocking a texture can result in
+corrupted textures, depending on the renderer in use.
+
+Expected parameters include:
+
+- `texture` - a texture locked by [`SDL_LockTexture( ... )`](#sdl_locktexture)
+
+## `SDL_RenderTargetSupported( ... )`
+
+Determine whether a renderer supports the use of render targets.
+
+        my $bool = SDL_RenderTargetSupported( $renderer );
+
+Expected parameters include:
+
+- `renderer` - the renderer that will be checked
+
+Returns true if supported or false if not.
+
+## `SDL_SetRenderTarget( ... )`
+
+Set a texture as the current rendering target.
+
+        SDL_SetRenderTarget( $renderer, $texture );
+
+Before using this function, you should check the `SDL_RENDERER_TARGETTEXTURE`
+bit in the flags of [SDL2::RendererInfo](https://metacpan.org/pod/SDL2%3A%3ARendererInfo) to see if render targets are
+supported.
+
+The default render target is the window for which the renderer was created. To
+stop rendering to a texture and render to the window again, call this function
+with a undefined `texture`.
+
+Expected parameters include:
+
+- `renderer` - the rendering context
+- `texture` - the targeted texture, which must be created with the `SDL_TEXTUREACCESS_TARGET` flag, or undef to render to the window instead of a texture.
+
+Returns `0` on success or a negative error code on failure; call [`SDL_GetError( )`](#sdl_geterror)() for more information.
+
+## `SDL_GetRenderTarget( ... )`
+
+Get the current render target.
+
+        my $texture = SDL_GetRenderTarget( $renderer );
+
+The default render target is the window for which the renderer was created, and
+is reported an undefined value here.
+
+Expected parameters include:
+
+- `renderer` - the rendering context
+
+Returns the current render target or undef for the default render target.
+
+## `SDL_RenderSetLogicalSize( ... )`
+
+Set a device independent resolution for rendering.
+
+        SDL_RenderSetLogicalSize( $renderer, 100, 100 );
+
+This function uses the viewport and scaling functionality to allow a fixed
+logical resolution for rendering, regardless of the actual output resolution.
+If the actual output resolution doesn't have the same aspect ratio the output
+rendering will be centered within the output display.
+
+If the output display is a window, mouse and touch events in the window will be
+filtered and scaled so they seem to arrive within the logical resolution.
+
+If this function results in scaling or subpixel drawing by the rendering
+backend, it will be handled using the appropriate quality hints.
+
+Expected parameters include:
+
+- `renderer` - the renderer for which resolution should be set
+- `w` - the width of the logical resolution
+- `h` - the height of the logical resolution
+
+Returns `0` on success or a negative error code on failure; call [`SDL_GetError( )`](#sdl_geterror)() for more information.
+
+## `SDL_RenderGetLogicalSize( ... )`
+
+Get device independent resolution for rendering.
+
+        my ($w, $h) = SDL_RenderGetLogicalSize( $renderer );
+
+This may return `0` for `w` and `h` if the [SDL2::Renderer](https://metacpan.org/pod/SDL2%3A%3ARenderer) has never had
+its logical size set by [`SDL_RenderSetLogicalSize( ...
+)`](#sdl_rendersetlogicalsize) and never had a render target set.
+
+Expected parameters include:
+
+- `renderer` - a rendering context
+
+Returns the width and height.
+
+## `SDL_RenderSetIntegerScale( ... )`
+
+Set whether to force integer scales for resolution-independent rendering.
+
+        SDL_RenderSetIntegerScale( $renderer, 1 );
+
+This function restricts the logical viewport to integer values - that is, when
+a resolution is between two multiples of a logical size, the viewport size is
+rounded down to the lower multiple.
+
+Expected parameters include:
+
+- `renderer` - the renderer for which integer scaling should be set
+- `enable` - enable or disable the integer scaling for rendering
+
+Returns `0` on success or a negative error code on failure; call [`SDL_GetError( )`](#sdl_geterror)() for more information.
+
+## `SDL_RenderGetIntegerScale( ... )`
+
+Get whether integer scales are forced for resolution-independent rendering.
+
+        SDL_RenderGetIntegerScale( $renderer );
+
+Expected parameters include:
+
+- `renderer` - the renderer from which integer scaling should be queried
+
+Returns true if integer scales are forced or false if not and on failure; call
+[`SDL_GetError( )`](#sdl_geterror)() for more information.
+
+## `SDL_RenderSetViewport( ... )`
+
+Set the drawing area for rendering on the current target.
+
+        SDL_RenderSetViewport( $renderer, $rect );
+
+When the window is resized, the viewport is reset to fill the entire new window
+size.
+
+Expected parameters include:
+
+- `renderer` - the rendering context
+- `rect` - the [SDL2::Rect](https://metacpan.org/pod/SDL2%3A%3ARect) structure representing the drawing area, or undef to set the viewport to the entire target
+
+Returns `0` on success or a negative error code on failure; call [`SDL_GetError( )`](#sdl_geterror)() for more information.
+
+## `SDL_RenderGetViewport( ... )`
+
+Get the drawing area for the current target.
+
+        my $rect = SDL_RenderGetViewport( $renderer );
+
+Expected parameters include:
+
+- `renderer` - the rendering context
+
+Returns an [SDL2::Rect](https://metacpan.org/pod/SDL2%3A%3ARect) structure filled in with the current drawing area.
+
+## `SDL_RenderSetClipRect( ... )`
+
+Set the clip rectangle for rendering on the specified target.
+
+        SDL_RenderSetClipRect( $renderer, $rect );
+
+Expected parameters include:
+
+- `renderer` - the rendering context for which clip rectangle should be set
+- `rect` - an [SDL2::Rect](https://metacpan.org/pod/SDL2%3A%3ARect) structure representing the clip area, relative to the viewport, or undef to disable clipping
+
+Returns `0` on success or a negative error code on failure; call [`SDL_GetError( )`](#sdl_geterror)() for more information.
+
+## `SDL_RenderGetClipRect( ... )`
+
+Get the clip rectangle for the current target.
+
+        my $rect = SDL_RenderGetClipRect( $renderer );
+
+Expected parameters include:
+
+- `renderer` - the rendering context from which clip rectangle should be queried
+
+Returns an [SDL2::Rect](https://metacpan.org/pod/SDL2%3A%3ARect) structure filled in with the current clipping area or
+an empty rectangle if clipping is disabled.
+
+## `SDL_RenderIsClipEnabled( ... )`
+
+Get whether clipping is enabled on the given renderer.
+
+        my $tf = SDL_RenderIsClipEnabled( $renderer );
+
+Expected parameters include:
+
+- `renderer` - the renderer from which clip state should be queried
+
+Returns true if clipping is enabled or false if not; call [`SDL_GetError(
+)`](#sdl_geterror)() for more information.
+
+## `SDL_RenderSetScale( ... )`
+
+Set the drawing scale for rendering on the current target.
+
+        SDL_RenderSetScale( $renderer, .5, 1 );
+
+The drawing coordinates are scaled by the x/y scaling factors before they are
+used by the renderer. This allows resolution independent drawing with a single
+coordinate system.
+
+If this results in scaling or subpixel drawing by the rendering backend, it
+will be handled using the appropriate quality hints. For best results use
+integer scaling factors.
+
+Expected parameters include:
+
+- `renderer` - a rendering context
+- `scaleX` - the horizontal scaling factor
+- `scaleY` - the vertical scaling factor
+
+Returns `0` on success or a negative error code on failure; call [`SDL_GetError( )`](#sdl_geterror)() for more information.
+
+## `SDL_RenderGetScale( ... )`
+
+Get the drawing scale for the current target.
+
+        my ($scaleX, $scaleY) = SDL_RenderGetScale( $renderer );
+
+Expected parameters include:
+
+- `renderer` - the renderer from which drawing scale should be queried
+
+Returns the horizonal and vertical scaling factors.
+
+## `SDL_SetRenderDrawColor( ... )`
+
+Set the color used for drawing operations (Rect, Line and Clear).
+
+        SDL_SetRenderDrawColor( $renderer, 0, 0, 128, SDL_ALPHA_OPAQUE );
+
+Set the color for drawing or filling rectangles, lines, and points, and for [`SDL_RenderClear( ... )`](#sdl_renderclear).
+
+Expected parameters include:
+
+- `renderer` - the rendering context
+- `r` - the red value used to draw on the rendering target
+- `g` - the green value used to draw on the rendering target
+- `b` - the blue value used to draw on the rendering target
+- `a` - the alpha value used to draw on the rendering target; usually `SDL_ALPHA_OPAQUE` (255). Use `SDL_SetRenderDrawBlendMode` to specify how the alpha channel is used
+
+Returns `0` on success or a negative error code on failure; call [`SDL_GetError( )`](#sdl_geterror)() for more information.
+
+## `SDL_GetRenderDrawColor( ... )`
+
+Get the color used for drawing operations (Rect, Line and Clear).
+
+        my ($r, $g, $b, $a) = SDL_GetRenderDrawColor( $renderer );
+
+Expected parameters include:
+
+- `renderer` - the rendering context
+
+Returns red, green, blue, and alpha values on success or a negative error code
+on failure; call [`SDL_GetError( )`](#sdl_geterror)() for more
+information.
+
+## `SDL_SetRenderDrawBlendMode( ... )`
+
+Set the blend mode used for drawing operations (Fill and Line).
+
+        SDL_SetRenderDrawBlendMode( $renderer, SDL_BLENDMODE_BLEND );
+
+If the blend mode is not supported, the closest supported mode is chosen.
+
+Expected parameters include:
+
+- `renderer` - the rendering context
+- `blendMode` - the [`:blendMode`](#blendmode) to use for blending
+
+Returns `0` on success or a negative error code on failure; call [`SDL_GetError( )`](#sdl_geterror)() for more information.
+
+## `SDL_GetRenderDrawBlendMode( ... )`
+
+Get the blend mode used for drawing operations.
+
+        my $blendMode = SDL_GetRenderDrawBlendMode( $rendering );
+
+Expected parameters include:
+
+- `renderer` - the rendering context
+
+Returns the current `:blendMode` on success or a negative error code on
+failure; call [`SDL_GetError( )`](#sdl_geterror)() for more
+information.
+
+## `SDL_RenderClear( ... )`
+
+Clear the current rendering target with the drawing color.
+
+        SDL_RenderClear( $renderer );
+
+This function clears the entire rendering target, ignoring the viewport and the
+clip rectangle.
+
+- `renderer` - the rendering context
+
+Returns `0` on success or a negative error code on failure; call [`SDL_GetError( )`](#sdl_geterror)() for more information.
+
+## `SDL_RenderDrawPoint( ... )`
+
+Draw a point on the current rendering target.
+
+        SDL_RenderDrawPoint( $renderer, 100, 100 );
+
+`SDL_RenderDrawPoint( ... )` draws a single point. If you want to draw
+multiple, use [`SDL_RenderDrawPoints( ... )`](#sdl_renderdrawpoints) instead.
+
+Expected parameters include:
+
+- `renderer` - the rendering context
+- `x` - the x coordinate of the point
+- `y` - the y coordinate of the point
+
+Returns `0` on success or a negative error code on failure; call [`SDL_GetError( )`](#sdl_geterror)() for more information.
+
+## `SDL_RenderDrawPoints( ... )`
+
+Draw multiple points on the current rendering target.
+
+        my @points = map { SDL2::Point->new( {x => int rand, y => int rand } ) } 1..1024;
+        SDL_RenderDrawPoints( $renderer, @points );
+
+- `renderer` - the rendering context
+- `points` - an array of [SDL2::Point](https://metacpan.org/pod/SDL2%3A%3APoint) structures that represent the points to draw
+
+Returns `0` on success or a negative error code on failure; call [`SDL_GetError( )`](#sdl_geterror)() for more information.
+
+## `SDL_RenderDrawLine( ... )`
+
+Draw a line on the current rendering target.
+
+        SDL_RenderDrawLine( $renderer, 300, 240, 340, 240 );
+
+`SDL_RenderDrawLine( ... )` draws the line to include both end points. If you
+want to draw multiple, connecting lines use [`SDL_RenderDrawLines( ...
+)`](#sdl_renderdrawlines) instead.
+
+Expected parameters include:
+
+- `renderer` - the rendering context
+- `x1` - the x coordinate of the start point
+- `y1` - the y coordinate of the start point
+- `x2` - the x coordinate of the end point
+- `y2` - the y coordinate of the end point
+
+Returns `0` on success or a negative error code on failure; call [`SDL_GetError( )`](#sdl_geterror)() for more information.
+
+## `SDL_RenderDrawLines( ... )`
+
+Draw a series of connected lines on the current rendering target.
+
+        SDL_RenderDrawLines( $renderer, @points);
+
+Expected parameters include:
+
+- `renderer` - the rendering context
+- `points` - an array of [SDL2::Point](https://metacpan.org/pod/SDL2%3A%3APoint) structures representing points along the lines
+
+Returns `0` on success or a negative error code on failure; call [`SDL_GetError( )`](#sdl_geterror)() for more information.
+
+## `SDL_RenderDrawRect( ... )`
+
+Draw a rectangle on the current rendering target.
+
+        SDL_RenderDrawRect( $renderer, SDL2::Rect->new( { x => 100, y => 100, w => 100, h => 100 } ) );
+
+Expected parameters include:
+
+- `renderer` - the rendering context
+- `rect` - an [SDL::Rect](https://metacpan.org/pod/SDL%3A%3ARect) structure representing the rectangle to draw
+
+Returns `0` on success or a negative error code on failure; call [`SDL_GetError( )`](#sdl_geterror)() for more information.
+
+## `SDL_RenderDrawRects( ... )`
+
+Draw some number of rectangles on the current rendering target.
+
+        SDL_RenderDrawRects( $renderer,
+                SDL2::Rect->new( { x => 100, y => 100, w => 100, h => 100 } ),
+        SDL2::Rect->new( { x => 75,  y => 75,  w => 50,  h => 50 } )
+    );
+
+Expected parameters include:
+
+- `renderer` - the rendering context
+- `rects` - an array of SDL2::Rect structures representing the rectangles to be drawn
+
+Returns `0` on success or a negative error code on failure; call [`SDL_GetError( )`](#sdl_geterror)() for more information.
+
+## `SDL_RenderFillRect( ... )`
+
+Fill a rectangle on the current rendering target with the drawing color.
+
+        SDL_RenderFillRect( $renderer, SDL2::Rect->new( { x => 100, y => 100, w => 100, h => 100 } ) );
+
+The current drawing color is set by [`SDL_SetRenderDrawColor( ...
+)`](#sdl_setrenderdrawcolor), and the color's alpha value is ignored
+unless blending is enabled with the appropriate call to [`SDL_SetRenderDrawBlendMode( ... )`](#sdl_setrenderdrawblendmode).
+
+Expected parameters includue:
+
+- `renderer` - the rendering context
+- `rect` - the [SDL2::Rect](https://metacpan.org/pod/SDL2%3A%3ARect) structure representing the rectangle to fill
+
+Returns `0` on success or a negative error code on failure; call [`SDL_GetError( )`](#sdl_geterror)() for more information.
+
+## `SDL_RenderFillRects( ... )`
+
+Fill some number of rectangles on the current rendering target with the drawing
+color.
+
+        SDL_RenderFillRects( $renderer,
+                SDL2::Rect->new( { x => 100, y => 100, w => 100, h => 100 } ),
+        SDL2::Rect->new( { x => 75,  y => 75,  w => 50,  h => 50 } )
+    );
+
+Expected parameters include:
+
+- `renderer` - the rendering context
+- `rects` - an array of [SDL2::Rect](https://metacpan.org/pod/SDL2%3A%3ARect) structures representing the rectangles to be filled
+
+Returns `0` on success or a negative error code on failure; call [`SDL_GetError( )`](#sdl_geterror)() for more information.
+
+## `SDL_RenderCopy( ... )`
+
+Copy a portion of the texture to the current rendering target.
+
+        SDL_RenderCopy( $renderer, $blueShapes, $srcR, $destR );
+
+The texture is blended with the destination based on its blend mode set with
+[`SDL_SetTextureBlendMode( ... )`](#sdl_settextureblendmode).
+
+The texture color is affected based on its color modulation set by [`SDL_SetTextureColorMod( ... )`](#sdl_settexturecolormod).
+
+The texture alpha is affected based on its alpha modulation set by [`SDL_SetTextureAlphaMod( ... )`](#sdl_settexturealphamod).
+
+Expected parameters include:
+
+- `renderer` - the rendering context
+- `texture` - the source texture
+- `srcrect` - the source [SDL2::Rect](https://metacpan.org/pod/SDL2%3A%3ARect) structure
+- `dstrect` - the destination [SDL2::Rect](https://metacpan.org/pod/SDL2%3A%3ARect) structure; the texture will be stretched to fill the given rectangle
+
+Returns `0` on success or a negative error code on failure; call [`SDL_GetError( )`](#sdl_geterror)() for more information.
+
+## `SDL_RenderCopyEx( ... )`
+
+Copy a portion of the texture to the current rendering, with optional rotation
+and flipping.
+
+Copy a portion of the texture to the current rendering target, optionally
+rotating it by angle around the given center and also flipping it top-bottom
+and/or left-right.
+
+The texture is blended with the destination based on its blend mode set with
+[`SDL_SetTextureBlendMode( ... )`](#sdl_settextureblendmode).
+
+The texture color is affected based on its color modulation set by [`SDL_SetTextureColorMod( ... )`](#sdl_settexturecolormod).
+
+The texture alpha is affected based on its alpha modulation set by [`SDL_SetTextureAlphaMod( ... )`](#sdl_settexturealphamod).
+
+Expected parameters include:
+
+- `renderer` - the rendering context
+- `texture` - the source texture
+- `srcrect` - the source [SDL2::Rect](https://metacpan.org/pod/SDL2%3A%3ARect) structure 
+- `dstrect` - the destination SDL\_Rect structure
+- `angle` - an angle in degrees that indicates the rotation that will be applied to dstrect, rotating it in a clockwise direction
+- `center` - a pointer to a point indicating the point around which dstrect will be rotated (if NULL, rotation will be done around `dstrect.w / 2`, `dstrect.h / 2`)
+- `flip` - a [:rendererFlip](https://metacpan.org/pod/%3ArendererFlip) value stating which flipping actions should be performed on the texture
+
+Returns `0` on success or a negative error code on failure; call [`SDL_GetError( )`](#sdl_geterror)() for more information.
+
+## `SDL_RenderDrawPointF( ... )`
+
+Draw a point on the current rendering target at subpixel precision.
+
+        SDL_RenderDrawPointF( $renderer, 25.5, 100.25 );
+
+Expected parameters include:
+
+- `renderer` - The renderer which should draw a point.
+- `x` - The x coordinate of the point.
+- `y` - The y coordinate of the point.
+
+Returns `0` on success, or `-1` on error
+
+## `SDL_RenderDrawPointsF( ... )`
+
+Draw multiple points on the current rendering target at subpixel precision.
+
+        my @points = map { SDL2::Point->new( {x => int rand, y => int rand } ) } 1..1024;
+        SDL_RenderDrawPointsF( $renderer, @points );
+
+Expected parameters include:
+
+- `renderer` - The renderer which should draw multiple points
+- `points` - The points to draw
+
+Returns `0` on success, or `-1` on error; call [`SDL_GetError(
+)`](#sdl_geterror)() for more information.
+
+## `SDL_RenderDrawLineF( ... )`
+
+Draw a line on the current rendering target at subpixel precision.
+
+        SDL_RenderDrawLineF( $renderer, 100, 100, 250, 100);
+
+Expected parameters include:
+
+- `renderer` - The renderer which should draw a line.
+- `x1` - The x coordinate of the start point.
+- `y1` - The y coordinate of the start point.
+- `x2` - The x coordinate of the end point.
+- `y2` - The y coordinate of the end point.
+
+Returns `0` on success, or `-1` on error.
+
+## `SDL_RenderDrawLinesF( ... )`
+
+Draw a series of connected lines on the current rendering target at subpixel
+precision.
+
+        SDL_RenderDrawLines( $renderer, @points);
+
+Expected parameters include:
+
+- `renderer` - The renderer which should draw multiple lines.
+- `points` - The points along the lines
+
+Return `0` on success, or `-1` on error.
+
+## `SDL_RenderDrawRectF( ... )`
+
+Draw a rectangle on the current rendering target at subpixel precision.
+
+        SDL_RenderDrawRectF( $renderer, $point);
+
+Expected parameters include:
+
+- `renderer` - The renderer which should draw a rectangle.
+- `rect` - A pointer to the destination rectangle
+
+Returns `0` on success, or `-1` on error
+
+## `SDL_RenderDrawRectsF( ... )`
+
+Draw some number of rectangles on the current rendering target at subpixel
+precision.
+
+        SDL_RenderDrawRectsF( $renderer,
+                SDL2::Rect->new( { x => 100, y => 100, w => 100, h => 100 } ),
+        SDL2::Rect->new( { x => 75,  y => 75,  w => 50,  h => 50 } )
+    );
+
+Expected parameters include:
+
+- `renderer` - The renderer which should draw multiple rectangles.
+- `rects` - A pointer to an array of destination rectangles.
+
+Returns `0` on success, or `-1` on error.
+
+## `SDL_RenderFillRectF( ... )`
+
+Fill a rectangle on the current rendering target with the drawing color at
+subpixel precision.
+
+        SDL_RenderFillRectF( $renderer,
+        SDL2::Rect->new( { x => 75,  y => 75,  w => 50,  h => 50 } )
+    );
+
+Expected parameters include:
+
+- `renderer` - The renderer which should fill a rectangle.
+- `rect` - A pointer to the destination rectangle
+
+Returns `0` on success, or `-1` on error.
+
+## `SDL_RenderFillRectsF( ... )`
+
+Fill some number of rectangles on the current rendering target with the drawing
+color at subpixel precision.
+
+        SDL_RenderFillRectsF( $renderer,
+                SDL2::Rect->new( { x => 100, y => 100, w => 100, h => 100 } ),
+        SDL2::Rect->new( { x => 75,  y => 75,  w => 50,  h => 50 } )
+    );
+
+Expected parameters include:
+
+- `renderer` - The renderer which should fill multiple rectangles.
+- `rects` - A pointer to an array of destination rectangles.
+
+Returns `0` on success, or `-1` on error.
+
+## `SDL_RenderCopyF( ... )`
+
+Copy a portion of the texture to the current rendering target at subpixel
+precision.
+
+Expected parameters include:
+
+- `renderer` - The renderer which should copy parts of a texture
+- `texture` - The source texture
+- `srcrect` - A pointer to the source rectangle
+- `dstrect` - A pointer to the destination rectangle
+
+Returns `0` on success, or `-1` on error.
+
+## `SDL_RenderCopyExF( ... )`
+
+Copy a portion of the source texture to the current rendering target, with
+rotation and flipping, at subpixel precision.
+
+- `renderer` - The renderer which should copy parts of a texture
+- `texture` - The source texture
+- `srcrect` - A pointer to the source rectangle
+- `dstrect` - A pointer to the destination rectangle
+- `angle` - An angle in degrees that indicates the rotation that will be applied to dstrect, rotating it in a clockwise direction
+- `center` - A pointer to a point indicating the point around which dstrect will be rotated (if NULL, rotation will be done around `dstrect.w/2`, `dstrect.h/2`)
+- `flip` - A `:rendererFlip` value stating which flipping actions should be performed on the texture
+
+Returns `0` on success, or `-1` on error
+
+## `SDL_RenderReadPixels( ... )`
+
+Read pixels from the current rendering target to an array of pixels.
+
+        SDL_RenderReadPixels(
+        $renderer,
+        SDL2::Rect->new( { x => 0, y => 0, w => 640, h => 480 } ),
+        SDL_PIXELFORMAT_RGB888,
+        $surface->pixels, $surface->pitch
+    );
+
+**WARNING**: This is a very slow operation, and should not be used frequently.
+
+`pitch` specifies the number of bytes between rows in the destination
+`pixels` data. This allows you to write to a subrectangle or have padded rows
+in the destination. Generally, `pitch` should equal the number of pixels per
+row in the \`pixels\` data times the number of bytes per pixel, but it might
+contain additional padding (for example, 24bit RGB Windows Bitmap data pads all
+rows to multiples of 4 bytes).
+
+Expected parameters include:
+
+- `renderer` - the rendering context
+- `rect` - an [SDL2::Rect](https://metacpan.org/pod/SDL2%3A%3ARect) structure representing the area to read
+- `format` - an `:pixelFormatEnum` value of the desired format of the pixel data, or `0` to use the format of the rendering target
+- `pixels` - pointer to the pixel data to copy into
+- `pitch` - the pitch of the `pixels` parameter
+
+Returns `0` on success or a negative error code on failure; call [`SDL_GetError( )`](#sdl_geterror)() for more information.
+
+## `SDL_RenderPresent( ... )`
+
+Update the screen with any rendering performed since the previous call.
+
+        SDL_RenderPresent( $renderer );
+
+SDL's rendering functions operate on a backbuffer; that is, calling a rendering
+function such as [`SDL_RenderDrawLine( ... )`](#sdl_renderdrawline) does not directly put a line on the screen, but rather updates the
+backbuffer. As such, you compose your entire scene and \*present\* the composed
+backbuffer to the screen as a complete picture.
+
+Therefore, when using SDL's rendering API, one does all drawing intended for
+the frame, and then calls this function once per frame to present the final
+drawing to the user.
+
+The backbuffer should be considered invalidated after each present; do not
+assume that previous contents will exist between frames. You are strongly
+encouraged to call [`SDL_RenderClear( ... )`](#sdl_renderclear)
+to initialize the backbuffer before starting each new frame's drawing, even if
+you plan to overwrite every pixel.
+
+Expected parameters include:
+
+- `renderer` - the rendering context
+
+## `SDL_DestroyTexture( ... )`
+
+Destroy the specified texture.
+
+        SDL_DestroyTexture( $texture );
+
+Passing undef or an otherwise invalid texture will set the SDL error message to
+"Invalid texture".
+
+Expected parameters include:
+
+- `texture` - the texture to destroy
+
+## `SDL_DestroyRenderer( ... )`
+
+Destroy the rendering context for a window and free associated textures.
+
+        SDL_DestroyRenderer( $renderer );
+
+Expected parameters include:
+
+- `renderer` - the rendering context
+
+## `SDL_RenderFlush( ... )`
+
+Force the rendering context to flush any pending commands to the underlying
+rendering API.
+
+        SDL_RenderFlush( $renderer );
+
+You do not need to (and in fact, shouldn't) call this function unless you are
+planning to call into OpenGL/Direct3D/Metal/whatever directly in addition to
+using an SDL\_Renderer.
+
+This is for a very-specific case: if you are using SDL's render API, you asked
+for a specific renderer backend (OpenGL, Direct3D, etc), you set
+`SDL_HINT_RENDER_BATCHING` to "`1`", and you plan to make OpenGL/D3D/whatever
+calls in addition to SDL render API calls. If all of this applies, you should
+call [`SDL_RenderFlush( ... )`](#sdl_renderflush) between calls
+to SDL's render API and the low-level API you're using in cooperation.
+
+In all other cases, you can ignore this function. This is only here to get
+maximum performance out of a specific situation. In all other cases, SDL will
+do the right thing, perhaps at a performance loss.
+
+This function is first available in SDL 2.0.10, and is not needed in 2.0.9 and
+earlier, as earlier versions did not queue rendering commands at all, instead
+flushing them to the OS immediately.
+
+Expected parameters include:
+
+- `renderer` - the rendering context
+
+Returns `0` on success or a negative error code on failure; call [`SDL_GetError( )`](#sdl_geterror)() for more information.
+
+## `SDL_GL_BindTexture( ... )`
+
+Bind an OpenGL/ES/ES2 texture to the current context.
+
+        my ($texw, $texh) = SDL_GL_BindTexture( $texture );
+
+This is for use with OpenGL instructions when rendering OpenGL primitives
+directly.
+
+If not NULL, the returned width and height values suitable for the provided
+texture. In most cases, both will be `1.0`, however, on systems that support
+the GL\_ARB\_texture\_rectangle extension, these values will actually be the pixel
+width and height used to create the texture, so this factor needs to be taken
+into account when providing texture coordinates to OpenGL.
+
+You need a renderer to create an [SDL2::Texture](https://metacpan.org/pod/SDL2%3A%3ATexture), therefore you can only use
+this function with an implicit OpenGL context from [`SDL_CreateRenderer(
+... )`](#sdl_createrenderer), not with your own OpenGL context. If
+you need control over your OpenGL context, you need to write your own
+texture-loading methods.
+
+Also note that SDL may upload RGB textures as BGR (or vice-versa), and re-order
+the color channels in the shaders phase, so the uploaded texture may have
+swapped color channels.
+
+Expected parameters include:
+
+- `texture` - the texture to bind to the current OpenGL/ES/ES2 context
+
+Returns the texture's with and height on success, or -1 if the operation is not
+supported; call [`SDL_GetError( )`](#sdl_geterror)() for more
+information.
+
+## `SDL_GL_UnbindTexture( ... )`
+
+Unbind an OpenGL/ES/ES2 texture from the current context.
+
+        SDL_GL_UnbindTexture( $texture );
+
+See [`SDL_GL_BindTexture( ... )`](#sdl_gl_bindtexture) for
+examples on how to use these functions.
+
+Expected parameters include:
+
+- `texture` - the texture to unbind from the current OpenGL/ES/ES2 context
+
+Returns `0` on success, or `-1` if the operation is not supported.
+
+## `SDL_RenderGetMetalLayer( ... )`
+
+Get the CAMetalLayer associated with the given Metal renderer.
+
+        my $opaque = SDL_RenderGetMetalLayer( $renderer );
+
+This function returns `void *`, so SDL doesn't have to include Metal's
+headers, but it can be safely cast to a `CAMetalLayer *`.
+
+Expected parameters include:
+
+- `renderer` - the renderer to query
+
+Returns `CAMetalLayer*` on success, or undef if the renderer isn't a Metal
+renderer.
+
+## `SDL_RenderGetMetalCommandEncoder( ... )`
+
+Get the Metal command encoder for the current frame
+
+        $opaque = SDL_RenderGetMetalCommandEncoder( $renderer );
+
+This function returns `void *`, so SDL doesn't have to include Metal's
+headers, but it can be safely cast to an
+`id<MTLRenderCommandEncoder>`.
+
+Expected parameters include:
+
+- `renderer` - the renderer to query
+
+Returns `id<MTLRenderCommandEncoder>` on success, or undef if the
+renderer isn't a Metal renderer.
+
+## `SDL_ComposeCustomBlendMode( ... )`
+
+Compose a custom blend mode for renderers.
+
+The functions SDL\_SetRenderDrawBlendMode and SDL\_SetTextureBlendMode accept the
+SDL\_BlendMode returned by this function if the renderer supports it.
+
+A blend mode controls how the pixels from a drawing operation (source) get
+combined with the pixels from the render target (destination). First, the
+components of the source and destination pixels get multiplied with their blend
+factors. Then, the blend operation takes the two products and calculates the
+result that will get stored in the render target.
+
+Expressed in pseudocode, it would look like this:
+
+        my $dstRGB = colorOperation( $srcRGB * $srcColorFactor, $dstRGB * $dstColorFactor );
+        my $dstA   = alphaOperation( $srcA * $srcAlphaFactor, $dstA * $dstAlphaFactor );
+
+Where the functions `colorOperation(src, dst)` and `alphaOperation(src, dst)`
+can return one of the following:
+
+- `src + dst`
+- `src - dst`
+- `dst - src`
+- `min(src, dst)`
+- `max(src, dst)`
+
+The red, green, and blue components are always multiplied with the first,
+second, and third components of the SDL\_BlendFactor, respectively. The fourth
+component is not used.
+
+The alpha component is always multiplied with the fourth component of the [`:blendFactor`](#blendfactor). The other components are not used in the
+alpha calculation.
+
+Support for these blend modes varies for each renderer. To check if a specific
+[`:blendMode`](#blendmode) is supported, create a renderer and pass it
+to either `SDL_SetRenderDrawBlendMode` or `SDL_SetTextureBlendMode`. They
+will return with an error if the blend mode is not supported.
+
+This list describes the support of custom blend modes for each renderer in SDL
+2.0.6. All renderers support the four blend modes listed in the [`:blendMode`](#blendmode) enumeration.
+
+- **direct3d** - Supports `SDL_BLENDOPERATION_ADD` with all factors.
+- **direct3d11** - Supports all operations with all factors. However, some factors produce unexpected results with `SDL_BLENDOPERATION_MINIMUM` and `SDL_BLENDOPERATION_MAXIMUM`.
+- **opengl** - Supports the `SDL_BLENDOPERATION_ADD` operation with all factors. OpenGL versions 1.1, 1.2, and 1.3 do not work correctly with SDL 2.0.6.
+- **opengles** - Supports the `SDL_BLENDOPERATION_ADD` operation with all factors. Color and alpha factors need to be the same. OpenGL ES 1 implementation specific: May also support `SDL_BLENDOPERATION_SUBTRACT` and `SDL_BLENDOPERATION_REV_SUBTRACT`. May support color and alpha operations being different from each other. May support color and alpha factors being different from each other.
+- **opengles2** - Supports the `SDL_BLENDOPERATION_ADD`, `SDL_BLENDOPERATION_SUBTRACT`, `SDL_BLENDOPERATION_REV_SUBTRACT` operations with all factors.
+- **psp** - No custom blend mode support.
+- **software** - No custom blend mode support.
+
+Some renderers do not provide an alpha component for the default render target.
+The `SDL_BLENDFACTOR_DST_ALPHA` and `SDL_BLENDFACTOR_ONE_MINUS_DST_ALPHA`
+factors do not have an effect in this case.
+
+Expected parameters include:
+
+- `srcColorFactor` -the `:blendFactor` applied to the red, green, and blue components of the source pixels
+- `dstColorFactor` - the `:blendFactor` applied to the red, green, and blue components of the destination pixels
+- `colorOperation` - the `:blendOperation` used to combine the red, green, and blue components of the source and destination pixels
+- `srcAlphaFactor` - the `:blendFactor` applied to the alpha component of the source pixels
+- `dstAlphaFactor` - the `:blendFactor` applied to the alpha component of the destination pixels
+- `alphaOperation` - the `:blendOperation` used to combine the alpha component of the source and destination pixels
+
+Returns a `:blendMode` that represents the chosen factors and operations.
+
 # Imports
 
 This list of imports will be organized by their related tags. Of course, you
@@ -4173,6 +5535,106 @@ OpenGL configuration attributes.
 
 - `SDL_GL_CONTEXT_RESET_NO_NOTIFICATION`
 - `SDL_GL_CONTEXT_RESET_LOSE_CONTEXT`
+
+## `:rendererFlags`
+
+Flags used when creating a rendering context.
+
+- `SDL_RENDERER_SOFTWARE` - The renderer is a software fallback
+- `SDL_RENDERER_ACCELERATED` - The renderer uses hardware acceleration
+- `SDL_RENDERER_PRESENTVSYNC` - Present is synchronized with the refresh rate
+- `SDL_RENDERER_TARGETTEXTURE` - The renderer supports rendering to texture
+
+## `:scaleMode`
+
+The scaling mode for a texture.
+
+- `SDL_SCALEMODENEAREST` - nearest pixel sampling
+- `SDL_SCALEMODELINEAR` - linear filtering
+- `SDL_SCALEMODEBEST` - anisotropic filtering
+
+## `:textureAccess`
+
+The access pattern allowed for a texture.
+
+- `SDL_TEXTUREACCESS_STATIC` - Changes rarely, not lockable
+- `SDL_TEXTUREACCESS_STREAMING` - Changes frequently, lockable
+- `SDL_TEXTUREACCESS_TARGET` - Texture can be used as a render target
+
+## `:textureModulate`
+
+The texture channel modulation used in [`SDL_RenderCopy( ...
+)`](#sdl_rendercopy).
+
+- `SDL_TEXTUREMODULATE_NONE` - No modulation
+- `SDL_TEXTUREMODULATE_COLOR` - srcC = srcC \* color
+- `SDL_TEXTUREMODULATE_ALPHA` - srcA = srcA \* alpha
+
+## `:renderFlip`
+
+Flip constants for [`SDL_RenderCopyEx( ... )`](#sdl_rendercopyex).
+
+- `SDL_FLIP_NONE` - do not flip 
+- `SDL_FLIP_HORIZONTAL` - flip horizontally
+- `SDL_FLIP_VERTICAL` - flip vertically 
+
+## `:blendMode`
+
+The blend mode used in [`SDL_RenderCopy( ... )`](#sdl_rendercopy) and drawing operations.
+
+- `SDL_BLENDMODE_NONE` - no blending
+
+            dstRGBA = srcRGBA
+
+- `SDL_BLENDMODE_BLEND` - alpha blending 
+
+            dstRGB = (srcRGB * srcA) + (dstRGB * (1-srcA))
+        dstA = srcA + (dstA * (1-srcA))
+
+- `SDL_BLENDMODE_ADD` - additive blending
+
+            dstRGB = (srcRGB * srcA) + dstRGB
+            dstA = dstA 
+
+- `SDL_BLENDMODE_MOD` - color modulate
+
+            dstRGB = srcRGB * dstRGB
+            dstA = dstA 
+
+- `SDL_BLENDMODE_MUL` - color multiply
+
+            dstRGB = (srcRGB * dstRGB) + (dstRGB * (1-srcA))
+            dstA = (srcA * dstA) + (dstA * (1-srcA))
+
+- `SDL_BLENDMODE_INVALID` - 
+
+Additional custom blend modes can be returned by [`SDL_ComposeCustomBlendMode( ... )`](#sdl_composecustomblendmode)
+
+## `:blendOperation`
+
+The blend operation used when combining source and destination pixel
+components.
+
+- `SDL_BLENDOPERATION_ADD` - `dst + src`: supported by all renderers
+- `SDL_BLENDOPERATION_SUBTRACT` - `dst - src`: supported by D3D9, D3D11, OpenGL, OpenGLES
+- `SDL_BLENDOPERATION_REV_SUBTRACT` - `src - dst`: supported by D3D9, D3D11, OpenGL, OpenGLES
+- `SDL_BLENDOPERATION_MINIMUM` - `min(dst, src)`: supported by D3D11
+- `SDL_BLENDOPERATION_MAXIMUM` - `max(dst, src)`: supported by D3D11
+
+## `:blendFactor`
+
+The normalized factor used to multiply pixel components.
+
+- `SDL_BLENDFACTOR_ZERO` - `0, 0, 0, 0`
+- `SDL_BLENDFACTOR_ONE` - `1, 1, 1, 1`
+- `SDL_BLENDFACTOR_SRC_COLOR` - `srcR, srcG, srcB, srcA`
+- `SDL_BLENDFACTOR_ONE_MINUS_SRC_COLOR` - `1-srcR, 1-srcG, 1-srcB, 1-srcA`
+- `SDL_BLENDFACTOR_SRC_ALPHA` - `srcA, srcA, srcA, srcA`
+- `SDL_BLENDFACTOR_ONE_MINUS_SRC_ALPHA` - `1-srcA, 1-srcA, 1-srcA, 1-srcA`
+- `SDL_BLENDFACTOR_DST_COLOR` - `dstR, dstG, dstB, dstA`
+- `SDL_BLENDFACTOR_ONE_MINUS_DST_COLOR` - `1-dstR, 1-dstG, 1-dstB, 1-dstA`
+- `SDL_BLENDFACTOR_DST_ALPHA` - `dstA, dstA, dstA, dstA`
+- `SDL_BLENDFACTOR_ONE_MINUS_DST_ALPHA` - `1-dstA, 1-dstA, 1-dstA, 1-dstA`
 
 # LICENSE
 
