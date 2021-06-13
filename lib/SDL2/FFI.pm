@@ -871,7 +871,7 @@ package SDL2::FFI 1.0 {
     class
         SDL_Renderer => [],
         SDL_Texture  => [];
-    attach rendering => {
+    attach render => {
         SDL_GetNumRenderDrivers => [ [], 'int' ],
         SDL_GetRenderDriverInfo => [
             [ 'int', 'SDL_RendererInfo' ],
@@ -1229,6 +1229,24 @@ package SDL2::FFI 1.0 {
         SDL_RenderGetMetalLayer          => [ ['SDL_Renderer'], 'opaque' ],
         SDL_RenderGetMetalCommandEncoder => [ ['SDL_Renderer'], 'opaque' ]
     };
+    $ffi->type( '(int,opaque)->uint32' => 'SDL_TimerCallback' );
+    attach timer => {
+        SDL_GetTicks                => [ [], 'uint32' ],
+        SDL_GetPerformanceCounter   => [ [], 'uint64' ],
+        SDL_GetPerformanceFrequency => [ [], 'uint64' ],
+        SDL_Delay                   => [ ['uint32'] ],
+        SDL_AddTimer                => [
+            [ 'uint32', 'SDL_TimerCallback', 'opaque' ],
+            'int' => sub ( $xsub, $interval, $callback, $param = () ) {
+
+                # Fake void pointer
+                my $cb = FFI::Platypus::Closure->new( sub { $callback->(@_); } );
+                $cb->sticky;
+                $xsub->( $interval, $cb, $param );
+            }
+        ],
+        SDL_RemoveTimer => [ ['uint32'] => 'bool' ],
+    };
 
     # START HERE!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     # https://wiki.libsdl.org/CategoryPlatform
@@ -1297,9 +1315,6 @@ package SDL2::FFI 1.0 {
     sub SDL_WINDOWPOS_CENTERED_DISPLAY ($X) { ( SDL_WINDOWPOS_CENTERED_MASK | ($X) ) }
     sub SDL_WINDOWPOS_CENTERED ()           { SDL_WINDOWPOS_CENTERED_DISPLAY(0) }
     sub SDL_WINDOWPOS_ISCENTERED ($X) { ( ( ($X) & 0xFFFF0000 ) == SDL_WINDOWPOS_CENTERED_MASK ) }
-
-    # https://wiki.libsdl.org/CategoryTimer
-    attach all => { SDL_Delay => [ ['uint32'] ] };
 
     # https://wiki.libsdl.org/CategoryPixels
     FFI::C::StructDef->new(

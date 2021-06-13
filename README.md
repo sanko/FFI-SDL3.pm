@@ -2148,7 +2148,7 @@ Expected parameters include:
 ## 2D Accelerated Rendering
 
 This category contains functions for 2D accelerated rendering. You may import
-these functions with the `:rendering` tag.
+these functions with the `:render` tag.
 
 This API supports the following features:
 
@@ -3506,6 +3506,101 @@ Expected parameters include:
 - `alphaOperation` - the `:blendOperation` used to combine the alpha component of the source and destination pixels
 
 Returns a `:blendMode` that represents the chosen factors and operations.
+
+# Time Management Routines
+
+This section contains functions for handling the SDL time management routines.
+They may be imported with the `:timer` tag.
+
+## `SDL_GetTicks( )`
+
+Get the number of milliseconds since SDL library initialization.
+
+        my $time = SDL_GetTicks( );
+
+This value wraps if the program runs for more than `~49` days.
+
+Returns an unsigned 32-bit value representing the number of milliseconds since
+the SDL library initialized.
+
+## `SDL_GetPerformanceCounter( )`
+
+Get the current value of the high resolution counter.
+
+        my $high_timer = SDL_GetPerformanceCounter( );
+
+This function is typically used for profiling.
+
+The counter values are only meaningful relative to each other. Differences
+between values can be converted to times by using [`SDL_GetPerformanceFrequency( )`](#sdl_getperformancefrequency).
+
+Returns the current counter value.
+
+## `SDL_GetPerformanceFrequency( ... )`
+
+Get the count per second of the high resolution counter.
+
+        my $hz = SDL_GetPerformanceFrequency( );
+
+Returns a platform-specific count per second.
+
+## `SDL_Delay( ... )`
+
+Wait a specified number of milliseconds before returning.
+
+        SDL_Delay( 1000 );
+
+This function waits a specified number of milliseconds before returning. It
+waits at least the specified time, but possibly longer due to OS scheduling.
+
+Expected parameters include:
+
+- `ms` - the number of milliseconds to delay
+
+## `SDL_AddTimer( ... )`
+
+Call a callback function at a future time.
+
+    my $id = SDL_AddTimer( 1000, sub ( $interval, $data ) { warn 'ping!'; $interval; } );
+
+If you use this function, you must pass `SDL_INIT_TIMER` to [`SDL_Init(
+... )`](#sdl_init).
+
+The callback function is passed the current timer interval and returns the next
+timer interval. If the returned value is the same as the one passed in, the
+periodic alarm continues, otherwise a new alarm is scheduled. If the callback
+returns `0`, the periodic alarm is cancelled.
+
+The callback is run on a separate thread.
+
+Timers take into account the amount of time it took to execute the callback.
+For example, if the callback took 250 ms to execute and returned 1000 (ms), the
+timer would only wait another 750 ms before its next iteration.
+
+Timing may be inexact due to OS scheduling. Be sure to note the current time
+with [`SDL_GetTicks( )`](#sdl_getticks) or  [`SDL_GetPerformanceCounter( )`](#sdl_getperformancecounter) in case
+your callback needs to adjust for variances.
+
+Expected parameters include:
+
+- `interval` - the timer delay, in milliseconds, passed to `callback`
+- `callback` - the `CODE` reference to call when the specified `interval` elapses
+- `param` - a pointer that is passed to `callback`
+
+Returns a timer ID or `0` if an error occurs; call [`SDL_GetError(
+)`](#sdl_geterror)() for more information.
+
+## `SDL_RemoveTimer( ... )`
+
+        SDL_RemoveTimer( $id );
+
+Remove a timer created with [`SDL_AddTimer( ... )`](#sdl_addtimer).
+
+Expected parameters include:
+
+- `id` - the ID of the timer to remove
+
+Returns true if the timer is removed or false if the timer wasn't found.
 
 # Imports
 
