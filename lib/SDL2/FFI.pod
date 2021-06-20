@@ -4765,7 +4765,7 @@ Expected parameters include:
 
 Audio system initialization.
 
-	SDL_AudioInit( 'x11' );
+	SDL_AudioInit( 'pulseaudio' );
 
 This method is used internally, and should not be used unless you have a
 specific need to specify the audio driver you want to use. You should normally

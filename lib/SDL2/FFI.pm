@@ -48,6 +48,10 @@ package SDL2::FFI 0.01 {
     our %EXPORT_TAGS;
 
     # Sugar
+    sub deprecate ($str) {
+        warnings::warn( 'deprecated', $str ) if warnings::enabled('deprecated');
+    }
+
     sub define (%args) {
         for my $tag ( keys %args ) {
 
@@ -92,7 +96,13 @@ package SDL2::FFI 0.01 {
                 -f sub ($package) { $package =~ m[::(.+)]; './lib/SDL2/' . $1 . '.pod' }
                     ->($class) ? '' : ' (undocumented)'
             );
-            FFI::C::StructDef->new( $ffi, name => $name, class => $class, members => $args{$name} );
+            FFI::C::StructDef->new(
+                $ffi,
+                name     => $name,
+                class    => $class,
+                members  => $args{$name},
+                nullable => 1
+            );
         }
     }
     #
@@ -1324,10 +1334,24 @@ package SDL2::FFI 0.01 {
     $ffi->type( '(opaque,uint16)->void' => 'SDL_AudioFilter' );
     define audio => [ [ SDL_AUDIOCVT_MAX_FILTERS => 9 ], ];
     attach audio => {
-        SDL_GetNumAudioDrivers => [ [],         'int' ],
-        SDL_GetAudioDriver     => [ ['int'],    'string' ],
-        SDL_AudioInit          => [ ['string'], 'int' ],
-        SDL_AudioQuit          => [ [] ],
+        SDL_GetNumAudioDrivers    => [ [],         'int' ],
+        SDL_GetAudioDriver        => [ ['int'],    'string' ],
+        SDL_AudioInit             => [ ['string'], 'int' ],
+        SDL_AudioQuit             => [ [] ],
+        SDL_GetCurrentAudioDriver => [ [], 'string' ],
+        SDL_OpenAudio             => [
+            [ 'SDL_AudioSpec', 'SDL_AudioSpec' ],
+            'int' => sub ( $inner, $desired, $obtained = () ) {
+                deprecate <<'END';
+SDL_OpenAudio( ... ) remains for compatibility with SDL 1.2. The new, more
+powerful, and preferred way to do this is SDL_OpenAudioDevice( ... );
+END
+
+                #my $obtained = SDL2::AudioSpec->new();
+                my $ok = $inner->( $desired, $obtained );
+                $ok == 0 ? $obtained : $ok;
+            }
+        ],
         SDL_GetNumAudioDevices => [ ['int'], 'int' ],
     };
 
