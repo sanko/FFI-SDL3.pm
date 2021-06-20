@@ -21,19 +21,38 @@ SDL2::FFI - FFI Wrapper for SDL (Simple DirectMedia Layer) Development Library
     } until $event->type == SDL_QUIT;
     SDL_DestroyRenderer($renderer);
     SDL_DestroyWindow($win);
-    exit SDL_Quit();
+    exit SDL_Quit( );
 
 # DESCRIPTION
 
-SDL2::FFI is ...
+SDL2::FFI is an FFI::Platypus-backed wrapper around the **S**imple
+**D**irectMedia **L**ayer - a cross-platform development library designed to
+provide low level access to audio, keyboard, mouse, joystick, and graphics
+hardware.
 
-This package is named `SDL2::FFI` because `SDL2` is being squatted on and I'd
-rather make games than play them over namespaces.
+## Getting Started
+
+The SDL2::FFI module exports a high-level, Perl-like abstraction to use the SDL
+library.
+
+To get started, you must initialize the subsystems you need:
+
+        use SDL2::FFI;
+        my $window = SDL2::Window->new( w => 100, h => 100 );
+
+## The Future
+
+SDL2::FFI is still in early development: the majority of SDL's functions have
+yet to be implemented and the interface may also grow to be less sugary leading
+up to an eventual 1.0 release. This package is named `SDL2::FFI` because
+`SDL2` is being squatted on and I'd rather make games than play them over
+namespaces.
 
 # Initialization and Shutdown
 
 The functions in this category are used to set up SDL for use and generally
-have global effects in your program.
+have global effects in your program. These functions may be imported with the
+`:default` tag.
 
 ## `SDL_Init( ... )`
 
@@ -76,7 +95,7 @@ Expected parameters include:
 
 - `flags` which may be any be imported with the [`:init`](https://metacpan.org/pod/SDL2%3A%3AFFI#init) tag and may be OR'd together.
 
-Returns `0` on success or a negative error code on failure; call [`SDL_GetError()`](#sdl_geterror) for more information.
+Returns `0` on success or a negative error code on failure; call [`SDL_GetError( )`](#sdl_geterror) for more information.
 
 ## `SDL_Quit( )`
 
@@ -87,7 +106,7 @@ initialized subsystem with [`SDL_QuitSubSystem( )`](#sdl_quitsubsystem). It is s
 initialization.
 
 If you start a subsystem using a call to that subsystem's init function (for
-example [`SDL_VideoInit()`](#sdl_videoinit)) instead of [`SDL_Init( ... )`](#sdl_init) or [`SDL_InitSubSystem( ...
+example [`SDL_VideoInit( )`](#sdl_videoinit)) instead of [`SDL_Init( ... )`](#sdl_init) or [`SDL_InitSubSystem( ...
 )`](#sdl_initsubsystem), then you must use that subsystem's quit
 function ([`SDL_VideoQuit( )`](#sdl_videoquit)) to shut it down
 before calling `SDL_Quit( )`. But generally, you should not be using those
@@ -175,7 +194,7 @@ Set a hint with normal priority.
         SDL_SetHint( SDL_HINT_XINPUT_ENABLED, 1 );
 
 Hints will not be set if there is an existing override hint or environment
-variable that takes precedence. You can use SDL\_SetHintWithPriority() to set
+variable that takes precedence. You can use SDL\_SetHintWithPriority( ) to set
 the hint with override priority instead.
 
 Expected parameters:
@@ -233,7 +252,7 @@ Add a function to watch a particular hint.
                         my ($userdata, $name, $oldvalue, $newvalue) = @_;
                         ...;
                 },
-                { time => time(), clicks => 3 }
+                { time => time( ), clicks => 3 }
         );
 
 Expected parameters:
@@ -259,7 +278,7 @@ Remove a callback watching a particular hint.
         SDL_AddHintCallback(
                 SDL_HINT_XINPUT_ENABLED,
                 $cb,
-                { time => time(), clicks => 3 }
+                { time => time( ), clicks => 3 }
         );
 
 Expected parameters:
@@ -277,11 +296,11 @@ Expected parameters:
 
     a pointer to pass to the callback function
 
-## `SDL_ClearHints()`
+## `SDL_ClearHints( )`
 
 Clear all hints.
 
-        SDL_ClearHints();
+        SDL_ClearHints( );
 
 This function is automatically called during [`SDL_Quit( )`](#sdl_quit).
 
@@ -310,7 +329,7 @@ Expected parameters:
 
 - `fmt`
 
-    a `printf()`-style message format string
+    a `printf( )`-style message format string
 
 - `@params`
 
@@ -320,16 +339,16 @@ Expected parameters:
 
 Retrieve a message about the last error that occurred on the current thread.
 
-        warn SDL_GetError();
+        warn SDL_GetError( );
 
-It is possible for multiple errors to occur before calling `SDL_GetError()`.
+It is possible for multiple errors to occur before calling `SDL_GetError( )`.
 Only the last error is returned.
 
 The message is only applicable when an SDL function has signaled an error. You
 must check the return values of SDL function calls to determine when to
-appropriately call `SDL_GetError()`. You should **not** use the results of
-`SDL_GetError()` to decide if an error has occurred! Sometimes SDL will set an
-error string even when reporting success.
+appropriately call `SDL_GetError( )`. You should **not** use the results of
+`SDL_GetError( )` to decide if an error has occurred! Sometimes SDL will set
+an error string even when reporting success.
 
 SDL will **not** clear the error string for successful API calls. You **must**
 check return values for failure cases before you can assume the error string
@@ -343,10 +362,10 @@ application.
 
 Returns a message with information about the specific error that occurred, or
 an empty string if there hasn't been an error message set since the last call
-to [`SDL_ClearError()`](#sdl_clearerror). The message is only
+to [`SDL_ClearError( )`](#sdl_clearerror). The message is only
 applicable when an SDL function has signaled an error. You must check the
 return values of SDL function calls to determine when to appropriately call
-`SDL_GetError()`.
+`SDL_GetError( )`.
 
 ## `SDL_GetErrorMsg( ... )`
 
@@ -356,7 +375,7 @@ Get the last error message that was set for the current thread.
         warn SDL_GetErrorMsg($x, 300);
 
 This allows the caller to copy the error string into a provided buffer, but
-otherwise operates exactly the same as [`SDL_GetError()`](#sdl_geterror).
+otherwise operates exactly the same as [`SDL_GetError( )`](#sdl_geterror).
 
 - `errstr`
 
@@ -470,7 +489,7 @@ Expected parameters:
 
 Log a message with `SDL_LOG_PRIORITY_VERBOSE`.
 
-        SDL_LogVerbose( 'Current time: %s [%ds exec]', +localtime(), time - $^T );
+        SDL_LogVerbose( 'Current time: %s [%ds exec]', +localtime( ), time - $^T );
 
 Expected parameters:
 
@@ -480,7 +499,7 @@ Expected parameters:
 
 - `fmt`
 
-    A `sprintf()` style message format string.
+    A `sprintf( )` style message format string.
 
 - `...`
 
@@ -490,7 +509,7 @@ Expected parameters:
 
 Log a message with `SDL_LOG_PRIORITY_DEBUG`.
 
-        SDL_LogDebug( 'Current time: %s [%ds exec]', +localtime(), time - $^T );
+        SDL_LogDebug( 'Current time: %s [%ds exec]', +localtime( ), time - $^T );
 
 Expected parameters:
 
@@ -500,7 +519,7 @@ Expected parameters:
 
 - `fmt`
 
-    A `sprintf()` style message format string.
+    A `sprintf( )` style message format string.
 
 - `...`
 
@@ -510,7 +529,7 @@ Expected parameters:
 
 Log a message with `SDL_LOG_PRIORITY_INFO`.
 
-        SDL_LogInfo( 'Current time: %s [%ds exec]', +localtime(), time - $^T );
+        SDL_LogInfo( 'Current time: %s [%ds exec]', +localtime( ), time - $^T );
 
 Expected parameters:
 
@@ -520,7 +539,7 @@ Expected parameters:
 
 - `fmt`
 
-    A `sprintf()` style message format string.
+    A `sprintf( )` style message format string.
 
 - `...`
 
@@ -530,7 +549,7 @@ Expected parameters:
 
 Log a message with `SDL_LOG_PRIORITY_WARN`.
 
-        SDL_LogWarn( 'Current time: %s [%ds exec]', +localtime(), time - $^T );
+        SDL_LogWarn( 'Current time: %s [%ds exec]', +localtime( ), time - $^T );
 
 Expected parameters:
 
@@ -540,7 +559,7 @@ Expected parameters:
 
 - `fmt`
 
-    A `sprintf()` style message format string.
+    A `sprintf( )` style message format string.
 
 - `...`
 
@@ -550,7 +569,7 @@ Expected parameters:
 
 Log a message with `SDL_LOG_PRIORITY_ERROR`.
 
-        SDL_LogError( 'Current time: %s [%ds exec]', +localtime(), time - $^T );
+        SDL_LogError( 'Current time: %s [%ds exec]', +localtime( ), time - $^T );
 
 Expected parameters:
 
@@ -560,7 +579,7 @@ Expected parameters:
 
 - `fmt`
 
-    A `sprintf()` style message format string.
+    A `sprintf( )` style message format string.
 
 - `...`
 
@@ -570,7 +589,7 @@ Expected parameters:
 
 Log a message with `SDL_LOG_PRIORITY_CRITICAL`.
 
-        SDL_LogCritical( 'Current time: %s [%ds exec]', +localtime(), time - $^T );
+        SDL_LogCritical( 'Current time: %s [%ds exec]', +localtime( ), time - $^T );
 
 Expected parameters:
 
@@ -580,7 +599,7 @@ Expected parameters:
 
 - `fmt`
 
-    A `sprintf()` style message format string.
+    A `sprintf( )` style message format string.
 
 - `...`
 
@@ -591,7 +610,7 @@ Expected parameters:
 Log a message with the specified category and priority.
 
         SDL_LogMessage( SDL_LOG_CATEGORY_APPLICATION, SDL_LOG_PRIORITY_CRITICAL,
-                                        'Current time: %s [%ds exec]', +localtime(), time - $^T );
+                                        'Current time: %s [%ds exec]', +localtime( ), time - $^T );
 
 Expected parameters:
 
@@ -605,7 +624,7 @@ Expected parameters:
 
 - `fmt`
 
-    A `sprintf()` style message format string.
+    A `sprintf( )` style message format string.
 
 - `...`
 
@@ -672,8 +691,8 @@ Get the version of SDL that is linked against your program.
 
 If you are linking to SDL dynamically, then it is possible that the current
 version will be different than the version you compiled against. This function
-returns the current version, while SDL\_VERSION() is a macro that tells you what
-version you compiled with.
+returns the current version, while SDL\_VERSION( ) is a macro that tells you
+what version you compiled with.
 
 This function may be called safely at any time, even before [`SDL_Init(
 )`](#sdl_init).
@@ -698,7 +717,7 @@ Returns a number >= 1 on success or a negative error code on failure; call [`SDL
 
 Get the name of a built in video driver.
 
-    CORE::say SDL_GetVideoDriver($_) for 0 .. SDL_GetNumVideoDrivers() - 1;
+    CORE::say SDL_GetVideoDriver($_) for 0 .. SDL_GetNumVideoDrivers( ) - 1;
 
 The video drivers are presented in the order in which they are normally checked
 during initialization.
@@ -720,13 +739,13 @@ window manager, etc, and determines the available display modes and pixel
 formats, but does not initialize a window or graphics mode.
 
 If you use this function and you haven't used the SDL\_INIT\_VIDEO flag with
-either SDL\_Init() or SDL\_InitSubSystem(), you should call SDL\_VideoQuit()
-before calling SDL\_Quit().
+either SDL\_Init( ) or SDL\_InitSubSystem( ), you should call SDL\_VideoQuit( )
+before calling SDL\_Quit( ).
 
-It is safe to call this function multiple times. SDL\_VideoInit() will call
-SDL\_VideoQuit() itself if the video subsystem has already been initialized.
+It is safe to call this function multiple times. SDL\_VideoInit( ) will call
+SDL\_VideoQuit( ) itself if the video subsystem has already been initialized.
 
-You can use SDL\_GetNumVideoDrivers() and SDL\_GetVideoDriver() to find a
+You can use SDL\_GetNumVideoDrivers( ) and SDL\_GetVideoDriver( ) to find a
 specific \`driver\_name\`.
 
 Expected parameters include:
@@ -1611,7 +1630,7 @@ Expected parameters includes:
 - `window` - the window used to select the display whose brightness will be changed
 - `brightness` - the brightness (gamma multiplier) value to set where 0.0 is completely dark and 1.0 is normal brightness
 
-Returns `0` on success or a negative error code on failure; call [`SDL_GetError( )`](#sdl_geterror)() for more information.
+Returns `0` on success or a negative error code on failure; call [`SDL_GetError( )`](#sdl_geterror)( ) for more information.
 
 ## `SDL_GetWindowBrightness( ... )`
 
@@ -1648,7 +1667,7 @@ Expected parameters include:
 - `window` - the window which will be made transparent or opaque
 - `opacity` - the opacity value (0.0 - transparent, 1.0 - opaque)
 
-Returns `0` on success or a negative error code on failure; call [`SDL_GetError( )`](#sdl_geterror)() for more information.
+Returns `0` on success or a negative error code on failure; call [`SDL_GetError( )`](#sdl_geterror)( ) for more information.
 
 ## `SDL_GetWindowOpacity( ... )`
 
@@ -1668,7 +1687,7 @@ Expected parameters include:
 - `window` - the window to get the current opacity value from
 
 Returns the current opacity on success or a negative error code on failure;
-call [`SDL_GetError( )`](#sdl_geterror)() for more information.
+call [`SDL_GetError( )`](#sdl_geterror)( ) for more information.
 
 ## `SDL_SetWindowModalFor( ... )`
 
@@ -1681,7 +1700,7 @@ Expected parameters include:
 - `modal_window` - the window that should be set modal
 - `parent_window` - the parent window for the modal window
 
-Returns `0` on success or a negative error code on failure; call [`SDL_GetError( )`](#sdl_geterror)() for more information.
+Returns `0` on success or a negative error code on failure; call [`SDL_GetError( )`](#sdl_geterror)( ) for more information.
 
 ## `SDL_SetWindowInputFocus( ... )`
 
@@ -1696,7 +1715,7 @@ Expected parameters include:
 
 - `window` - the window that should get the input focus
 
-Returns `0` on success or a negative error code on failure; call [`SDL_GetError( )`](#sdl_geterror)() for more information.
+Returns `0` on success or a negative error code on failure; call [`SDL_GetError( )`](#sdl_geterror)( ) for more information.
 
 ## `SDL_SetWindowGammaRamp( ... )`
 
@@ -1722,7 +1741,7 @@ Expected parameters include:
 - `green` - a 256 element array of 16-bit quantities representing the translation table for the green channel, or NULL
 - `blue` - a 256 element array of 16-bit quantities representing the translation table for the blue channel, or NULL
 
-Returns `0` on success or a negative error code on failure; call [`SDL_GetError( )`](#sdl_geterror)() for more information.
+Returns `0` on success or a negative error code on failure; call [`SDL_GetError( )`](#sdl_geterror)( ) for more information.
 
 ## `SDL_GetWindowGammaRamp( ... )`
 
@@ -1742,8 +1761,8 @@ Expected parameters include:
 
 Returns three 256 element arrays of 16-bit quantities filled in with the
 translation table for the red, gree, and blue channels on success or a negative
-error code on failure; call [`SDL_GetError( )`](#sdl_geterror)() for
-more information.
+error code on failure; call [`SDL_GetError( )`](#sdl_geterror)( )
+for more information.
 
 ## `SDL_SetWindowHitTest( ... )`
 
@@ -1789,7 +1808,7 @@ Expected parameters include:
 - `callback` - the function to call when doing a hit-test
 - `callback_data` - an app-defined void pointer passed to `callback`
 
-Returns `0` on success or `-1` on error (including unsupported); call [`SDL_GetError( )`](#sdl_geterror)() for more information.
+Returns `0` on success or `-1` on error (including unsupported); call [`SDL_GetError( )`](#sdl_geterror)( ) for more information.
 
 ## `SDL_FlashWindow( ... )`
 
@@ -1803,7 +1822,7 @@ Expected parameters include:
 - `window` - the window to request the flashing for
 - `flash_count` - number of times the window gets flashed on systems that support flashing the window multiple times, like Windows, else it is ignored
 
-Returns `0` on success or a negative error code on failure; call [`SDL_GetError( )`](#sdl_geterror)() for more information.
+Returns `0` on success or a negative error code on failure; call [`SDL_GetError( )`](#sdl_geterror)( ) for more information.
 
 ## `SDL_DestroyWindow( ... )`
 
@@ -1813,7 +1832,7 @@ Destroy a window.
 
 If `window` is undefined, this function will return immediately after setting
 the SDL error message to "Invalid window". See [`SDL_GetError(
-)`](#sdl_geterror)().
+)`](#sdl_geterror)( ).
 
 Expected parameters include:
 
@@ -1868,7 +1887,7 @@ Expected parameters include:
 
 - `path` - the platform dependent OpenGL library name, or undef to open the default OpenGL library
 
-Returns `0` on success or a negative error code on failure; call [`SDL_GetError( )`](#sdl_geterror)() for more information.
+Returns `0` on success or a negative error code on failure; call [`SDL_GetError( )`](#sdl_geterror)( ) for more information.
 
 ## `SDL_GL_GetProcAddress( ... )`
 
@@ -1889,7 +1908,7 @@ without any platform-specific code, though:
 
 - On Windows, function pointers are specific to the current GL context;
 this means you need to have created a GL context and made it current before
-calling SDL\_GL\_GetProcAddress(). If you recreate your context or create a
+calling SDL\_GL\_GetProcAddress( ). If you recreate your context or create a
 second context, you should assume that any existing function pointers
 aren't valid to use with it. This is (currently) a Windows-specific
 limitation, and in practice lots of drivers don't suffer this limitation,
@@ -1977,7 +1996,7 @@ Expected parameters include:
 - `attr` - an SDL\_GLattr enum value specifying the OpenGL attribute to set
 - `value` - the desired value for the attribute
 
-Returns `0` on success or a negative error code on failure; call [`SDL_GetError( )`](#sdl_geterror)() for more information.
+Returns `0` on success or a negative error code on failure; call [`SDL_GetError( )`](#sdl_geterror)( ) for more information.
 
 ## `SDL_GL_GetAttribute( ... )`
 
@@ -1989,7 +2008,7 @@ Expected parameters include:
 
 - `attr` - an SDL\_GLattr enum value specifying the OpenGL attribute to get
 
-Returns the value on success or a negative error code on failure; call [`SDL_GetError( )`](#sdl_geterror)() for more information.
+Returns the value on success or a negative error code on failure; call [`SDL_GetError( )`](#sdl_geterror)( ) for more information.
 
 ## `SDL_GL_CreateContext( ... )`
 
@@ -2023,7 +2042,7 @@ Expected parameters include:
 - `window` - the window to associate with the context
 
 Returns the OpenGL context associated with `window` or undef on error; call
-[`SDL_GetError( )`](#sdl_geterror)() for more details.
+[`SDL_GetError( )`](#sdl_geterror)( ) for more details.
 
 ## `SDL_GL_MakeCurrent( ... )`
 
@@ -2038,7 +2057,7 @@ Expected parameters include:
 - `window` - the window to associate with the context
 - `context` - the OpenGL context to associate with the window
 
-Returns `0` on success or a negative error code on failure; call [`SDL_GetError( )`](#sdl_geterror)() for more information.
+Returns `0` on success or a negative error code on failure; call [`SDL_GetError( )`](#sdl_geterror)( ) for more information.
 
 ## `SDL_GL_GetCurrentWindow( )`
 
@@ -2047,7 +2066,7 @@ Get the currently active OpenGL window.
         my $window = SDL_GL_GetCurrentWindow( );
 
 Returns the currently active OpenGL window on success or undef on failure; call
-[`SDL_GetError( )`](#sdl_geterror)() for more information.
+[`SDL_GetError( )`](#sdl_geterror)( ) for more information.
 
 ## `SDL_GL_GetCurrentContext( )`
 
@@ -2055,7 +2074,7 @@ Get the currently active OpenGL context.
 
         my $gl = SDL_GL_GetCurrentContext( );
 
-Returns the currently active OpenGL context or NULL on failure; call [`SDL_GetError( )`](#sdl_geterror)() for more information.
+Returns the currently active OpenGL context or NULL on failure; call [`SDL_GetError( )`](#sdl_geterror)( ) for more information.
 
 ## `SDL_GL_GetDrawableSize( ... )`
 
@@ -2104,7 +2123,7 @@ Expected parameters include:
 - `interval` - 0 for immediate updates, 1 for updates synchronized with the vertical retrace, -1 for adaptive vsync
 
 Returns `0` on success or `-1` if setting the swap interval is not supported;
-call [`SDL_GetError( )`](#sdl_geterror)() for more information.
+call [`SDL_GetError( )`](#sdl_geterror)( ) for more information.
 
 ## `SDL_GL_GetSwapInterval( )`
 
@@ -2117,7 +2136,7 @@ context, this function will return 0 as a safe default.
 
 Returns `0` if there is no vertical retrace synchronization, `1` if the
 buffer swap is synchronized with the vertical retrace, and `-1` if late swaps
-happen immediately instead of waiting for the next retrace; call [`SDL_GetError( )`](#sdl_geterror)() for more information.
+happen immediately instead of waiting for the next retrace; call [`SDL_GetError( )`](#sdl_geterror)( ) for more information.
 
 ## `SDL_GL_SwapWindow( ... )`
 
@@ -2181,7 +2200,7 @@ several available with different capabilities.
 
 There may be none if SDL was compiled without render support.
 
-Returns a number >= 0 on success or a negative error code on failure; call [`SDL_GetError( )`](#sdl_geterror)() for more information.
+Returns a number >= 0 on success or a negative error code on failure; call [`SDL_GetError( )`](#sdl_geterror)( ) for more information.
 
 ## `SDL_GetRenderDriverInfo( ... )`
 
@@ -2194,7 +2213,7 @@ Expected parameters include:
 - `index` - the index of the driver to query information about
 
 Returns an [SDL2::RendererInfo](https://metacpan.org/pod/SDL2%3A%3ARendererInfo) structure on success or a negative error code
-on failure; call [`SDL_GetError( )`](#sdl_geterror)() for more
+on failure; call [`SDL_GetError( )`](#sdl_geterror)( ) for more
 information.
 
 ## `SDL_CreateWindowAndRenderer( ... )`
@@ -2210,7 +2229,7 @@ Expected parameters include:
 - `window_flags` - the flags used to create the window (see [`SDL_CreateWindow( ... )`](#sdl_createwindow))
 
 Returns a [SDL2::Window](https://metacpan.org/pod/SDL2%3A%3AWindow) and [SDL2::Renderer](https://metacpan.org/pod/SDL2%3A%3ARenderer) objects on success, or -1 on
-error; call [`SDL_GetError( )`](#sdl_geterror)() for more
+error; call [`SDL_GetError( )`](#sdl_geterror)( ) for more
 information.
 
 ## `SDL_CreateRenderer( ... )`
@@ -2225,7 +2244,7 @@ Expected parameters include:
 - `index` - the index of the rendering driver to initialize, or `-1` to initialize the first one supporting the requested flags
 - `flags` - `0`, or one or more `SDL_RendererFlags` OR'd together
 
-Returns a valid rendering context or undefined if there was an error; call [`SDL_GetError( )`](#sdl_geterror)() for more information.
+Returns a valid rendering context or undefined if there was an error; call [`SDL_GetError( )`](#sdl_geterror)( ) for more information.
 
 ## `SDL_CreateSoftwareRenderer( ... )`
 
@@ -2243,7 +2262,7 @@ Expected parameters include:
 
 - `surface` - the [SDL2::Surface](https://metacpan.org/pod/SDL2%3A%3ASurface) structure representing the surface where rendering is done
 
-Returns a valid rendering context or undef if there was an error; call [`SDL_GetError( )`](#sdl_geterror)() for more information.
+Returns a valid rendering context or undef if there was an error; call [`SDL_GetError( )`](#sdl_geterror)( ) for more information.
 
 ## `SDL_GetRenderer( ... )`
 
@@ -2255,7 +2274,7 @@ Expected parameters include:
 
 - `window` - the window to query
 
-Returns the rendering context on success or undef on failure; call [`SDL_GetError( )`](#sdl_geterror)() for more information.
+Returns the rendering context on success or undef on failure; call [`SDL_GetError( )`](#sdl_geterror)( ) for more information.
 
 ## `SDL_GetRendererInfo( ... )`
 
@@ -2268,7 +2287,7 @@ Expected parameters include:
 - `renderer` - the rendering context
 
 Returns an [SDL2::RendererInfo](https://metacpan.org/pod/SDL2%3A%3ARendererInfo) structure on success or a negative error code
-on failure; call [`SDL_GetError( )`](#sdl_geterror)() for more
+on failure; call [`SDL_GetError( )`](#sdl_geterror)( ) for more
 information.
 
 ## `SDL_GetRendererOutputSize( ... )`
@@ -2286,7 +2305,7 @@ Expected parameters include:
 - `renderer` - the rendering context
 
 Returns the width and height on success or a negative error code on failure;
-call [`SDL_GetError( )`](#sdl_geterror)() for more information.
+call [`SDL_GetError( )`](#sdl_geterror)( ) for more information.
 
 ## `SDL_CreateTexture( ... )`
 
@@ -2307,7 +2326,7 @@ Expected parameters include:
 
 Returns a pointer to the created texture or undefined if no rendering context
 was active, the format was unsupported, or the width or height were out of
-range; call [`SDL_GetError( )`](#sdl_geterror)() for more
+range; call [`SDL_GetError( )`](#sdl_geterror)( ) for more
 information.
 
 ## `SDL_CreateTextureFromSurface( ... )`
@@ -2335,7 +2354,7 @@ Expected parameters include:
 - `surface` - the [SDL2::Surface](https://metacpan.org/pod/SDL2%3A%3ASurface) structure containing pixel data used to fill the texture
 
 Returns the created texture or undef on failure; call [`SDL_GetError(
-)`](#sdl_geterror)() for more information.
+)`](#sdl_geterror)( ) for more information.
 
 ## `SDL_QueryTexture( ... )`
 
@@ -2357,7 +2376,7 @@ format (one of the [`:pixelFormatEnum`](#pixelformatenum) values)
 - `h` - a pointer filled in with the height of the texture in pixels
 
 ...or a negative error code on failure; call [`SDL_GetError(
-)`](#sdl_geterror)() for more information.
+)`](#sdl_geterror)( ) for more information.
 
 ## `SDL_SetTextureColorMod( ... )`
 
@@ -2381,7 +2400,7 @@ Expected parameters include:
 - `g` - the green color value multiplied into copy operations
 - `b` - the blue color value multiplied into copy operations
 
-Returns `0` on success or a negative error code on failure; call [`SDL_GetError( )`](#sdl_geterror)() for more information.
+Returns `0` on success or a negative error code on failure; call [`SDL_GetError( )`](#sdl_geterror)( ) for more information.
 
 ## `SDL_GetTextureColorMod( ... )`
 
@@ -2394,8 +2413,8 @@ Expected parameters include:
 - `texture` - the texture to query
 
 Returns the current red, green, and blue color values on success or a negative
-error code on failure; call [`SDL_GetError( )`](#sdl_geterror)() for
-more information.
+error code on failure; call [`SDL_GetError( )`](#sdl_geterror)( )
+for more information.
 
 ## `SDL_SetTextureAlphaMod( ... )`
 
@@ -2417,7 +2436,7 @@ Expected parameters include:
 - `texture` - the texture to update
 - `alpha` - the source alpha value multiplied into copy operations
 
-Returns `0` on success or a negative error code on failure; call [`SDL_GetError( )`](#sdl_geterror)() for more information.
+Returns `0` on success or a negative error code on failure; call [`SDL_GetError( )`](#sdl_geterror)( ) for more information.
 
 ## `SDL_GetTextureAlphaMod( ... )`
 
@@ -2430,7 +2449,7 @@ Expected parameters include:
 - `texture` - the texture to query
 
 Returns the current alpha value on success or a negative error code on failure;
-call [`SDL_GetError( )`](#sdl_geterror)() for more information.
+call [`SDL_GetError( )`](#sdl_geterror)( ) for more information.
 
 ## `SDL_SetTextureBlendMode( ... )`
 
@@ -2445,7 +2464,7 @@ Expected parameters include:
 - `texture` - the texture to update
 - `blendMode` - the [`:blendMode`](#blendmode) to use for texture blending
 
-Returns 0 on success or a negative error code on failure; call [`SDL_GetError( )`](#sdl_geterror)() for more information.
+Returns 0 on success or a negative error code on failure; call [`SDL_GetError( )`](#sdl_geterror)( ) for more information.
 
 ## `SDL_GetTextureBlendMode( ... )`
 
@@ -2458,7 +2477,7 @@ Expected parameters include:
 - `texture` - the texture to query
 
 Returns the current `:blendMode` on success or a negative error code on
-failure; call [`SDL_GetError( )`](#sdl_geterror)() for more
+failure; call [`SDL_GetError( )`](#sdl_geterror)( ) for more
 information.
 
 ## `SDL_SetTextureScaleMode( ... )`
@@ -2514,7 +2533,7 @@ Expected parameters include:
 - `pixels` - the raw pixel data in the format of the texture
 - `pitch` - the number of bytes in a row of pixel data, including padding between lines
 
-Returns `0` on success or a negative error code on failure; call [`SDL_GetError( )`](#sdl_geterror)() for more information.
+Returns `0` on success or a negative error code on failure; call [`SDL_GetError( )`](#sdl_geterror)( ) for more information.
 
 ## `SDL_UpdateYUVTexture( ... )`
 
@@ -2537,7 +2556,7 @@ Expected parameters include:
 - `Vplane` - the raw pixel data for the V plane
 - `Vpitch` - the number of bytes between rows of pixel data for the V plane
 
-Returns `0` on success or -1 if the texture is not valid; call [`SDL_GetError( )`](#sdl_geterror)() for more information.
+Returns `0` on success or -1 if the texture is not valid; call [`SDL_GetError( )`](#sdl_geterror)( ) for more information.
 
 ## `SDL_UpdateNVTexture( ... )`
 
@@ -2582,7 +2601,7 @@ Expected parameters include:
 
 Returns 0 on success or a negative error code if the texture is not valid or
 was not created with \`SDL\_TEXTUREACCESS\_STREAMING\`; call [`SDL_GetError(
-)`](#sdl_geterror)() for more information.
+)`](#sdl_geterror)( ) for more information.
 
 ## `SDL_LockTextureToSurface( ... )`
 
@@ -2662,7 +2681,7 @@ Expected parameters include:
 - `renderer` - the rendering context
 - `texture` - the targeted texture, which must be created with the `SDL_TEXTUREACCESS_TARGET` flag, or undef to render to the window instead of a texture.
 
-Returns `0` on success or a negative error code on failure; call [`SDL_GetError( )`](#sdl_geterror)() for more information.
+Returns `0` on success or a negative error code on failure; call [`SDL_GetError( )`](#sdl_geterror)( ) for more information.
 
 ## `SDL_GetRenderTarget( ... )`
 
@@ -2702,7 +2721,7 @@ Expected parameters include:
 - `w` - the width of the logical resolution
 - `h` - the height of the logical resolution
 
-Returns `0` on success or a negative error code on failure; call [`SDL_GetError( )`](#sdl_geterror)() for more information.
+Returns `0` on success or a negative error code on failure; call [`SDL_GetError( )`](#sdl_geterror)( ) for more information.
 
 ## `SDL_RenderGetLogicalSize( ... )`
 
@@ -2735,7 +2754,7 @@ Expected parameters include:
 - `renderer` - the renderer for which integer scaling should be set
 - `enable` - enable or disable the integer scaling for rendering
 
-Returns `0` on success or a negative error code on failure; call [`SDL_GetError( )`](#sdl_geterror)() for more information.
+Returns `0` on success or a negative error code on failure; call [`SDL_GetError( )`](#sdl_geterror)( ) for more information.
 
 ## `SDL_RenderGetIntegerScale( ... )`
 
@@ -2748,7 +2767,7 @@ Expected parameters include:
 - `renderer` - the renderer from which integer scaling should be queried
 
 Returns true if integer scales are forced or false if not and on failure; call
-[`SDL_GetError( )`](#sdl_geterror)() for more information.
+[`SDL_GetError( )`](#sdl_geterror)( ) for more information.
 
 ## `SDL_RenderSetViewport( ... )`
 
@@ -2764,7 +2783,7 @@ Expected parameters include:
 - `renderer` - the rendering context
 - `rect` - the [SDL2::Rect](https://metacpan.org/pod/SDL2%3A%3ARect) structure representing the drawing area, or undef to set the viewport to the entire target
 
-Returns `0` on success or a negative error code on failure; call [`SDL_GetError( )`](#sdl_geterror)() for more information.
+Returns `0` on success or a negative error code on failure; call [`SDL_GetError( )`](#sdl_geterror)( ) for more information.
 
 ## `SDL_RenderGetViewport( ... )`
 
@@ -2789,7 +2808,7 @@ Expected parameters include:
 - `renderer` - the rendering context for which clip rectangle should be set
 - `rect` - an [SDL2::Rect](https://metacpan.org/pod/SDL2%3A%3ARect) structure representing the clip area, relative to the viewport, or undef to disable clipping
 
-Returns `0` on success or a negative error code on failure; call [`SDL_GetError( )`](#sdl_geterror)() for more information.
+Returns `0` on success or a negative error code on failure; call [`SDL_GetError( )`](#sdl_geterror)( ) for more information.
 
 ## `SDL_RenderGetClipRect( ... )`
 
@@ -2815,7 +2834,7 @@ Expected parameters include:
 - `renderer` - the renderer from which clip state should be queried
 
 Returns true if clipping is enabled or false if not; call [`SDL_GetError(
-)`](#sdl_geterror)() for more information.
+)`](#sdl_geterror)( ) for more information.
 
 ## `SDL_RenderSetScale( ... )`
 
@@ -2837,7 +2856,7 @@ Expected parameters include:
 - `scaleX` - the horizontal scaling factor
 - `scaleY` - the vertical scaling factor
 
-Returns `0` on success or a negative error code on failure; call [`SDL_GetError( )`](#sdl_geterror)() for more information.
+Returns `0` on success or a negative error code on failure; call [`SDL_GetError( )`](#sdl_geterror)( ) for more information.
 
 ## `SDL_RenderGetScale( ... )`
 
@@ -2867,7 +2886,7 @@ Expected parameters include:
 - `b` - the blue value used to draw on the rendering target
 - `a` - the alpha value used to draw on the rendering target; usually `SDL_ALPHA_OPAQUE` (255). Use `SDL_SetRenderDrawBlendMode` to specify how the alpha channel is used
 
-Returns `0` on success or a negative error code on failure; call [`SDL_GetError( )`](#sdl_geterror)() for more information.
+Returns `0` on success or a negative error code on failure; call [`SDL_GetError( )`](#sdl_geterror)( ) for more information.
 
 ## `SDL_GetRenderDrawColor( ... )`
 
@@ -2880,7 +2899,7 @@ Expected parameters include:
 - `renderer` - the rendering context
 
 Returns red, green, blue, and alpha values on success or a negative error code
-on failure; call [`SDL_GetError( )`](#sdl_geterror)() for more
+on failure; call [`SDL_GetError( )`](#sdl_geterror)( ) for more
 information.
 
 ## `SDL_SetRenderDrawBlendMode( ... )`
@@ -2896,7 +2915,7 @@ Expected parameters include:
 - `renderer` - the rendering context
 - `blendMode` - the [`:blendMode`](#blendmode) to use for blending
 
-Returns `0` on success or a negative error code on failure; call [`SDL_GetError( )`](#sdl_geterror)() for more information.
+Returns `0` on success or a negative error code on failure; call [`SDL_GetError( )`](#sdl_geterror)( ) for more information.
 
 ## `SDL_GetRenderDrawBlendMode( ... )`
 
@@ -2909,7 +2928,7 @@ Expected parameters include:
 - `renderer` - the rendering context
 
 Returns the current `:blendMode` on success or a negative error code on
-failure; call [`SDL_GetError( )`](#sdl_geterror)() for more
+failure; call [`SDL_GetError( )`](#sdl_geterror)( ) for more
 information.
 
 ## `SDL_RenderClear( ... )`
@@ -2923,7 +2942,7 @@ clip rectangle.
 
 - `renderer` - the rendering context
 
-Returns `0` on success or a negative error code on failure; call [`SDL_GetError( )`](#sdl_geterror)() for more information.
+Returns `0` on success or a negative error code on failure; call [`SDL_GetError( )`](#sdl_geterror)( ) for more information.
 
 ## `SDL_RenderDrawPoint( ... )`
 
@@ -2940,7 +2959,7 @@ Expected parameters include:
 - `x` - the x coordinate of the point
 - `y` - the y coordinate of the point
 
-Returns `0` on success or a negative error code on failure; call [`SDL_GetError( )`](#sdl_geterror)() for more information.
+Returns `0` on success or a negative error code on failure; call [`SDL_GetError( )`](#sdl_geterror)( ) for more information.
 
 ## `SDL_RenderDrawPoints( ... )`
 
@@ -2952,7 +2971,7 @@ Draw multiple points on the current rendering target.
 - `renderer` - the rendering context
 - `points` - an array of [SDL2::Point](https://metacpan.org/pod/SDL2%3A%3APoint) structures that represent the points to draw
 
-Returns `0` on success or a negative error code on failure; call [`SDL_GetError( )`](#sdl_geterror)() for more information.
+Returns `0` on success or a negative error code on failure; call [`SDL_GetError( )`](#sdl_geterror)( ) for more information.
 
 ## `SDL_RenderDrawLine( ... )`
 
@@ -2972,7 +2991,7 @@ Expected parameters include:
 - `x2` - the x coordinate of the end point
 - `y2` - the y coordinate of the end point
 
-Returns `0` on success or a negative error code on failure; call [`SDL_GetError( )`](#sdl_geterror)() for more information.
+Returns `0` on success or a negative error code on failure; call [`SDL_GetError( )`](#sdl_geterror)( ) for more information.
 
 ## `SDL_RenderDrawLines( ... )`
 
@@ -2985,7 +3004,7 @@ Expected parameters include:
 - `renderer` - the rendering context
 - `points` - an array of [SDL2::Point](https://metacpan.org/pod/SDL2%3A%3APoint) structures representing points along the lines
 
-Returns `0` on success or a negative error code on failure; call [`SDL_GetError( )`](#sdl_geterror)() for more information.
+Returns `0` on success or a negative error code on failure; call [`SDL_GetError( )`](#sdl_geterror)( ) for more information.
 
 ## `SDL_RenderDrawRect( ... )`
 
@@ -2998,7 +3017,7 @@ Expected parameters include:
 - `renderer` - the rendering context
 - `rect` - an [SDL::Rect](https://metacpan.org/pod/SDL%3A%3ARect) structure representing the rectangle to draw
 
-Returns `0` on success or a negative error code on failure; call [`SDL_GetError( )`](#sdl_geterror)() for more information.
+Returns `0` on success or a negative error code on failure; call [`SDL_GetError( )`](#sdl_geterror)( ) for more information.
 
 ## `SDL_RenderDrawRects( ... )`
 
@@ -3014,7 +3033,7 @@ Expected parameters include:
 - `renderer` - the rendering context
 - `rects` - an array of SDL2::Rect structures representing the rectangles to be drawn
 
-Returns `0` on success or a negative error code on failure; call [`SDL_GetError( )`](#sdl_geterror)() for more information.
+Returns `0` on success or a negative error code on failure; call [`SDL_GetError( )`](#sdl_geterror)( ) for more information.
 
 ## `SDL_RenderFillRect( ... )`
 
@@ -3031,7 +3050,7 @@ Expected parameters includue:
 - `renderer` - the rendering context
 - `rect` - the [SDL2::Rect](https://metacpan.org/pod/SDL2%3A%3ARect) structure representing the rectangle to fill
 
-Returns `0` on success or a negative error code on failure; call [`SDL_GetError( )`](#sdl_geterror)() for more information.
+Returns `0` on success or a negative error code on failure; call [`SDL_GetError( )`](#sdl_geterror)( ) for more information.
 
 ## `SDL_RenderFillRects( ... )`
 
@@ -3048,7 +3067,7 @@ Expected parameters include:
 - `renderer` - the rendering context
 - `rects` - an array of [SDL2::Rect](https://metacpan.org/pod/SDL2%3A%3ARect) structures representing the rectangles to be filled
 
-Returns `0` on success or a negative error code on failure; call [`SDL_GetError( )`](#sdl_geterror)() for more information.
+Returns `0` on success or a negative error code on failure; call [`SDL_GetError( )`](#sdl_geterror)( ) for more information.
 
 ## `SDL_RenderCopy( ... )`
 
@@ -3070,7 +3089,7 @@ Expected parameters include:
 - `srcrect` - the source [SDL2::Rect](https://metacpan.org/pod/SDL2%3A%3ARect) structure
 - `dstrect` - the destination [SDL2::Rect](https://metacpan.org/pod/SDL2%3A%3ARect) structure; the texture will be stretched to fill the given rectangle
 
-Returns `0` on success or a negative error code on failure; call [`SDL_GetError( )`](#sdl_geterror)() for more information.
+Returns `0` on success or a negative error code on failure; call [`SDL_GetError( )`](#sdl_geterror)( ) for more information.
 
 ## `SDL_RenderCopyEx( ... )`
 
@@ -3098,7 +3117,7 @@ Expected parameters include:
 - `center` - a pointer to a point indicating the point around which dstrect will be rotated (if NULL, rotation will be done around `dstrect.w / 2`, `dstrect.h / 2`)
 - `flip` - a [:rendererFlip](https://metacpan.org/pod/%3ArendererFlip) value stating which flipping actions should be performed on the texture
 
-Returns `0` on success or a negative error code on failure; call [`SDL_GetError( )`](#sdl_geterror)() for more information.
+Returns `0` on success or a negative error code on failure; call [`SDL_GetError( )`](#sdl_geterror)( ) for more information.
 
 ## `SDL_RenderDrawPointF( ... )`
 
@@ -3127,7 +3146,7 @@ Expected parameters include:
 - `points` - The points to draw
 
 Returns `0` on success, or `-1` on error; call [`SDL_GetError(
-)`](#sdl_geterror)() for more information.
+)`](#sdl_geterror)( ) for more information.
 
 ## `SDL_RenderDrawLineF( ... )`
 
@@ -3279,7 +3298,7 @@ Expected parameters include:
 - `pixels` - pointer to the pixel data to copy into
 - `pitch` - the pitch of the `pixels` parameter
 
-Returns `0` on success or a negative error code on failure; call [`SDL_GetError( )`](#sdl_geterror)() for more information.
+Returns `0` on success or a negative error code on failure; call [`SDL_GetError( )`](#sdl_geterror)( ) for more information.
 
 ## `SDL_RenderPresent( ... )`
 
@@ -3359,7 +3378,7 @@ Expected parameters include:
 
 - `renderer` - the rendering context
 
-Returns `0` on success or a negative error code on failure; call [`SDL_GetError( )`](#sdl_geterror)() for more information.
+Returns `0` on success or a negative error code on failure; call [`SDL_GetError( )`](#sdl_geterror)( ) for more information.
 
 ## `SDL_GL_BindTexture( ... )`
 
@@ -3391,7 +3410,7 @@ Expected parameters include:
 - `texture` - the texture to bind to the current OpenGL/ES/ES2 context
 
 Returns the texture's with and height on success, or -1 if the operation is not
-supported; call [`SDL_GetError( )`](#sdl_geterror)() for more
+supported; call [`SDL_GetError( )`](#sdl_geterror)( ) for more
 information.
 
 ## `SDL_GL_UnbindTexture( ... )`
@@ -3588,7 +3607,7 @@ Expected parameters include:
 - `param` - a pointer that is passed to `callback`
 
 Returns a timer ID or `0` if an error occurs; call [`SDL_GetError(
-)`](#sdl_geterror)() for more information.
+)`](#sdl_geterror)( ) for more information.
 
 ## `SDL_RemoveTimer( ... )`
 
@@ -3602,6 +3621,47 @@ Expected parameters include:
 
 Returns true if the timer is removed or false if the timer wasn't found.
 
+# Raw Audio Mixing
+
+These methods provide acces to the raw audio mixing buffer for the SDL library.
+They may be imported with the `:audio` tag.
+
+## `SDL_GetNumAudioDrivers( )`
+
+Returns a list of built in audio drivers, in the order that they were normally
+initialized by default.
+
+## `SDL_GetAudioDriver( ... )`
+
+Returns an audio driver by name.
+
+        my $driver = SDL_GetAudioDriver( 1 );
+
+Expected parameters include:
+
+- `index` - The zero-based index of the desired audio driver
+
+## `SDL_AudioInit( ... )`
+
+Audio system initialization.
+
+        SDL_AudioInit( 'pulseaudio' );
+
+This method is used internally, and should not be used unless you have a
+specific need to specify the audio driver you want to use. You should normally
+use [`SDL_Init( ... )`](#sdl_init).
+
+Returns `0` on success.
+
+## `SDL_AudioQuit( )`
+
+Cleaning up initialized audio system.
+
+        SDL_AudioQuit( );
+
+This method is used internally, and should not be used unless you have a
+specific need to close the selected audio driver. You should normally use [`SDL_Quit( )`](#sdl_quit).
+
 # Imports
 
 This list of imports will be organized by their related tags. Of course, you
@@ -3609,8 +3669,8 @@ may import them all by name as well.
 
 ## `:init`
 
-These are the flags which may be passed to `SDL_Init()`. You should specify
-the subsystems which you will be using in your application.
+These are the flags which may be passed to [`SDL_Init( ... )`](#sdl_init). You should specify the subsystems which you will be using in your
+application.
 
 - `SDL_INIT_TIMER`
 
@@ -3685,7 +3745,7 @@ These enum values can be passed to [Configuration Variable](https://metacpan.org
     This hint must be set together with the hint
     `SDL_HINT_ANDROID_APK_EXPANSION_PATCH_FILE_VERSION`.
 
-    If both hints were set then `SDL_RWFromFile()` will look into expansion files
+    If both hints were set then `SDL_RWFromFile( )` will look into expansion files
     after a given relative path was not found in the internal storage and assets.
 
     By default this hint is not set and the APK expansion files are not searched.
@@ -3701,7 +3761,7 @@ These enum values can be passed to [Configuration Variable](https://metacpan.org
     This hint must be set together with the hint
     `SDL_HINT_ANDROID_APK_EXPANSION_MAIN_FILE_VERSION`.
 
-    If both hints were set then `SDL_RWFromFile()` will look into expansion files
+    If both hints were set then `SDL_RWFromFile( )` will look into expansion files
     after a given relative path was not found in the internal storage and assets.
 
     By default this hint is not set and the APK expansion files are not searched.
@@ -3804,8 +3864,8 @@ These enum values can be passed to [Configuration Variable](https://metacpan.org
 
 - `SDL_HINT_FRAMEBUFFER_ACCELERATION`
 
-    A hint that specifies how 3D acceleration is used with
-    [SDL\_GetWindowSurface()](https://metacpan.org/pod/SDL2#SDL_GetWindowSurface).
+    A hint that specifies how 3D acceleration is used with [SDL\_GetWindowSurface(
+    ... )](https://metacpan.org/pod/SDL2#SDL_GetWindowSurface).
 
     Values:
 
@@ -3817,9 +3877,9 @@ These enum values can be passed to [Configuration Variable](https://metacpan.org
     each platform.
 
     SDL can try to accelerate the screen surface returned by
-    [SDL\_GetWindowSurface()](https://metacpan.org/pod/SDL2#SDL_GetWindowSurface) by using streaming
-    textures with a 3D rendering engine. This variable controls whether and how
-    this is done.
+    [SDL\_GetWindowSurface( ... )](https://metacpan.org/pod/SDL2#SDL_GetWindowSurface) by using
+    streaming textures with a 3D rendering engine. This variable controls whether
+    and how this is done.
 
 - `SDL_HINT_GAMECONTROLLERCONFIG`
 
@@ -3828,7 +3888,7 @@ These enum values can be passed to [Configuration Variable](https://metacpan.org
     This hint must be set before calling `SDL_Init(SDL_INIT_GAMECONTROLLER)`.
 
     You can update mappings after the system is initialized with
-    `SDL_GameControllerMappingForGUID()` and `SDL_GameControllerAddMapping()`.
+    `SDL_GameControllerMappingForGUID( )` and `SDL_GameControllerAddMapping( )`.
 
 - `SDL_HINT_GRAB_KEYBOARD`
 
@@ -3848,7 +3908,7 @@ These enum values can be passed to [Configuration Variable](https://metacpan.org
     dimmed automatically. For games where the accelerometer is the only input this
     is problematic. This functionality can be disabled by setting this hint.
 
-    As of SDL 2.0.4, `SDL_EnableScreenSaver()` and `SDL_DisableScreenSaver()`
+    As of SDL 2.0.4, `SDL_EnableScreenSaver( )` and `SDL_DisableScreenSaver( )`
     accomplish the same thing on iOS. They should be preferred over this hint.
 
 - `SDL_HINT_IME_INTERNAL_EDITING`
@@ -4037,8 +4097,8 @@ These enum values can be passed to [Configuration Variable](https://metacpan.org
     is currently available only in the pthread, Windows, and PSP backend.
 
     Instead of this hint, in 2.0.9 and later, you can use
-    `SDL_CreateThreadWithStackSize()`. This hint only works with the classic
-    `SDL_CreateThread()`.
+    `SDL_CreateThreadWithStackSize( )`. This hint only works with the classic
+    `SDL_CreateThread( )`.
 
 - `SDL_HINT_TIMER_RESOLUTION`
 
@@ -4127,7 +4187,7 @@ These enum values can be passed to [Configuration Variable](https://metacpan.org
     A variable that is the address of another `SDL_Window*` (as a hex string
     formatted with `%p`).
 
-    If this hint is set before `SDL_CreateWindowFrom()` and the `SDL_Window*` it
+    If this hint is set before `SDL_CreateWindowFrom( )` and the `SDL_Window*` it
     is set to has `SDL_WINDOW_OPENGL` set (and running on WGL only, currently),
     then two things will occur on the newly created `SDL_Window`:
 
@@ -4135,8 +4195,8 @@ These enum values can be passed to [Configuration Variable](https://metacpan.org
     - 2. The flag SDL\_WINDOW\_OPENGL will be set on the new window so it can be used for OpenGL rendering.
 
     This variable can be set to the address (as a string `%p`) of the
-    `SDL_Window*` that new windows created with `SDL_CreateWindowFrom()` should
-    share a pixel format with.
+    `SDL_Window*` that new windows created with [`SDL_CreateWindowFrom( ...
+    )`](#sdl_createwindowfrom)should share a pixel format with.
 
 - `SDL_HINT_VIDEO_X11_NET_WM_PING`
 
@@ -4230,7 +4290,7 @@ These enum values can be passed to [Configuration Variable](https://metacpan.org
     This variable can be set to the following values:
 
         0   The window message loop is not run
-        1   The window message loop is processed in SDL_PumpEvents()
+        1   The window message loop is processed in SDL_PumpEvents( )
 
     By default SDL will process the windows message loop.
 
@@ -4281,7 +4341,7 @@ These enum values can be passed to [Configuration Variable](https://metacpan.org
     pressed.
 
     In order to get notified when a back button is pressed, SDL apps should
-    register a callback function with `SDL_AddEventWatch()`, and have it listen
+    register a callback function with `SDL_AddEventWatch( )`, and have it listen
     for `SDL_KEYDOWN` events that have a scancode of `SDL_SCANCODE_AC_BACK`.
     (Alternatively, `SDL_KEYUP` events can be listened-for. Listening for either
     event type is suitable.)  Any value of `SDL_HINT_WINRT_HANDLE_BACK_BUTTON` set
@@ -4307,7 +4367,8 @@ These enum values can be passed to [Configuration Variable](https://metacpan.org
     The contents of this hint should be encoded as a UTF8 string.
 
     The default value is "Privacy Policy". This hint should only be set during app
-    initialization, preferably before any calls to `SDL_Init()`.
+    initialization, preferably before any calls to [`SDL_Init( ...
+    )`](#sdl_init).
 
     For additional information on linking to a privacy policy, see the
     documentation for `SDL_HINT_WINRT_PRIVACY_POLICY_URL`.
@@ -4323,9 +4384,9 @@ These enum values can be passed to [Configuration Variable](https://metacpan.org
     privacy policy.
 
     To setup a URL to an app's privacy policy, set
-    `SDL_HINT_WINRT_PRIVACY_POLICY_URL` before calling any `SDL_Init()`
-    functions.  The contents of the hint should be a valid URL.  For example,
-    [http://www.example.com](http://www.example.com).
+    `SDL_HINT_WINRT_PRIVACY_POLICY_URL` before calling any [`SDL_Init( ...
+    )`](#sdl_init) functions.  The contents of the hint should be a
+    valid URL.  For example, [http://www.example.com](http://www.example.com).
 
     The default value is an empty string (``), which will prevent SDL from adding
     a privacy policy link to the Settings charm. This hint should only be set
@@ -4357,7 +4418,8 @@ These enum values can be passed to [Configuration Variable](https://metacpan.org
 
     This hint is for backwards compatibility only and will be removed in SDL 2.1
 
-    The default value is `0`.  This hint must be set before `SDL_Init()`
+    The default value is `0`.  This hint must be set before [`SDL_Init( ...
+    )`](#sdl_init)
 
 - `SDL_HINT_QTWAYLAND_WINDOW_FLAGS`
 
@@ -4557,7 +4619,7 @@ These enum values can be passed to [Configuration Variable](https://metacpan.org
         This hint must be set before calling `SDL_Init(SDL_INIT_GAMECONTROLLER)`
 
         You can update mappings after the system is initialized with
-        `SDL_GameControllerMappingForGUID()` and `SDL_GameControllerAddMapping()`.
+        `SDL_GameControllerMappingForGUID( )` and `SDL_GameControllerAddMapping( )`.
 
     - `SDL_HINT_GAMECONTROLLER_IGNORE_DEVICES`
 
@@ -4865,7 +4927,7 @@ These enum values can be passed to [Configuration Variable](https://metacpan.org
 
         On Linux, the kernel may send `SIGKILL` to realtime tasks which exceed the
         distro configured execution budget for rtkit. This budget can be queried
-        through `RLIMIT_RTTIME` after calling `SDL_SetThreadPriority()`.
+        through `RLIMIT_RTTIME` after calling `SDL_SetThreadPriority( )`.
 
     - `SDL_HINT_THREAD_FORCE_REALTIME_TIME_CRITICAL`
 
@@ -4896,7 +4958,7 @@ These enum values can be passed to [Configuration Variable](https://metacpan.org
         A variable that is the address of another SDL\_Window\* (as a hex string
         formatted with `%p`).
 
-        If this hint is set before `SDL_CreateWindowFrom()` and the `SDL_Window*` it
+        If this hint is set before `SDL_CreateWindowFrom( )` and the `SDL_Window*` it
         is set to has `SDL_WINDOW_OPENGL` set (and running on WGL only, currently),
         then two things will occur on the newly created `SDL_Window`:
 
@@ -4905,7 +4967,7 @@ These enum values can be passed to [Configuration Variable](https://metacpan.org
 
             This variable can be set to the following values:
 
-            - The address (as a string `%p`) of the `SDL_Window*` that new windows created with `SDL_CreateWindowFrom()` should share a pixel format with.
+            - The address (as a string `%p`) of the `SDL_Window*` that new windows created with [`SDL_CreateWindowFrom( ... )`](#sdl_createwindowfrom) should share a pixel format with.
 
         - `SDL_HINT_ANDROID_TRAP_BACK_BUTTON`
 
@@ -5106,11 +5168,11 @@ These enum values can be passed to [Configuration Variable](https://metacpan.org
     Circumstances where this is useful include
 
     - - Testing an app with a particular OpenGL ES implementation, e.g ANGLE, or emulator, e.g. those from ARM, Imagination or Qualcomm.
-    - Resolving OpenGL ES function addresses at link time by linking with the OpenGL ES library instead of querying them at run time with `SDL_GL_GetProcAddress()`.
+    - Resolving OpenGL ES function addresses at link time by linking with the OpenGL ES library instead of querying them at run time with `SDL_GL_GetProcAddress( )`.
 
     Caution: for an application to work with the default behaviour across different
     OpenGL drivers it must query the OpenGL ES function addresses at run time using
-    `SDL_GL_GetProcAddress()`.
+    `SDL_GL_GetProcAddress( )`.
 
     This variable is ignored on most platforms because OpenGL ES is native or not
     supported.
@@ -5203,9 +5265,10 @@ These enum values can be passed to [Configuration Variable](https://metacpan.org
     requested (since this might indicate that the app is planning to use the
     underlying graphics API directly). This hint can be used to explicitly request
     batching in this instance. It is a contract that you will either never use the
-    underlying graphics API directly, or if you do, you will call SDL\_RenderFlush()
-    before you do so any current batch goes to the GPU before your work begins. Not
-    following this contract will result in undefined behavior.
+    underlying graphics API directly, or if you do, you will call
+    `SDL_RenderFlush( )` before you do so any current batch goes to the GPU before
+    your work begins. Not following this contract will result in undefined
+    behavior.
 
 - `SDL_HINT_AUTO_UPDATE_JOYSTICKS`
 
@@ -5216,11 +5279,11 @@ These enum values can be passed to [Configuration Variable](https://metacpan.org
 
     - `0`
 
-        You'll call `SDL_JoystickUpdate()` manually
+        You'll call `SDL_JoystickUpdate( )` manually
 
     - `1`
 
-        SDL will automatically call `SDL_JoystickUpdate()` (default)
+        SDL will automatically call `SDL_JoystickUpdate( )` (default)
 
     This hint can be toggled on and off at runtime.
 
@@ -5233,11 +5296,11 @@ These enum values can be passed to [Configuration Variable](https://metacpan.org
 
     - `0`
 
-        You'll call `SDL_SensorUpdate()` manually
+        You'll call `SDL_SensorUpdate ( )` manually
 
     - `1`
 
-        SDL will automatically call `SDL_SensorUpdate()` (default)
+        SDL will automatically call `SDL_SensorUpdate( )` (default)
 
     This hint can be toggled on and off at runtime.
 
@@ -5262,10 +5325,10 @@ These enum values can be passed to [Configuration Variable](https://metacpan.org
 
     This is generally meant to be used to debug SDL itself, but can be useful for
     application developers that need better visibility into what is going on in the
-    event queue. Logged events are sent through `SDL_Log()`, which means by
-    default they appear on stdout on most platforms or maybe `OutputDebugString()`
-    on Windows, and can be funneled by the app with `SDL_LogSetOutputFunction()`,
-    etc.
+    event queue. Logged events are sent through `SDL_Log( )`, which means by
+    default they appear on stdout on most platforms or maybe `OutputDebugString(
+    )` on Windows, and can be funneled by the app with `SDL_LogSetOutputFunction(
+    )`, etc.
 
     This hint can be toggled on and off at runtime, if you only need to log events
     for a small subset of program execution.
@@ -5364,10 +5427,10 @@ These enum values can be passed to [Configuration Variable](https://metacpan.org
 
 - `SDL_HINT_DISPLAY_USABLE_BOUNDS`
 
-    Override for `SDL_GetDisplayUsableBounds()`
+    Override for `SDL_GetDisplayUsableBounds( )`
 
     If set, this hint will override the expected results for
-    `SDL_GetDisplayUsableBounds()` for display index 0. Generally you don't want
+    `SDL_GetDisplayUsableBounds( )` for display index 0. Generally you don't want
     to do this, but this allows an embedded system to request that some of the
     screen be reserved for other uses when paired with a well-behaved application.
 
@@ -5452,7 +5515,7 @@ These enum values can be passed to [Configuration Variable](https://metacpan.org
 
 - `SDL_HINT_PREFERRED_LOCALES`
 
-    Override for SDL\_GetPreferredLocales()
+    Override for SDL\_GetPreferredLocales( )
 
     If set, this will be favored over anything the OS might report for the user's
     preferred locales. Changing this hint at runtime will not generate a
@@ -5556,7 +5619,7 @@ Event subtype for window events.
 - `SDL_WINDOWEVENT_FOCUS_GAINED` - Window has gained keyboard focus
 - `SDL_WINDOWEVENT_FOCUS_LOST` - Window has lost keyboard focus
 - `SDL_WINDOWEVENT_CLOSE` - The window manager requests that the window be closed
-- `SDL_WINDOWEVENT_TAKE_FOCUS` - Window is being offered a focus (should `SetWindowInputFocus()` on itself or a subwindow, or ignore)
+- `SDL_WINDOWEVENT_TAKE_FOCUS` - Window is being offered a focus (should `SetWindowInputFocus( )` on itself or a subwindow, or ignore)
 - `SDL_WINDOWEVENT_HIT_TEST` - Window had a hit test that wasn't `SDL_HITTEST_NORMAL`.
 
 ## `:displayEventID`
@@ -5730,6 +5793,81 @@ The normalized factor used to multiply pixel components.
 - `SDL_BLENDFACTOR_ONE_MINUS_DST_COLOR` - `1-dstR, 1-dstG, 1-dstB, 1-dstA`
 - `SDL_BLENDFACTOR_DST_ALPHA` - `dstA, dstA, dstA, dstA`
 - `SDL_BLENDFACTOR_ONE_MINUS_DST_ALPHA` - `1-dstA, 1-dstA, 1-dstA, 1-dstA`
+
+## `:audio`
+
+Audio format flags.
+
+These are what the 16 bits in SDL\_AudioFormat currently mean... (Unspecified
+bits are always zero).
+
+    ++-----------------------sample is signed if set
+    ||
+    ||       ++-----------sample is bigendian if set
+    ||       ||
+    ||       ||          ++---sample is float if set
+    ||       ||          ||
+    ||       ||          || +---sample bit size---+
+    ||       ||          || |                     |
+    15 14 13 12 11 10 09 08 07 06 05 04 03 02 01 00
+
+There are macros in SDL 2.0 and later to query these bits.
+
+### Audio flags
+
+- `SDL_AUDIO_MASK_BITSIZE`
+- `SDL_AUDIO_MASK_DATATYPE`
+- `SDL_AUDIO_MASK_ENDIAN`
+- `SDL_AUDIO_MASK_SIGNED`
+- `SDL_AUDIO_BITSIZE`
+- `SDL_AUDIO_ISFLOAT`
+- `SDL_AUDIO_ISBIGENDIAN`
+- `SDL_AUDIO_ISSIGNED`
+- `SDL_AUDIO_ISINT`
+- `SDL_AUDIO_ISLITTLEENDIAN`
+- `SDL_AUDIO_ISUNSIGNED`
+
+### Audio format flags
+
+Defaults to LSB byte order.
+
+- `AUDIO_U8` - Unsigned 8-bit samples
+- `AUDIO_S8` - Signed 8-bit samples
+- `AUDIO_U16LSB` - Unsigned 16-bit samples
+- `AUDIO_S16LSB` - Signed 16-bit samples
+- `AUDIO_U16MSB` - As above, but big-endian byte order
+- `AUDIO_S16MSB` - As above, but big-endian byte order
+- `AUDIO_U16` - `AUDIO_U16LSB`
+- `AUDIO_S16` - `AUDIO_S16LSB`
+
+### `int32` support
+
+- `AUDIO_S32LSB` - 32-bit integer samples
+- `AUDIO_S32MSB` - As above, but big-endian byte order
+- `AUDIO_S32` - `AUDIO_S32LSB`
+
+### `float32` support
+
+- `AUDIO_F32LSB` - 32-bit floating point samples
+- `AUDIO_F32MSB` - As above, but big-endian byte order
+- `AUDIO_F32` - `AUDIO_F32LSB`
+
+### Native audio byte ordering
+
+- `AUDIO_U16SYS`
+- `AUDIO_S16SYS`
+- `AUDIO_S32SYS`
+- `AUDIO_F32SYS`
+
+### Allow change flags
+
+Which audio format changes are allowed when opening a device.
+
+- `SDL_AUDIO_ALLOW_FREQUENCY_CHANGE`
+- `SDL_AUDIO_ALLOW_FORMAT_CHANGE`
+- `SDL_AUDIO_ALLOW_CHANNELS_CHANGE`
+- `SDL_AUDIO_ALLOW_SAMPLES_CHANGE`
+- `SDL_AUDIO_ALLOW_ANY_CHANGE`
 
 # LICENSE
 

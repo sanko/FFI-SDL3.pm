@@ -9,6 +9,7 @@
 /carton.lock
 /.carton/
 /local/
+/.vscode/
 
 nytprof.out
 nytprof/

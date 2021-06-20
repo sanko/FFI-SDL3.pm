@@ -22,19 +22,38 @@ SDL2::FFI - FFI Wrapper for SDL (Simple DirectMedia Layer) Development Library
     } until $event->type == SDL_QUIT;
     SDL_DestroyRenderer($renderer);
     SDL_DestroyWindow($win);
-    exit SDL_Quit();
+    exit SDL_Quit( );
 
 =head1 DESCRIPTION
 
-SDL2::FFI is ...
+SDL2::FFI is an FFI::Platypus-backed wrapper around the B<S>imple
+B<D>irectMedia B<L>ayer - a cross-platform development library designed to
+provide low level access to audio, keyboard, mouse, joystick, and graphics
+hardware.
 
-This package is named C<SDL2::FFI> because C<SDL2> is being squatted on and I'd
-rather make games than play them over namespaces.
+=head2 Getting Started
+
+The SDL2::FFI module exports a high-level, Perl-like abstraction to use the SDL
+library.
+
+To get started, you must initialize the subsystems you need:
+
+	use SDL2::FFI;
+	my $window = SDL2::Window->new( w => 100, h => 100 );
+
+=head2 The Future
+
+SDL2::FFI is still in early development: the majority of SDL's functions have
+yet to be implemented and the interface may also grow to be less sugary leading
+up to an eventual 1.0 release. This package is named C<SDL2::FFI> because
+C<SDL2> is being squatted on and I'd rather make games than play them over
+namespaces.
 
 =head1 Initialization and Shutdown
 
 The functions in this category are used to set up SDL for use and generally
-have global effects in your program.
+have global effects in your program. These functions may be imported with the
+C<:default> tag.
 
 =head2 C<SDL_Init( ... )>
 
@@ -87,7 +106,7 @@ Expected parameters include:
 =back
 
 Returns C<0> on success or a negative error code on failure; call L<<
-C<SDL_GetError()>|/C<SDL_GetError( )> >> for more information.
+C<SDL_GetError( )>|/C<SDL_GetError( )> >> for more information.
 
 =head2 C<SDL_Quit( )>
 
@@ -99,7 +118,7 @@ initialized subsystem with L<< C<SDL_QuitSubSystem( )>|/C<SDL_QuitSubSystem( )>
 initialization.
 
 If you start a subsystem using a call to that subsystem's init function (for
-example L<< C<SDL_VideoInit()>|/C<SDL_VideoInit( )> >>) instead of L<<
+example L<< C<SDL_VideoInit( )>|/C<SDL_VideoInit( )> >>) instead of L<<
 C<SDL_Init( ... )>|/C<SDL_Init( ... )> >> or L<< C<SDL_InitSubSystem( ...
 )>|/C<SDL_InitSubSystem( ... )> >>, then you must use that subsystem's quit
 function (L<< C<SDL_VideoQuit( )>|/C<SDL_VideoQuit( )> >>) to shut it down
@@ -203,7 +222,7 @@ Set a hint with normal priority.
 	SDL_SetHint( SDL_HINT_XINPUT_ENABLED, 1 );
 
 Hints will not be set if there is an existing override hint or environment
-variable that takes precedence. You can use SDL_SetHintWithPriority() to set
+variable that takes precedence. You can use SDL_SetHintWithPriority( ) to set
 the hint with override priority instead.
 
 Expected parameters:
@@ -273,7 +292,7 @@ Add a function to watch a particular hint.
 			my ($userdata, $name, $oldvalue, $newvalue) = @_;
 			...;
 		},
-		{ time => time(), clicks => 3 }
+		{ time => time( ), clicks => 3 }
 	);
 
 Expected parameters:
@@ -304,7 +323,7 @@ Remove a callback watching a particular hint.
 	SDL_AddHintCallback(
 		SDL_HINT_XINPUT_ENABLED,
 		$cb,
-		{ time => time(), clicks => 3 }
+		{ time => time( ), clicks => 3 }
 	);
 
 Expected parameters:
@@ -326,11 +345,11 @@ a pointer to pass to the callback function
 
 =back
 
-=head2 C<SDL_ClearHints()>
+=head2 C<SDL_ClearHints( )>
 
 Clear all hints.
 
-	SDL_ClearHints();
+	SDL_ClearHints( );
 
 This function is automatically called during L<< C<SDL_Quit( )>|/C<SDL_Quit( )>
 >>.
@@ -366,7 +385,7 @@ Expected parameters:
 
 =item C<fmt>
 
-a C<printf()>-style message format string
+a C<printf( )>-style message format string
 
 =item C<@params>
 
@@ -378,16 +397,16 @@ additional parameters matching % tokens in the C<fmt> string, if any
 
 Retrieve a message about the last error that occurred on the current thread.
 
-	warn SDL_GetError();
+	warn SDL_GetError( );
 
-It is possible for multiple errors to occur before calling C<SDL_GetError()>.
+It is possible for multiple errors to occur before calling C<SDL_GetError( )>.
 Only the last error is returned.
 
 The message is only applicable when an SDL function has signaled an error. You
 must check the return values of SDL function calls to determine when to
-appropriately call C<SDL_GetError()>. You should B<not> use the results of
-C<SDL_GetError()> to decide if an error has occurred! Sometimes SDL will set an
-error string even when reporting success.
+appropriately call C<SDL_GetError( )>. You should B<not> use the results of
+C<SDL_GetError( )> to decide if an error has occurred! Sometimes SDL will set
+an error string even when reporting success.
 
 SDL will B<not> clear the error string for successful API calls. You B<must>
 check return values for failure cases before you can assume the error string
@@ -401,10 +420,10 @@ application.
 
 Returns a message with information about the specific error that occurred, or
 an empty string if there hasn't been an error message set since the last call
-to L<< C<SDL_ClearError()>|/C<SDL_ClearError()> >>. The message is only
+to L<< C<SDL_ClearError( )>|/C<SDL_ClearError( )> >>. The message is only
 applicable when an SDL function has signaled an error. You must check the
 return values of SDL function calls to determine when to appropriately call
-C<SDL_GetError()>.
+C<SDL_GetError( )>.
 
 =head2 C<SDL_GetErrorMsg( ... )>
 
@@ -414,8 +433,8 @@ Get the last error message that was set for the current thread.
 	warn SDL_GetErrorMsg($x, 300);
 
 This allows the caller to copy the error string into a provided buffer, but
-otherwise operates exactly the same as L<< C<SDL_GetError()>|/C<SDL_GetError()>
->>.
+otherwise operates exactly the same as L<< C<SDL_GetError( )>|/C<SDL_GetError(
+)> >>.
 
 =over
 
@@ -559,7 +578,7 @@ Any additional parameters matching C<%> tokens in the C<fmt> string, if any.
 
 Log a message with C<SDL_LOG_PRIORITY_VERBOSE>.
 
-	SDL_LogVerbose( 'Current time: %s [%ds exec]', +localtime(), time - $^T );
+	SDL_LogVerbose( 'Current time: %s [%ds exec]', +localtime( ), time - $^T );
 
 Expected parameters:
 
@@ -571,7 +590,7 @@ The category of the message.
 
 =item C<fmt>
 
-A C<sprintf()> style message format string.
+A C<sprintf( )> style message format string.
 
 =item C<...>
 
@@ -583,7 +602,7 @@ Additional parameters matching C<%> tokens in the C<fmt> string, if any.
 
 Log a message with C<SDL_LOG_PRIORITY_DEBUG>.
 
-	SDL_LogDebug( 'Current time: %s [%ds exec]', +localtime(), time - $^T );
+	SDL_LogDebug( 'Current time: %s [%ds exec]', +localtime( ), time - $^T );
 
 Expected parameters:
 
@@ -595,7 +614,7 @@ The category of the message.
 
 =item C<fmt>
 
-A C<sprintf()> style message format string.
+A C<sprintf( )> style message format string.
 
 =item C<...>
 
@@ -607,7 +626,7 @@ Additional parameters matching C<%> tokens in the C<fmt> string, if any.
 
 Log a message with C<SDL_LOG_PRIORITY_INFO>.
 
-	SDL_LogInfo( 'Current time: %s [%ds exec]', +localtime(), time - $^T );
+	SDL_LogInfo( 'Current time: %s [%ds exec]', +localtime( ), time - $^T );
 
 Expected parameters:
 
@@ -619,7 +638,7 @@ The category of the message.
 
 =item C<fmt>
 
-A C<sprintf()> style message format string.
+A C<sprintf( )> style message format string.
 
 =item C<...>
 
@@ -631,7 +650,7 @@ Additional parameters matching C<%> tokens in the C<fmt> string, if any.
 
 Log a message with C<SDL_LOG_PRIORITY_WARN>.
 
-	SDL_LogWarn( 'Current time: %s [%ds exec]', +localtime(), time - $^T );
+	SDL_LogWarn( 'Current time: %s [%ds exec]', +localtime( ), time - $^T );
 
 Expected parameters:
 
@@ -643,7 +662,7 @@ The category of the message.
 
 =item C<fmt>
 
-A C<sprintf()> style message format string.
+A C<sprintf( )> style message format string.
 
 =item C<...>
 
@@ -655,7 +674,7 @@ Additional parameters matching C<%> tokens in the C<fmt> string, if any.
 
 Log a message with C<SDL_LOG_PRIORITY_ERROR>.
 
-	SDL_LogError( 'Current time: %s [%ds exec]', +localtime(), time - $^T );
+	SDL_LogError( 'Current time: %s [%ds exec]', +localtime( ), time - $^T );
 
 Expected parameters:
 
@@ -667,7 +686,7 @@ The category of the message.
 
 =item C<fmt>
 
-A C<sprintf()> style message format string.
+A C<sprintf( )> style message format string.
 
 =item C<...>
 
@@ -679,7 +698,7 @@ Additional parameters matching C<%> tokens in the C<fmt> string, if any.
 
 Log a message with C<SDL_LOG_PRIORITY_CRITICAL>.
 
-	SDL_LogCritical( 'Current time: %s [%ds exec]', +localtime(), time - $^T );
+	SDL_LogCritical( 'Current time: %s [%ds exec]', +localtime( ), time - $^T );
 
 Expected parameters:
 
@@ -691,7 +710,7 @@ The category of the message.
 
 =item C<fmt>
 
-A C<sprintf()> style message format string.
+A C<sprintf( )> style message format string.
 
 =item C<...>
 
@@ -704,7 +723,7 @@ Additional parameters matching C<%> tokens in the C<fmt> string, if any.
 Log a message with the specified category and priority.
 
 	SDL_LogMessage( SDL_LOG_CATEGORY_APPLICATION, SDL_LOG_PRIORITY_CRITICAL,
-					'Current time: %s [%ds exec]', +localtime(), time - $^T );
+					'Current time: %s [%ds exec]', +localtime( ), time - $^T );
 
 Expected parameters:
 
@@ -720,7 +739,7 @@ The priority of the message.
 
 =item C<fmt>
 
-A C<sprintf()> style message format string.
+A C<sprintf( )> style message format string.
 
 =item C<...>
 
@@ -803,8 +822,8 @@ Get the version of SDL that is linked against your program.
 
 If you are linking to SDL dynamically, then it is possible that the current
 version will be different than the version you compiled against. This function
-returns the current version, while SDL_VERSION() is a macro that tells you what
-version you compiled with.
+returns the current version, while SDL_VERSION( ) is a macro that tells you
+what version you compiled with.
 
 This function may be called safely at any time, even before L<< C<SDL_Init(
 )>|/C<SDL_Init( )> >>.
@@ -830,7 +849,7 @@ C<SDL_GetError( )>|/C<SDL_GetError( )> >> for more information.
 
 Get the name of a built in video driver.
 
-    CORE::say SDL_GetVideoDriver($_) for 0 .. SDL_GetNumVideoDrivers() - 1;
+    CORE::say SDL_GetVideoDriver($_) for 0 .. SDL_GetNumVideoDrivers( ) - 1;
 
 The video drivers are presented in the order in which they are normally checked
 during initialization.
@@ -858,13 +877,13 @@ window manager, etc, and determines the available display modes and pixel
 formats, but does not initialize a window or graphics mode.
 
 If you use this function and you haven't used the SDL_INIT_VIDEO flag with
-either SDL_Init() or SDL_InitSubSystem(), you should call SDL_VideoQuit()
-before calling SDL_Quit().
+either SDL_Init( ) or SDL_InitSubSystem( ), you should call SDL_VideoQuit( )
+before calling SDL_Quit( ).
 
-It is safe to call this function multiple times. SDL_VideoInit() will call
-SDL_VideoQuit() itself if the video subsystem has already been initialized.
+It is safe to call this function multiple times. SDL_VideoInit( ) will call
+SDL_VideoQuit( ) itself if the video subsystem has already been initialized.
 
-You can use SDL_GetNumVideoDrivers() and SDL_GetVideoDriver() to find a
+You can use SDL_GetNumVideoDrivers( ) and SDL_GetVideoDriver( ) to find a
 specific `driver_name`.
 
 Expected parameters include:
@@ -2031,7 +2050,7 @@ Expected parameters includes:
 =back
 
 Returns C<0> on success or a negative error code on failure; call L<<
-C<SDL_GetError( )>|/C<SDL_GetError( )> >>() for more information.
+C<SDL_GetError( )>|/C<SDL_GetError( )> >>( ) for more information.
 
 =head2 C<SDL_GetWindowBrightness( ... )>
 
@@ -2078,7 +2097,7 @@ Expected parameters include:
 =back
 
 Returns C<0> on success or a negative error code on failure; call L<<
-C<SDL_GetError( )>|/C<SDL_GetError( )> >>() for more information.
+C<SDL_GetError( )>|/C<SDL_GetError( )> >>( ) for more information.
 
 =head2 C<SDL_GetWindowOpacity( ... )>
 
@@ -2102,7 +2121,7 @@ Expected parameters include:
 =back
 
 Returns the current opacity on success or a negative error code on failure;
-call L<< C<SDL_GetError( )>|/C<SDL_GetError( )> >>() for more information.
+call L<< C<SDL_GetError( )>|/C<SDL_GetError( )> >>( ) for more information.
 
 =head2 C<SDL_SetWindowModalFor( ... )>
 
@@ -2121,7 +2140,7 @@ Expected parameters include:
 =back
 
 Returns C<0> on success or a negative error code on failure; call L<<
-C<SDL_GetError( )>|/C<SDL_GetError( )> >>() for more information.
+C<SDL_GetError( )>|/C<SDL_GetError( )> >>( ) for more information.
 
 
 =head2 C<SDL_SetWindowInputFocus( ... )>
@@ -2143,7 +2162,7 @@ Expected parameters include:
 =back
 
 Returns C<0> on success or a negative error code on failure; call L<<
-C<SDL_GetError( )>|/C<SDL_GetError( )> >>() for more information.
+C<SDL_GetError( )>|/C<SDL_GetError( )> >>( ) for more information.
 
 =head2 C<SDL_SetWindowGammaRamp( ... )>
 
@@ -2178,7 +2197,7 @@ Expected parameters include:
 =back
 
 Returns C<0> on success or a negative error code on failure; call L<<
-C<SDL_GetError( )>|/C<SDL_GetError( )> >>() for more information.
+C<SDL_GetError( )>|/C<SDL_GetError( )> >>( ) for more information.
 
 =head2 C<SDL_GetWindowGammaRamp( ... )>
 
@@ -2202,8 +2221,8 @@ Expected parameters include:
 
 Returns three 256 element arrays of 16-bit quantities filled in with the
 translation table for the red, gree, and blue channels on success or a negative
-error code on failure; call L<< C<SDL_GetError( )>|/C<SDL_GetError( )> >>() for
-more information.
+error code on failure; call L<< C<SDL_GetError( )>|/C<SDL_GetError( )> >>( )
+for more information.
 
 =head2 C<SDL_SetWindowHitTest( ... )>
 
@@ -2256,7 +2275,7 @@ Expected parameters include:
 =back
 
 Returns C<0> on success or C<-1> on error (including unsupported); call L<<
-C<SDL_GetError( )>|/C<SDL_GetError( )> >>() for more information.
+C<SDL_GetError( )>|/C<SDL_GetError( )> >>( ) for more information.
 
 =head2 C<SDL_FlashWindow( ... )>
 
@@ -2276,7 +2295,7 @@ Expected parameters include:
 =back
 
 Returns C<0> on success or a negative error code on failure; call L<<
-C<SDL_GetError( )>|/C<SDL_GetError( )> >>() for more information.
+C<SDL_GetError( )>|/C<SDL_GetError( )> >>( ) for more information.
 
 =head2 C<SDL_DestroyWindow( ... )>
 
@@ -2286,7 +2305,7 @@ Destroy a window.
 
 If C<window> is undefined, this function will return immediately after setting
 the SDL error message to "Invalid window". See L<< C<SDL_GetError(
-)>|/C<SDL_GetError( )> >>().
+)>|/C<SDL_GetError( )> >>( ).
 
 Expected parameters include:
 
@@ -2351,7 +2370,7 @@ Expected parameters include:
 =back
 
 Returns C<0> on success or a negative error code on failure; call L<<
-C<SDL_GetError( )>|/C<SDL_GetError( )> >>() for more information.
+C<SDL_GetError( )>|/C<SDL_GetError( )> >>( ) for more information.
 
 =head2 C<SDL_GL_GetProcAddress( ... )>
 
@@ -2374,7 +2393,7 @@ without any platform-specific code, though:
 
 =item * On Windows, function pointers are specific to the current GL context;
 this means you need to have created a GL context and made it current before
-calling SDL_GL_GetProcAddress(). If you recreate your context or create a
+calling SDL_GL_GetProcAddress( ). If you recreate your context or create a
 second context, you should assume that any existing function pointers
 aren't valid to use with it. This is (currently) a Windows-specific
 limitation, and in practice lots of drivers don't suffer this limitation,
@@ -2483,7 +2502,7 @@ Expected parameters include:
 =back
 
 Returns C<0> on success or a negative error code on failure; call L<<
-C<SDL_GetError( )>|/C<SDL_GetError( )> >>() for more information.
+C<SDL_GetError( )>|/C<SDL_GetError( )> >>( ) for more information.
 
 =head2 C<SDL_GL_GetAttribute( ... )>
 
@@ -2500,7 +2519,7 @@ Expected parameters include:
 =back
 
 Returns the value on success or a negative error code on failure; call L<<
-C<SDL_GetError( )>|/C<SDL_GetError( )> >>() for more information.
+C<SDL_GetError( )>|/C<SDL_GetError( )> >>( ) for more information.
 
 =head2 C<SDL_GL_CreateContext( ... )>
 
@@ -2539,7 +2558,7 @@ Expected parameters include:
 =back
 
 Returns the OpenGL context associated with C<window> or undef on error; call
-L<< C<SDL_GetError( )>|/C<SDL_GetError( )> >>() for more details.
+L<< C<SDL_GetError( )>|/C<SDL_GetError( )> >>( ) for more details.
 
 =head2 C<SDL_GL_MakeCurrent( ... )>
 
@@ -2560,7 +2579,7 @@ Expected parameters include:
 =back
 
 Returns C<0> on success or a negative error code on failure; call L<<
-C<SDL_GetError( )>|/C<SDL_GetError( )> >>() for more information.
+C<SDL_GetError( )>|/C<SDL_GetError( )> >>( ) for more information.
 
 =head2 C<SDL_GL_GetCurrentWindow( )>
 
@@ -2569,7 +2588,7 @@ Get the currently active OpenGL window.
 	my $window = SDL_GL_GetCurrentWindow( );
 
 Returns the currently active OpenGL window on success or undef on failure; call
-L<< C<SDL_GetError( )>|/C<SDL_GetError( )> >>() for more information.
+L<< C<SDL_GetError( )>|/C<SDL_GetError( )> >>( ) for more information.
 
 =head2 C<SDL_GL_GetCurrentContext( )>
 
@@ -2578,7 +2597,7 @@ Get the currently active OpenGL context.
 	my $gl = SDL_GL_GetCurrentContext( );
 
 Returns the currently active OpenGL context or NULL on failure; call L<<
-C<SDL_GetError( )>|/C<SDL_GetError( )> >>() for more information.
+C<SDL_GetError( )>|/C<SDL_GetError( )> >>( ) for more information.
 
 =head2 C<SDL_GL_GetDrawableSize( ... )>
 
@@ -2636,7 +2655,7 @@ Expected parameters include:
 =back
 
 Returns C<0> on success or C<-1> if setting the swap interval is not supported;
-call L<< C<SDL_GetError( )>|/C<SDL_GetError( )> >>() for more information.
+call L<< C<SDL_GetError( )>|/C<SDL_GetError( )> >>( ) for more information.
 
 =head2 C<SDL_GL_GetSwapInterval( )>
 
@@ -2650,7 +2669,7 @@ context, this function will return 0 as a safe default.
 Returns C<0> if there is no vertical retrace synchronization, C<1> if the
 buffer swap is synchronized with the vertical retrace, and C<-1> if late swaps
 happen immediately instead of waiting for the next retrace; call L<<
-C<SDL_GetError( )>|/C<SDL_GetError( )> >>() for more information.
+C<SDL_GetError( )>|/C<SDL_GetError( )> >>( ) for more information.
 
 =head2 C<SDL_GL_SwapWindow( ... )>
 
@@ -2730,7 +2749,7 @@ several available with different capabilities.
 There may be none if SDL was compiled without render support.
 
 Returns a number >= 0 on success or a negative error code on failure; call L<<
-C<SDL_GetError( )>|/C<SDL_GetError( )> >>() for more information.
+C<SDL_GetError( )>|/C<SDL_GetError( )> >>( ) for more information.
 
 =head2 C<SDL_GetRenderDriverInfo( ... )>
 
@@ -2747,7 +2766,7 @@ Expected parameters include:
 =back
 
 Returns an L<SDL2::RendererInfo> structure on success or a negative error code
-on failure; call L<< C<SDL_GetError( )>|/C<SDL_GetError( )> >>() for more
+on failure; call L<< C<SDL_GetError( )>|/C<SDL_GetError( )> >>( ) for more
 information.
 
 =head2 C<SDL_CreateWindowAndRenderer( ... )>
@@ -2769,7 +2788,7 @@ Expected parameters include:
 =back
 
 Returns a L<SDL2::Window> and L<SDL2::Renderer> objects on success, or -1 on
-error; call L<< C<SDL_GetError( )>|/C<SDL_GetError( )> >>() for more
+error; call L<< C<SDL_GetError( )>|/C<SDL_GetError( )> >>( ) for more
 information.
 
 =head2 C<SDL_CreateRenderer( ... )>
@@ -2791,7 +2810,7 @@ Expected parameters include:
 =back
 
 Returns a valid rendering context or undefined if there was an error; call L<<
-C<SDL_GetError( )>|/C<SDL_GetError( )> >>() for more information.
+C<SDL_GetError( )>|/C<SDL_GetError( )> >>( ) for more information.
 
 =head2 C<SDL_CreateSoftwareRenderer( ... )>
 
@@ -2816,7 +2835,7 @@ Expected parameters include:
 =back
 
 Returns a valid rendering context or undef if there was an error; call L<<
-C<SDL_GetError( )>|/C<SDL_GetError( )> >>() for more information.
+C<SDL_GetError( )>|/C<SDL_GetError( )> >>( ) for more information.
 
 =head2 C<SDL_GetRenderer( ... )>
 
@@ -2833,7 +2852,7 @@ Expected parameters include:
 =back
 
 Returns the rendering context on success or undef on failure; call L<<
-C<SDL_GetError( )>|/C<SDL_GetError( )> >>() for more information.
+C<SDL_GetError( )>|/C<SDL_GetError( )> >>( ) for more information.
 
 =head2 C<SDL_GetRendererInfo( ... )>
 
@@ -2850,7 +2869,7 @@ Expected parameters include:
 =back
 
 Returns an L<SDL2::RendererInfo> structure on success or a negative error code
-on failure; call L<< C<SDL_GetError( )>|/C<SDL_GetError( )> >>() for more
+on failure; call L<< C<SDL_GetError( )>|/C<SDL_GetError( )> >>( ) for more
 information.
 
 =head2 C<SDL_GetRendererOutputSize( ... )>
@@ -2873,7 +2892,7 @@ Expected parameters include:
 =back
 
 Returns the width and height on success or a negative error code on failure;
-call L<< C<SDL_GetError( )>|/C<SDL_GetError( )> >>() for more information.
+call L<< C<SDL_GetError( )>|/C<SDL_GetError( )> >>( ) for more information.
 
 =head2 C<SDL_CreateTexture( ... )>
 
@@ -2904,7 +2923,7 @@ Expected parameters include:
 
 Returns a pointer to the created texture or undefined if no rendering context
 was active, the format was unsupported, or the width or height were out of
-range; call L<< C<SDL_GetError( )>|/C<SDL_GetError( )> >>() for more
+range; call L<< C<SDL_GetError( )>|/C<SDL_GetError( )> >>( ) for more
 information.
 
 =head2 C<SDL_CreateTextureFromSurface( ... )>
@@ -2938,7 +2957,7 @@ Expected parameters include:
 =back
 
 Returns the created texture or undef on failure; call L<< C<SDL_GetError(
-)>|/C<SDL_GetError( )> >>() for more information.
+)>|/C<SDL_GetError( )> >>( ) for more information.
 
 =head2 C<SDL_QueryTexture( ... )>
 
@@ -2971,7 +2990,7 @@ format (one of the L<< C<:pixelFormatEnum>|/C<:pixelFormatEnum> >> values)
 =back
 
 ...or a negative error code on failure; call L<< C<SDL_GetError(
-)>|/C<SDL_GetError( )> >>() for more information.
+)>|/C<SDL_GetError( )> >>( ) for more information.
 
 =head2 C<SDL_SetTextureColorMod( ... )>
 
@@ -3003,7 +3022,7 @@ Expected parameters include:
 =back
 
 Returns C<0> on success or a negative error code on failure; call L<<
-C<SDL_GetError( )>|/C<SDL_GetError( )> >>() for more information.
+C<SDL_GetError( )>|/C<SDL_GetError( )> >>( ) for more information.
 
 =head2 C<SDL_GetTextureColorMod( ... )>
 
@@ -3020,8 +3039,8 @@ Expected parameters include:
 =back
 
 Returns the current red, green, and blue color values on success or a negative
-error code on failure; call L<< C<SDL_GetError( )>|/C<SDL_GetError( )> >>() for
-more information.
+error code on failure; call L<< C<SDL_GetError( )>|/C<SDL_GetError( )> >>( )
+for more information.
 
 =head2 C<SDL_SetTextureAlphaMod( ... )>
 
@@ -3049,7 +3068,7 @@ Expected parameters include:
 =back
 
 Returns C<0> on success or a negative error code on failure; call L<<
-C<SDL_GetError( )>|/C<SDL_GetError( )> >>() for more information.
+C<SDL_GetError( )>|/C<SDL_GetError( )> >>( ) for more information.
 
 =head2 C<SDL_GetTextureAlphaMod( ... )>
 
@@ -3066,7 +3085,7 @@ Expected parameters include:
 =back
 
 Returns the current alpha value on success or a negative error code on failure;
-call L<< C<SDL_GetError( )>|/C<SDL_GetError( )> >>() for more information.
+call L<< C<SDL_GetError( )>|/C<SDL_GetError( )> >>( ) for more information.
 
 =head2 C<SDL_SetTextureBlendMode( ... )>
 
@@ -3087,7 +3106,7 @@ Expected parameters include:
 =back
 
 Returns 0 on success or a negative error code on failure; call L<<
-C<SDL_GetError( )>|/C<SDL_GetError( )> >>() for more information.
+C<SDL_GetError( )>|/C<SDL_GetError( )> >>( ) for more information.
 
 =head2 C<SDL_GetTextureBlendMode( ... )>
 
@@ -3104,7 +3123,7 @@ Expected parameters include:
 =back
 
 Returns the current C<:blendMode> on success or a negative error code on
-failure; call L<< C<SDL_GetError( )>|/C<SDL_GetError( )> >>() for more
+failure; call L<< C<SDL_GetError( )>|/C<SDL_GetError( )> >>( ) for more
 information.
 
 =head2 C<SDL_SetTextureScaleMode( ... )>
@@ -3178,7 +3197,7 @@ Expected parameters include:
 =back
 
 Returns C<0> on success or a negative error code on failure; call L<<
-C<SDL_GetError( )>|/C<SDL_GetError( )> >>() for more information.
+C<SDL_GetError( )>|/C<SDL_GetError( )> >>( ) for more information.
 
 =head2 C<SDL_UpdateYUVTexture( ... )>
 
@@ -3213,7 +3232,7 @@ Expected parameters include:
 =back
 
 Returns C<0> on success or -1 if the texture is not valid; call L<<
-C<SDL_GetError( )>|/C<SDL_GetError( )> >>() for more information.
+C<SDL_GetError( )>|/C<SDL_GetError( )> >>( ) for more information.
 
 =head2 C<SDL_UpdateNVTexture( ... )>
 
@@ -3274,7 +3293,7 @@ Expected parameters include:
 
 Returns 0 on success or a negative error code if the texture is not valid or
 was not created with `SDL_TEXTUREACCESS_STREAMING`; call L<< C<SDL_GetError(
-)>|/C<SDL_GetError( )> >>() for more information.
+)>|/C<SDL_GetError( )> >>( ) for more information.
 
 =head2 C<SDL_LockTextureToSurface( ... )>
 
@@ -3374,7 +3393,7 @@ Expected parameters include:
 =back
 
 Returns C<0> on success or a negative error code on failure; call L<<
-C<SDL_GetError( )>|/C<SDL_GetError( )> >>() for more information.
+C<SDL_GetError( )>|/C<SDL_GetError( )> >>( ) for more information.
 
 =head2 C<SDL_GetRenderTarget( ... )>
 
@@ -3425,7 +3444,7 @@ Expected parameters include:
 =back
 
 Returns C<0> on success or a negative error code on failure; call L<<
-C<SDL_GetError( )>|/C<SDL_GetError( )> >>() for more information.
+C<SDL_GetError( )>|/C<SDL_GetError( )> >>( ) for more information.
 
 =head2 C<SDL_RenderGetLogicalSize( ... )>
 
@@ -3468,7 +3487,7 @@ Expected parameters include:
 =back
 
 Returns C<0> on success or a negative error code on failure; call L<<
-C<SDL_GetError( )>|/C<SDL_GetError( )> >>() for more information.
+C<SDL_GetError( )>|/C<SDL_GetError( )> >>( ) for more information.
 
 =head2 C<SDL_RenderGetIntegerScale( ... )>
 
@@ -3485,7 +3504,7 @@ Expected parameters include:
 =back
 
 Returns true if integer scales are forced or false if not and on failure; call
-L<< C<SDL_GetError( )>|/C<SDL_GetError( )> >>() for more information.
+L<< C<SDL_GetError( )>|/C<SDL_GetError( )> >>( ) for more information.
 
 =head2 C<SDL_RenderSetViewport( ... )>
 
@@ -3507,7 +3526,7 @@ Expected parameters include:
 =back
 
 Returns C<0> on success or a negative error code on failure; call L<<
-C<SDL_GetError( )>|/C<SDL_GetError( )> >>() for more information.
+C<SDL_GetError( )>|/C<SDL_GetError( )> >>( ) for more information.
 
 =head2 C<SDL_RenderGetViewport( ... )>
 
@@ -3542,7 +3561,7 @@ Expected parameters include:
 =back
 
 Returns C<0> on success or a negative error code on failure; call L<<
-C<SDL_GetError( )>|/C<SDL_GetError( )> >>() for more information.
+C<SDL_GetError( )>|/C<SDL_GetError( )> >>( ) for more information.
 
 =head2 C<SDL_RenderGetClipRect( ... )>
 
@@ -3576,7 +3595,7 @@ Expected parameters include:
 =back
 
 Returns true if clipping is enabled or false if not; call L<< C<SDL_GetError(
-)>|/C<SDL_GetError( )> >>() for more information.
+)>|/C<SDL_GetError( )> >>( ) for more information.
 
 =head2 C<SDL_RenderSetScale( ... )>
 
@@ -3605,7 +3624,7 @@ Expected parameters include:
 =back
 
 Returns C<0> on success or a negative error code on failure; call L<<
-C<SDL_GetError( )>|/C<SDL_GetError( )> >>() for more information.
+C<SDL_GetError( )>|/C<SDL_GetError( )> >>( ) for more information.
 
 =head2 C<SDL_RenderGetScale( ... )>
 
@@ -3649,7 +3668,7 @@ Expected parameters include:
 =back
 
 Returns C<0> on success or a negative error code on failure; call L<<
-C<SDL_GetError( )>|/C<SDL_GetError( )> >>() for more information.
+C<SDL_GetError( )>|/C<SDL_GetError( )> >>( ) for more information.
 
 =head2 C<SDL_GetRenderDrawColor( ... )>
 
@@ -3666,7 +3685,7 @@ Expected parameters include:
 =back
 
 Returns red, green, blue, and alpha values on success or a negative error code
-on failure; call L<< C<SDL_GetError( )>|/C<SDL_GetError( )> >>() for more
+on failure; call L<< C<SDL_GetError( )>|/C<SDL_GetError( )> >>( ) for more
 information.
 
 =head2 C<SDL_SetRenderDrawBlendMode( ... )>
@@ -3688,7 +3707,7 @@ Expected parameters include:
 =back
 
 Returns C<0> on success or a negative error code on failure; call L<<
-C<SDL_GetError( )>|/C<SDL_GetError( )> >>() for more information.
+C<SDL_GetError( )>|/C<SDL_GetError( )> >>( ) for more information.
 
 =head2 C<SDL_GetRenderDrawBlendMode( ... )>
 
@@ -3705,7 +3724,7 @@ Expected parameters include:
 =back
 
 Returns the current C<:blendMode> on success or a negative error code on
-failure; call L<< C<SDL_GetError( )>|/C<SDL_GetError( )> >>() for more
+failure; call L<< C<SDL_GetError( )>|/C<SDL_GetError( )> >>( ) for more
 information.
 
 =head2 C<SDL_RenderClear( ... )>
@@ -3724,7 +3743,7 @@ clip rectangle.
 =back
 
 Returns C<0> on success or a negative error code on failure; call L<<
-C<SDL_GetError( )>|/C<SDL_GetError( )> >>() for more information.
+C<SDL_GetError( )>|/C<SDL_GetError( )> >>( ) for more information.
 
 =head2 C<SDL_RenderDrawPoint( ... )>
 
@@ -3749,7 +3768,7 @@ Expected parameters include:
 =back
 
 Returns C<0> on success or a negative error code on failure; call L<<
-C<SDL_GetError( )>|/C<SDL_GetError( )> >>() for more information.
+C<SDL_GetError( )>|/C<SDL_GetError( )> >>( ) for more information.
 
 =head2 C<SDL_RenderDrawPoints( ... )>
 
@@ -3767,7 +3786,7 @@ Draw multiple points on the current rendering target.
 =back
 
 Returns C<0> on success or a negative error code on failure; call L<<
-C<SDL_GetError( )>|/C<SDL_GetError( )> >>() for more information.
+C<SDL_GetError( )>|/C<SDL_GetError( )> >>( ) for more information.
 
 =head2 C<SDL_RenderDrawLine( ... )>
 
@@ -3796,7 +3815,7 @@ Expected parameters include:
 =back
 
 Returns C<0> on success or a negative error code on failure; call L<<
-C<SDL_GetError( )>|/C<SDL_GetError( )> >>() for more information.
+C<SDL_GetError( )>|/C<SDL_GetError( )> >>( ) for more information.
 
 =head2 C<SDL_RenderDrawLines( ... )>
 
@@ -3815,7 +3834,7 @@ Expected parameters include:
 =back
 
 Returns C<0> on success or a negative error code on failure; call L<<
-C<SDL_GetError( )>|/C<SDL_GetError( )> >>() for more information.
+C<SDL_GetError( )>|/C<SDL_GetError( )> >>( ) for more information.
 
 =head2 C<SDL_RenderDrawRect( ... )>
 
@@ -3836,7 +3855,7 @@ Expected parameters include:
 =back
 
 Returns C<0> on success or a negative error code on failure; call L<<
-C<SDL_GetError( )>|/C<SDL_GetError( )> >>() for more information.
+C<SDL_GetError( )>|/C<SDL_GetError( )> >>( ) for more information.
 
 =head2 C<SDL_RenderDrawRects( ... )>
 
@@ -3858,7 +3877,7 @@ Expected parameters include:
 =back
 
 Returns C<0> on success or a negative error code on failure; call L<<
-C<SDL_GetError( )>|/C<SDL_GetError( )> >>() for more information.
+C<SDL_GetError( )>|/C<SDL_GetError( )> >>( ) for more information.
 
 =head2 C<SDL_RenderFillRect( ... )>
 
@@ -3884,7 +3903,7 @@ Expected parameters includue:
 =back
 
 Returns C<0> on success or a negative error code on failure; call L<<
-C<SDL_GetError( )>|/C<SDL_GetError( )> >>() for more information.
+C<SDL_GetError( )>|/C<SDL_GetError( )> >>( ) for more information.
 
 =head2 C<SDL_RenderFillRects( ... )>
 
@@ -3907,7 +3926,7 @@ Expected parameters include:
 =back
 
 Returns C<0> on success or a negative error code on failure; call L<<
-C<SDL_GetError( )>|/C<SDL_GetError( )> >>() for more information.
+C<SDL_GetError( )>|/C<SDL_GetError( )> >>( ) for more information.
 
 =head2 C<SDL_RenderCopy( ... )>
 
@@ -3943,7 +3962,7 @@ Expected parameters include:
 =back
 
 Returns C<0> on success or a negative error code on failure; call L<<
-C<SDL_GetError( )>|/C<SDL_GetError( )> >>() for more information.
+C<SDL_GetError( )>|/C<SDL_GetError( )> >>( ) for more information.
 
 =head2 C<SDL_RenderCopyEx( ... )>
 
@@ -3990,7 +4009,7 @@ Expected parameters include:
 =back
 
 Returns C<0> on success or a negative error code on failure; call L<<
-C<SDL_GetError( )>|/C<SDL_GetError( )> >>() for more information.
+C<SDL_GetError( )>|/C<SDL_GetError( )> >>( ) for more information.
 
 =head2 C<SDL_RenderDrawPointF( ... )>
 
@@ -4030,7 +4049,7 @@ Expected parameters include:
 =back
 
 Returns C<0> on success, or C<-1> on error; call L<< C<SDL_GetError(
-)>|/C<SDL_GetError( )> >>() for more information.
+)>|/C<SDL_GetError( )> >>( ) for more information.
 
 =head2 C<SDL_RenderDrawLineF( ... )>
 
@@ -4259,7 +4278,7 @@ Expected parameters include:
 =back
 
 Returns C<0> on success or a negative error code on failure; call L<<
-C<SDL_GetError( )>|/C<SDL_GetError( )> >>() for more information.
+C<SDL_GetError( )>|/C<SDL_GetError( )> >>( ) for more information.
 
 =head2 C<SDL_RenderPresent( ... )>
 
@@ -4358,7 +4377,7 @@ Expected parameters include:
 =back
 
 Returns C<0> on success or a negative error code on failure; call L<<
-C<SDL_GetError( )>|/C<SDL_GetError( )> >>() for more information.
+C<SDL_GetError( )>|/C<SDL_GetError( )> >>( ) for more information.
 
 
 =head2 C<SDL_GL_BindTexture( ... )>
@@ -4395,7 +4414,7 @@ Expected parameters include:
 =back
 
 Returns the texture's with and height on success, or -1 if the operation is not
-supported; call L<< C<SDL_GetError( )>|/C<SDL_GetError( )> >>() for more
+supported; call L<< C<SDL_GetError( )>|/C<SDL_GetError( )> >>( ) for more
 information.
 
 =head2 C<SDL_GL_UnbindTexture( ... )>
@@ -4433,7 +4452,7 @@ Expected parameters include:
 =item C<renderer> - the renderer to query
 
 =back
- 
+
 Returns C<CAMetalLayer*> on success, or undef if the renderer isn't a Metal
 renderer.
 
@@ -4699,7 +4718,7 @@ Expected parameters include:
 =back
 
 Returns a timer ID or C<0> if an error occurs; call L<< C<SDL_GetError(
-)>|/C<SDL_GetError( )> >>() for more information.
+)>|/C<SDL_GetError( )> >>( ) for more information.
 
 =head2 C<SDL_RemoveTimer( ... )>
 
@@ -4718,16 +4737,51 @@ Expected parameters include:
 
 Returns true if the timer is removed or false if the timer wasn't found.
 
+=head1 Raw Audio Mixing
+ 
+These methods provide acces to the raw audio mixing buffer for the SDL library.
+They may be imported with the C<:audio> tag.
 
+=head2 C<SDL_GetNumAudioDrivers( )>
 
+Returns a list of built in audio drivers, in the order that they were normally
+initialized by default.
 
+=head2 C<SDL_GetAudioDriver( ... )>
 
+Returns an audio driver by name.
 
+	my $driver = SDL_GetAudioDriver( 1 );
 
+Expected parameters include:
 
+=over
 
+=item C<index> - The zero-based index of the desired audio driver
 
+=back
 
+=head2 C<SDL_AudioInit( ... )>
+
+Audio system initialization.
+
+	SDL_AudioInit( 'x11' );
+
+This method is used internally, and should not be used unless you have a
+specific need to specify the audio driver you want to use. You should normally
+use L<< C<SDL_Init( ... )>|/C<SDL_Init( ... )> >>.
+
+Returns C<0> on success.
+
+=head2 C<SDL_AudioQuit( )>
+
+Cleaning up initialized audio system.
+
+	SDL_AudioQuit( );
+
+This method is used internally, and should not be used unless you have a
+specific need to close the selected audio driver. You should normally use L<<
+C<SDL_Quit( )>|/C<SDL_Quit( )> >>.
 
 
 
@@ -4960,8 +5014,9 @@ may import them all by name as well.
 
 =head2 C<:init>
 
-These are the flags which may be passed to C<SDL_Init()>. You should specify
-the subsystems which you will be using in your application.
+These are the flags which may be passed to L<< C<SDL_Init( ... )>|/C<SDL_Init(
+... )> >>. You should specify the subsystems which you will be using in your
+application.
 
 =over
 
@@ -5051,7 +5106,7 @@ Values:
 This hint must be set together with the hint
 C<SDL_HINT_ANDROID_APK_EXPANSION_PATCH_FILE_VERSION>.
 
-If both hints were set then C<SDL_RWFromFile()> will look into expansion files
+If both hints were set then C<SDL_RWFromFile( )> will look into expansion files
 after a given relative path was not found in the internal storage and assets.
 
 By default this hint is not set and the APK expansion files are not searched.
@@ -5067,7 +5122,7 @@ Values:
 This hint must be set together with the hint
 C<SDL_HINT_ANDROID_APK_EXPANSION_MAIN_FILE_VERSION>.
 
-If both hints were set then C<SDL_RWFromFile()> will look into expansion files
+If both hints were set then C<SDL_RWFromFile( )> will look into expansion files
 after a given relative path was not found in the internal storage and assets.
 
 By default this hint is not set and the APK expansion files are not searched.
@@ -5171,8 +5226,8 @@ This hint only applies to the Emscripten platform.
 
 =item C<SDL_HINT_FRAMEBUFFER_ACCELERATION>
 
-A hint that specifies how 3D acceleration is used with
-L<SDL_GetWindowSurface()|SDL2/SDL_GetWindowSurface( ... )>.
+A hint that specifies how 3D acceleration is used with L<SDL_GetWindowSurface(
+... )|SDL2/SDL_GetWindowSurface( ... )>.
 
 Values:
 
@@ -5184,9 +5239,9 @@ By default SDL tries to make a best guess whether to use acceleration or not on
 each platform.
 
 SDL can try to accelerate the screen surface returned by
-L<SDL_GetWindowSurface()|SDL2/SDL_GetWindowSurface( ... )> by using streaming
-textures with a 3D rendering engine. This variable controls whether and how
-this is done.
+L<SDL_GetWindowSurface( ... )|SDL2/SDL_GetWindowSurface( ... )> by using
+streaming textures with a 3D rendering engine. This variable controls whether
+and how this is done.
 
 =item C<SDL_HINT_GAMECONTROLLERCONFIG>
 
@@ -5195,7 +5250,7 @@ A variable that lets you provide a file with extra gamecontroller db entries.
 This hint must be set before calling C<SDL_Init(SDL_INIT_GAMECONTROLLER)>.
 
 You can update mappings after the system is initialized with
-C<SDL_GameControllerMappingForGUID()> and C<SDL_GameControllerAddMapping()>.
+C<SDL_GameControllerMappingForGUID( )> and C<SDL_GameControllerAddMapping( )>.
 
 =item C<SDL_HINT_GRAB_KEYBOARD>
 
@@ -5215,7 +5270,7 @@ When an iOS application does not receive touches for some time, the screen is
 dimmed automatically. For games where the accelerometer is the only input this
 is problematic. This functionality can be disabled by setting this hint.
 
-As of SDL 2.0.4, C<SDL_EnableScreenSaver()> and C<SDL_DisableScreenSaver()>
+As of SDL 2.0.4, C<SDL_EnableScreenSaver( )> and C<SDL_DisableScreenSaver( )>
 accomplish the same thing on iOS. They should be preferred over this hint.
 
 =item C<SDL_HINT_IME_INTERNAL_EDITING>
@@ -5420,8 +5475,8 @@ size (a few kilobytes versus the default 8MB glibc uses). Support for this hint
 is currently available only in the pthread, Windows, and PSP backend.
 
 Instead of this hint, in 2.0.9 and later, you can use
-C<SDL_CreateThreadWithStackSize()>. This hint only works with the classic
-C<SDL_CreateThread()>.
+C<SDL_CreateThreadWithStackSize( )>. This hint only works with the classic
+C<SDL_CreateThread( )>.
 
 =item C<SDL_HINT_TIMER_RESOLUTION>
 
@@ -5514,7 +5569,7 @@ the compiler in your binaries.
 A variable that is the address of another C<SDL_Window*> (as a hex string
 formatted with C<%p>).
 
-If this hint is set before C<SDL_CreateWindowFrom()> and the C<SDL_Window*> it
+If this hint is set before C<SDL_CreateWindowFrom( )> and the C<SDL_Window*> it
 is set to has C<SDL_WINDOW_OPENGL> set (and running on WGL only, currently),
 then two things will occur on the newly created C<SDL_Window>:
 
@@ -5527,8 +5582,8 @@ then two things will occur on the newly created C<SDL_Window>:
 =back
 
 This variable can be set to the address (as a string C<%p>) of the
-C<SDL_Window*> that new windows created with C<SDL_CreateWindowFrom()> should
-share a pixel format with.
+C<SDL_Window*> that new windows created with L<< C<SDL_CreateWindowFrom( ...
+)>|/C<SDL_CreateWindowFrom( ... )> >>should share a pixel format with.
 
 =item C<SDL_HINT_VIDEO_X11_NET_WM_PING>
 
@@ -5622,7 +5677,7 @@ A variable controlling whether the windows message loop is processed by SDL .
 This variable can be set to the following values:
 
     0   The window message loop is not run
-    1   The window message loop is processed in SDL_PumpEvents()
+    1   The window message loop is processed in SDL_PumpEvents( )
 
 By default SDL will process the windows message loop.
 
@@ -5673,7 +5728,7 @@ button is pressed, or can set it in direct-response to a back button being
 pressed.
 
 In order to get notified when a back button is pressed, SDL apps should
-register a callback function with C<SDL_AddEventWatch()>, and have it listen
+register a callback function with C<SDL_AddEventWatch( )>, and have it listen
 for C<SDL_KEYDOWN> events that have a scancode of C<SDL_SCANCODE_AC_BACK>.
 (Alternatively, C<SDL_KEYUP> events can be listened-for. Listening for either
 event type is suitable.)  Any value of C<SDL_HINT_WINRT_HANDLE_BACK_BUTTON> set
@@ -5699,7 +5754,8 @@ actual text of the policy.
 The contents of this hint should be encoded as a UTF8 string.
 
 The default value is "Privacy Policy". This hint should only be set during app
-initialization, preferably before any calls to C<SDL_Init()>.
+initialization, preferably before any calls to L<< C<SDL_Init( ...
+)>|/C<SDL_Init( ... )> >>.
 
 For additional information on linking to a privacy policy, see the
 documentation for C<SDL_HINT_WINRT_PRIVACY_POLICY_URL>.
@@ -5715,9 +5771,9 @@ provides code to add a URL-based link there, which can point to the app's
 privacy policy.
 
 To setup a URL to an app's privacy policy, set
-C<SDL_HINT_WINRT_PRIVACY_POLICY_URL> before calling any C<SDL_Init()>
-functions.  The contents of the hint should be a valid URL.  For example,
-L<http://www.example.com>.
+C<SDL_HINT_WINRT_PRIVACY_POLICY_URL> before calling any L<< C<SDL_Init( ...
+)>|/C<SDL_Init( ... )> >> functions.  The contents of the hint should be a
+valid URL.  For example, L<http://www.example.com>.
 
 The default value is an empty string (C<>), which will prevent SDL from adding
 a privacy policy link to the Settings charm. This hint should only be set
@@ -5749,7 +5805,8 @@ devices.
 
 This hint is for backwards compatibility only and will be removed in SDL 2.1
 
-The default value is C<0>.  This hint must be set before C<SDL_Init()>
+The default value is C<0>.  This hint must be set before L<< C<SDL_Init( ...
+)>|/C<SDL_Init( ... )> >>
 
 =item C<SDL_HINT_QTWAYLAND_WINDOW_FLAGS>
 
@@ -5974,7 +6031,7 @@ SDL_gamecontroller.h
 This hint must be set before calling C<SDL_Init(SDL_INIT_GAMECONTROLLER)>
 
 You can update mappings after the system is initialized with
-C<SDL_GameControllerMappingForGUID()> and C<SDL_GameControllerAddMapping()>.
+C<SDL_GameControllerMappingForGUID( )> and C<SDL_GameControllerAddMapping( )>.
 
 =item C<SDL_HINT_GAMECONTROLLER_IGNORE_DEVICES>
 
@@ -6282,7 +6339,7 @@ Note:
 
 On Linux, the kernel may send C<SIGKILL> to realtime tasks which exceed the
 distro configured execution budget for rtkit. This budget can be queried
-through C<RLIMIT_RTTIME> after calling C<SDL_SetThreadPriority()>.
+through C<RLIMIT_RTTIME> after calling C<SDL_SetThreadPriority( )>.
 
 =item C<SDL_HINT_THREAD_FORCE_REALTIME_TIME_CRITICAL>
 
@@ -6318,7 +6375,7 @@ This variable can be set to the following values:
 A variable that is the address of another SDL_Window* (as a hex string
 formatted with C<%p>).
 
-If this hint is set before C<SDL_CreateWindowFrom()> and the C<SDL_Window*> it
+If this hint is set before C<SDL_CreateWindowFrom( )> and the C<SDL_Window*> it
 is set to has C<SDL_WINDOW_OPENGL> set (and running on WGL only, currently),
 then two things will occur on the newly created C<SDL_Window>:
 
@@ -6332,7 +6389,7 @@ This variable can be set to the following values:
 
 =over
 
-=item The address (as a string C<%p>) of the C<SDL_Window*> that new windows created with C<SDL_CreateWindowFrom()> should share a pixel format with.
+=item The address (as a string C<%p>) of the C<SDL_Window*> that new windows created with L<< C<SDL_CreateWindowFrom( ... )>|/C<SDL_CreateWindowFrom( ... )> >> should share a pixel format with.
 
 =back
 
@@ -6585,13 +6642,13 @@ Circumstances where this is useful include
 
 =item - Testing an app with a particular OpenGL ES implementation, e.g ANGLE, or emulator, e.g. those from ARM, Imagination or Qualcomm.
 
-=item Resolving OpenGL ES function addresses at link time by linking with the OpenGL ES library instead of querying them at run time with C<SDL_GL_GetProcAddress()>.
+=item Resolving OpenGL ES function addresses at link time by linking with the OpenGL ES library instead of querying them at run time with C<SDL_GL_GetProcAddress( )>.
 
 =back
 
 Caution: for an application to work with the default behaviour across different
 OpenGL drivers it must query the OpenGL ES function addresses at run time using
-C<SDL_GL_GetProcAddress()>.
+C<SDL_GL_GetProcAddress( )>.
 
 This variable is ignored on most platforms because OpenGL ES is native or not
 supported.
@@ -6700,9 +6757,10 @@ output. As such, SDL will disable batching if a specific render backend is
 requested (since this might indicate that the app is planning to use the
 underlying graphics API directly). This hint can be used to explicitly request
 batching in this instance. It is a contract that you will either never use the
-underlying graphics API directly, or if you do, you will call SDL_RenderFlush()
-before you do so any current batch goes to the GPU before your work begins. Not
-following this contract will result in undefined behavior.
+underlying graphics API directly, or if you do, you will call
+C<SDL_RenderFlush( )> before you do so any current batch goes to the GPU before
+your work begins. Not following this contract will result in undefined
+behavior.
 
 =item C<SDL_HINT_AUTO_UPDATE_JOYSTICKS>
 
@@ -6715,11 +6773,11 @@ This variable can be set to the following values:
 
 =item C<0>
 
-You'll call C<SDL_JoystickUpdate()> manually
+You'll call C<SDL_JoystickUpdate( )> manually
 
 =item C<1>
 
-SDL will automatically call C<SDL_JoystickUpdate()> (default)
+SDL will automatically call C<SDL_JoystickUpdate( )> (default)
 
 =back
 
@@ -6736,11 +6794,11 @@ This variable can be set to the following values:
 
 =item C<0>
 
-You'll call C<SDL_SensorUpdate()> manually
+You'll call C<SDL_SensorUpdate ( )> manually
 
 =item C<1>
 
-SDL will automatically call C<SDL_SensorUpdate()> (default)
+SDL will automatically call C<SDL_SensorUpdate( )> (default)
 
 =back
 
@@ -6771,10 +6829,10 @@ Log all events.
 
 This is generally meant to be used to debug SDL itself, but can be useful for
 application developers that need better visibility into what is going on in the
-event queue. Logged events are sent through C<SDL_Log()>, which means by
-default they appear on stdout on most platforms or maybe C<OutputDebugString()>
-on Windows, and can be funneled by the app with C<SDL_LogSetOutputFunction()>,
-etc.
+event queue. Logged events are sent through C<SDL_Log( )>, which means by
+default they appear on stdout on most platforms or maybe C<OutputDebugString(
+)> on Windows, and can be funneled by the app with C<SDL_LogSetOutputFunction(
+)>, etc.
 
 This hint can be toggled on and off at runtime, if you only need to log events
 for a small subset of program execution.
@@ -6885,10 +6943,10 @@ Ignore fact chunk entirely (default)
 
 =item C<SDL_HINT_DISPLAY_USABLE_BOUNDS>
 
-Override for C<SDL_GetDisplayUsableBounds()>
+Override for C<SDL_GetDisplayUsableBounds( )>
 
 If set, this hint will override the expected results for
-C<SDL_GetDisplayUsableBounds()> for display index 0. Generally you don't want
+C<SDL_GetDisplayUsableBounds( )> for display index 0. Generally you don't want
 to do this, but this allows an embedded system to request that some of the
 screen be reserved for other uses when paired with a well-behaved application.
 
@@ -6977,7 +7035,7 @@ SDL will minimize your window when Alt+Tab is pressed (default)
 
 =item C<SDL_HINT_PREFERRED_LOCALES>
 
-Override for SDL_GetPreferredLocales()
+Override for SDL_GetPreferredLocales( )
 
 If set, this will be favored over anything the OS might report for the user's
 preferred locales. Changing this hint at runtime will not generate a
@@ -7159,7 +7217,7 @@ Event subtype for window events.
 
 =item C<SDL_WINDOWEVENT_CLOSE> - The window manager requests that the window be closed
 
-=item C<SDL_WINDOWEVENT_TAKE_FOCUS> - Window is being offered a focus (should C<SetWindowInputFocus()> on itself or a subwindow, or ignore)
+=item C<SDL_WINDOWEVENT_TAKE_FOCUS> - Window is being offered a focus (should C<SetWindowInputFocus( )> on itself or a subwindow, or ignore)
 
 =item C<SDL_WINDOWEVENT_HIT_TEST> - Window had a hit test that wasn't C<SDL_HITTEST_NORMAL>.
 
@@ -7461,7 +7519,134 @@ The normalized factor used to multiply pixel components.
 =item C<SDL_BLENDFACTOR_DST_ALPHA> - C<dstA, dstA, dstA, dstA>
 
 =item C<SDL_BLENDFACTOR_ONE_MINUS_DST_ALPHA> - C<1-dstA, 1-dstA, 1-dstA, 1-dstA>
- 
+
+=back
+
+=head2 C<:audio>
+
+Audio format flags.
+
+These are what the 16 bits in SDL_AudioFormat currently mean... (Unspecified
+bits are always zero).
+
+    ++-----------------------sample is signed if set
+    ||
+    ||       ++-----------sample is bigendian if set
+    ||       ||
+    ||       ||          ++---sample is float if set
+    ||       ||          ||
+    ||       ||          || +---sample bit size---+
+    ||       ||          || |                     |
+    15 14 13 12 11 10 09 08 07 06 05 04 03 02 01 00
+
+There are macros in SDL 2.0 and later to query these bits.
+
+=head3 Audio flags
+
+=over
+
+=item C<SDL_AUDIO_MASK_BITSIZE>
+
+=item C<SDL_AUDIO_MASK_DATATYPE>
+
+=item C<SDL_AUDIO_MASK_ENDIAN>
+
+=item C<SDL_AUDIO_MASK_SIGNED>
+
+=item C<SDL_AUDIO_BITSIZE>
+
+=item C<SDL_AUDIO_ISFLOAT>
+
+=item C<SDL_AUDIO_ISBIGENDIAN>
+
+=item C<SDL_AUDIO_ISSIGNED>
+
+=item C<SDL_AUDIO_ISINT>
+
+=item C<SDL_AUDIO_ISLITTLEENDIAN>
+
+=item C<SDL_AUDIO_ISUNSIGNED>
+
+=back
+
+=head3 Audio format flags
+
+Defaults to LSB byte order.
+
+=over
+
+=item C<AUDIO_U8> - Unsigned 8-bit samples
+
+=item C<AUDIO_S8> - Signed 8-bit samples
+
+=item C<AUDIO_U16LSB> - Unsigned 16-bit samples
+
+=item C<AUDIO_S16LSB> - Signed 16-bit samples
+
+=item C<AUDIO_U16MSB> - As above, but big-endian byte order
+
+=item C<AUDIO_S16MSB> - As above, but big-endian byte order
+
+=item C<AUDIO_U16> - C<AUDIO_U16LSB>
+
+=item C<AUDIO_S16> - C<AUDIO_S16LSB>
+
+=back
+
+=head3 C<int32> support
+
+=over
+
+=item C<AUDIO_S32LSB> - 32-bit integer samples
+
+=item C<AUDIO_S32MSB> - As above, but big-endian byte order
+
+=item C<AUDIO_S32> - C<AUDIO_S32LSB>
+
+=back
+
+=head3 C<float32> support
+
+=over
+
+=item C<AUDIO_F32LSB> - 32-bit floating point samples
+
+=item C<AUDIO_F32MSB> - As above, but big-endian byte order
+
+=item C<AUDIO_F32> - C<AUDIO_F32LSB>
+
+=back
+
+=head3 Native audio byte ordering
+
+=over
+
+=item C<AUDIO_U16SYS>
+
+=item C<AUDIO_S16SYS>
+
+=item C<AUDIO_S32SYS>
+
+=item C<AUDIO_F32SYS>
+
+=back
+
+=head3 Allow change flags
+
+Which audio format changes are allowed when opening a device.
+
+=over
+
+=item C<SDL_AUDIO_ALLOW_FREQUENCY_CHANGE>
+
+=item C<SDL_AUDIO_ALLOW_FORMAT_CHANGE>
+
+=item C<SDL_AUDIO_ALLOW_CHANNELS_CHANGE>
+
+=item C<SDL_AUDIO_ALLOW_SAMPLES_CHANGE>
+
+=item C<SDL_AUDIO_ALLOW_ANY_CHANGE>
+
 =back
 
 =head1 LICENSE

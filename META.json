@@ -73,7 +73,7 @@
          "web" : "https://github.com/sanko/SDL2.pm"
       }
    },
-   "version" : "1.0",
+   "version" : "0.01",
    "x_authority" : "cpan:SANKO",
    "x_serialization_backend" : "JSON::PP version 4.06",
    "x_static_install" : 1

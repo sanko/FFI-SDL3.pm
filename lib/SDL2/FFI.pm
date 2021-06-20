@@ -1,4 +1,4 @@
-package SDL2::FFI 1.0 {
+package SDL2::FFI 0.01 {
     use strictures 2;
     #
     $|++;
@@ -23,6 +23,8 @@ package SDL2::FFI 1.0 {
     my $ffi = FFI::Platypus->new( api => 1, experimental => 2,
         lib => [ Alien::libsdl2->dynamic_libs ] );
     FFI::C->ffi($ffi);
+    use Config;
+    my $bigendian = $Config{byteorder} != 4321;
 
     # I need these first
     class( SDL_version => [ major => 'uint8', minor => 'uint8', patch => 'uint8' ] );
@@ -50,9 +52,9 @@ package SDL2::FFI 1.0 {
         for my $tag ( keys %args ) {
 
             #print $_->[0] . ' ' for sort { $a->[0] cmp $b->[0] } @{ $Defines{$tag} };
-            constant->import(
-                ref $_ ? ( $_->[0] => ( ref $_->[1] eq 'CODE' ? $_->[1]->() : $_->[1] ) ) :
-                    ( $_ => $_ ) )
+            no strict 'refs';
+            ref $_->[1] eq 'CODE' ? *{ __PACKAGE__ . '::' . $_->[0] } = $_->[1] :
+                constant->import( $_->[0] => $_->[1] )
                 for @{ $args{$tag} };
 
             #constant->import( $_ => $_ ) for @{ $Defines{$tag} };
@@ -87,7 +89,7 @@ package SDL2::FFI 1.0 {
             my $class = $name;
             $class =~ s[^SDL_(.+)$]['SDL2::' . ucfirst $1 ]e;
             warn sprintf '%-20s => %-20s%s', $name, $class, (
-                -f sub ($package) { $package =~ m[::(.+)]; $1 . '.pod' }
+                -f sub ($package) { $package =~ m[::(.+)]; './lib/SDL2/' . $1 . '.pod' }
                     ->($class) ? '' : ' (undocumented)'
             );
             FFI::C::StructDef->new( $ffi, name => $name, class => $class, members => $args{$name} );
@@ -320,13 +322,12 @@ package SDL2::FFI 1.0 {
         refcount  => 'int'
     ];
     #
-    # See https://wiki.libsdl.org/APIByCategory
-    attach init => {    # https://wiki.libsdl.org/CategoryInit
+    attach default => {
         SDL_Init          => [ ['uint32'] => 'int' ],
         SDL_InitSubSystem => [ ['uint32'] => 'int' ],
-        SDL_Quit          => [ []         => 'void' ],
-        SDL_QuitSubSystem => [ ['uint32'] => 'void' ],
-        SDL_WasInit       => [ ['uint32'] => 'uint32' ]
+        SDL_QuitSubSystem => [ ['uint32'] ],
+        SDL_WasInit       => [ ['uint32'] => 'uint32' ],
+        SDL_Quit          => [ [] ],
     };
     #
     $ffi->type( '(opaque,string,string,string)->void' => 'SDL_HintCallback' );
@@ -1247,11 +1248,95 @@ package SDL2::FFI 1.0 {
         ],
         SDL_RemoveTimer => [ ['uint32'] => 'bool' ],
     };
+    define audio => [
+        [ SDL_AUDIO_MASK_BITSIZE   => 0xFF ],
+        [ SDL_AUDIO_MASK_DATATYPE  => ( 1 << 8 ) ],
+        [ SDL_AUDIO_MASK_ENDIAN    => ( 1 << 12 ) ],
+        [ SDL_AUDIO_MASK_SIGNED    => ( 1 << 15 ) ],
+        [ SDL_AUDIO_BITSIZE        => sub ($x) { $x & SDL_AUDIO_MASK_BITSIZE() } ],
+        [ SDL_AUDIO_ISFLOAT        => sub ($x) { $x & SDL_AUDIO_MASK_DATATYPE() } ],
+        [ SDL_AUDIO_ISBIGENDIAN    => sub ($x) { $x & SDL_AUDIO_MASK_ENDIAN() } ],
+        [ SDL_AUDIO_ISSIGNED       => sub ($x) { $x & SDL_AUDIO_MASK_SIGNED() } ],
+        [ SDL_AUDIO_ISINT          => sub ($x) { !SDL_AUDIO_ISFLOAT($x) } ],
+        [ SDL_AUDIO_ISLITTLEENDIAN => sub ($x) { !SDL_AUDIO_ISBIGENDIAN($x) } ],
+        [ SDL_AUDIO_ISUNSIGNED     => sub ($x) { !SDL_AUDIO_ISSIGNED($x) } ],
+        [ AUDIO_U8                 => 0x0008 ],
+        [ AUDIO_S8                 => 0x8008 ],
+        [ AUDIO_U16LSB             => 0x0010 ],
+        [ AUDIO_S16LSB             => 0x8010 ],
+        [ AUDIO_U16MSB             => 0x1010 ],
+        [ AUDIO_S16MSB             => 0x9010 ],
+        [ AUDIO_U16                => sub () { AUDIO_U16LSB() } ],
+        [ AUDIO_S16                => sub () { AUDIO_S16LSB() } ],
+        [ AUDIO_S32LSB             => 0x8020 ],
+        [ AUDIO_S32MSB             => 0x9020 ],
+        [ AUDIO_S32                => sub () { AUDIO_S32LSB() } ],
+        [ AUDIO_F32LSB             => 0x8120 ],
+        [ AUDIO_F32MSB             => 0x9120 ],
+        [ AUDIO_F32                => sub () { AUDIO_F32LSB() } ], (
+            $bigendian ? (
+                [ AUDIO_U16SYS => sub () { AUDIO_U16MSB() } ],
+                [ AUDIO_S16SYS => sub () { AUDIO_S16MSB() } ],
+                [ AUDIO_S32SYS => sub () { AUDIO_S32MSB() } ],
+                [ AUDIO_F32SYS => sub () { AUDIO_F32MSB() } ]
+                ) : (
+                [ AUDIO_U16SYS => sub () { AUDIO_U16LSB() } ],
+                [ AUDIO_S16SYS => sub () { AUDIO_S16LSB() } ],
+                [ AUDIO_S32SYS => sub () { AUDIO_S32LSB() } ],
+                [ AUDIO_F32SYS => sub () { AUDIO_F32LSB() } ],
+                )
+        ),
+        [ SDL_AUDIO_ALLOW_FREQUENCY_CHANGE => sub () {0x00000001} ],
+        [ SDL_AUDIO_ALLOW_FORMAT_CHANGE    => sub () {0x00000002} ],
+        [ SDL_AUDIO_ALLOW_CHANNELS_CHANGE  => sub () {0x00000004} ],
+        [ SDL_AUDIO_ALLOW_SAMPLES_CHANGE   => sub () {0x00000008} ],
+        [   SDL_AUDIO_ALLOW_ANY_CHANGE => sub () {
+                ( SDL_AUDIO_ALLOW_FREQUENCY_CHANGE() | SDL_AUDIO_ALLOW_FORMAT_CHANGE()
+                        | SDL_AUDIO_ALLOW_CHANNELS_CHANGE() | SDL_AUDIO_ALLOW_SAMPLES_CHANGE() )
+            }
+        ],
+    ];
+    $ffi->type( '(opaque,string,int)->void' => 'SDL_AudioCallback' );
+    class SDL_AudioSpec => [
+        freq     => 'int',
+        format   => 'uint16',
+        channels => 'uint8',
+        silence  => 'uint8',
+        samples  => 'uint16',
+        padding  => 'uint16',
+        size     => 'uint32',
+        callback => 'opaque',    # SDL_AudioCallback
+        userdata => 'opaque'     # void *
+    ];
+    class SDL_AudioCVT => [
+        needed       => 'int',
+        src_format   => 'uint16',    # SDL_AudioFormat
+        dst_format   => 'uint16',    # SDL_AudioFormat
+        rate_incr    => 'double',
+        buf          => 'opaque',    # uint8 *
+        len          => 'int',
+        len_cvt      => 'int',
+        len_mult     => 'int',
+        len_ratio    => 'double',
+        filters      => 'opaque',    #SDL_AudioFilter[SDL_AUDIOCVT_MAX_FILTERS + 1];
+        filter_index => 'int'
+    ];
+    $ffi->type( '(opaque,uint16)->void' => 'SDL_AudioFilter' );
+    define audio => [ [ SDL_AUDIOCVT_MAX_FILTERS => 9 ], ];
+    attach audio => {
+        SDL_GetNumAudioDrivers => [ [],         'int' ],
+        SDL_GetAudioDriver     => [ ['int'],    'string' ],
+        SDL_AudioInit          => [ ['string'], 'int' ],
+        SDL_AudioQuit          => [ [] ],
+        SDL_GetNumAudioDevices => [ ['int'], 'int' ],
+    };
 
     # START HERE!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     # https://wiki.libsdl.org/CategoryPlatform
     #
     class SDL_RWops => [];
+
+    #class SDL_PixelFormat => [];
     $ffi->attach( SDL_RWFromFile  => [ 'string', 'string' ], 'SDL_RWops' );
     $ffi->attach( SDL_FreeSurface => ['SDL_Surface'] );
     $ffi->attach( SDL_SaveBMP_RW  => [ 'SDL_Surface', 'SDL_RWops', 'int' ], 'int' );
@@ -1355,26 +1440,16 @@ package SDL2::FFI 1.0 {
             next          => 'opaque'         # SDL_PixelFormat *
         ]
     );
-    $ffi->attach(
-        SDL_MapRGB => [ 'SDL_PixelFormat', 'uint8', 'uint8', 'uint8' ] => 'uint32' =>
-            sub ( $inner, $format, $r, $g, $b ) {
-            $format = $ffi->cast( 'opaque', 'SDL_PixelFormat', $format ) if !ref $format;
-            $inner->( $format, $r, $g, $b );
-        }
-    );
-
-    # https://wiki.libsdl.org/CategorySurface
-    $ffi->attach(
-        SDL_FillRect => [ 'SDL_Surface', 'opaque', 'uint32' ] => 'int' =>
-            sub ( $inner, $dst, $rect, $color ) {
-
-            #$dst //= SDL2::Surface->new;
-            #$dst = $ffi->cast( 'opaque', 'SDL_Surface', $dst ) if !ref $dst;
-            #$rect //= SDL2::Rect->new( );
-            #$rect = $ffi->cast( 'opaque', 'SDL_Rect', $rect ) if !ref $rect;
-            $inner->( $dst, $rect, $color );
-        }
-    );
+    attach future => {
+        SDL_FillRect => [ [ 'SDL_Surface', 'opaque', 'uint32' ], 'int' ],
+        SDL_MapRGB   => [
+            [ 'SDL_PixelFormat', 'uint8', 'uint8', 'uint8' ] => 'uint32' =>
+                sub ( $inner, $format, $r, $g, $b ) {
+                $format = $ffi->cast( 'opaque', 'SDL_PixelFormat', $format ) if !ref $format;
+                $inner->( $format, $r, $g, $b );
+            }
+        ]
+    };
 
     # https://wiki.libsdl.org/CategoryEvents
     sub SDL_RELEASED () {0}
