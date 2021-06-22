@@ -6,14 +6,14 @@ SDL2::Version - Information About the Version of SDL in Use
 
 =head1 SYNOPSIS
 
-    use SDL2::FFI qw[:version];
-    my $ver = SDL_GetVersion();
-    CORE::say sprintf 'SDL version %d.%d.%d', $ver->major, $ver->minor, $ver->patchlevel;
+    use SDL2 qw[:version];
+    SDL_GetVersion( my $ver = SDL2::Version->new );
+    CORE::say sprintf 'SDL version %d.%d.%d', $ver->major, $ver->minor, $ver->patch;
 
 =head1 DESCRIPTION
 
 SDL2::Version represents the library's version as three levels: major, minor,
-and patchlevel.
+and patch level.
 
 =head1 Methods
 
@@ -29,7 +29,7 @@ revision.
 
 =head2 C<patch( )>
 
-Returns value which increments with fixes to the minor revisionl.
+Returns value which increments with fixes to the minor revision.
 
 =head1 LICENSE
 
@@ -44,8 +44,6 @@ conditions may apply to data transmitted through this module.
 Sanko Robinson E<lt>sanko@cpan.orgE<gt>
 
 =begin stopwords
-
- 
 
 =end stopwords
 

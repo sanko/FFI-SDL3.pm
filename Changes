@@ -2,5 +2,4 @@ Revision history for Perl extension SDL2::FFI
 
 {{$NEXT}}
 
-    - original version
-
+    - original version; not for broad use

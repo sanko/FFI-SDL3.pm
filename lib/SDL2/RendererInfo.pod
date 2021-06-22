@@ -7,7 +7,7 @@ Context
 
 =head1 SYNOPSIS
 
-    use SDL2::FFI qw[:all];
+    use SDL2 qw[:all];
     # TODO
     warn $renderer->name;
 
@@ -17,7 +17,7 @@ SDL2::RendererInfo
 
 =head1 Fields
 
-=over 
+=over
 
 =item C<name> - the name of the renderer
 
@@ -39,7 +39,7 @@ Sanko Robinson E<lt>sanko@cpan.orgE<gt>
 
 =begin stopwords
 
- 
+
 
 =end stopwords
 

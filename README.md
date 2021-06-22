@@ -6,10 +6,10 @@ SDL2::FFI - FFI Wrapper for SDL (Simple DirectMedia Layer) Development Library
 # SYNOPSIS
 
     use SDL2::FFI qw[:all];
-    die 'Error initializing SDL: ' . SDL_GetError( ) unless SDL_Init(SDL_INIT_VIDEO) == 0;
+    die 'Error initializing SDL: ' . SDL_GetError() unless SDL_Init(SDL_INIT_VIDEO) == 0;
     my $win = SDL_CreateWindow( 'Example window!',
         SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 640, 480, SDL_WINDOW_RESIZABLE );
-    die 'Could not create window: ' . SDL_GetError( ) unless $win;
+    die 'Could not create window: ' . SDL_GetError() unless $win;
     my $event = SDL2::Event->new;
     SDL_Init(SDL_INIT_VIDEO);
     my $renderer = SDL_CreateRenderer( $win, -1, 0 );
@@ -21,59 +21,43 @@ SDL2::FFI - FFI Wrapper for SDL (Simple DirectMedia Layer) Development Library
     } until $event->type == SDL_QUIT;
     SDL_DestroyRenderer($renderer);
     SDL_DestroyWindow($win);
-    exit SDL_Quit( );
+    SDL_Quit();
 
 # DESCRIPTION
 
-SDL2::FFI is an FFI::Platypus-backed wrapper around the **S**imple
-**D**irectMedia **L**ayer - a cross-platform development library designed to
-provide low level access to audio, keyboard, mouse, joystick, and graphics
-hardware.
-
-## Getting Started
-
-The SDL2::FFI module exports a high-level, Perl-like abstraction to use the SDL
-library.
-
-To get started, you must initialize the subsystems you need:
-
-        use SDL2::FFI;
-        my $window = SDL2::Window->new( w => 100, h => 100 );
-
-## The Future
-
-SDL2::FFI is still in early development: the majority of SDL's functions have
-yet to be implemented and the interface may also grow to be less sugary leading
-up to an eventual 1.0 release. This package is named `SDL2::FFI` because
-`SDL2` is being squatted on and I'd rather make games than play them over
-namespaces.
+SDL2 is an FFI::Platypus-backed wrapper around the **S**imple **D**irectMedia
+**L**ayer - a cross-platform development library designed to provide low level
+access to audio, keyboard, mouse, joystick, and graphics hardware.
 
 # Initialization and Shutdown
 
 The functions in this category are used to set up SDL for use and generally
 have global effects in your program. These functions may be imported with the
-`:default` tag.
+`:init` or `:default` tag.
 
 ## `SDL_Init( ... )`
 
-Initialize the SDL library.
+Initialize the SDL library. This must be called before using most other SDL
+functions.
+
+        SDL_Init( SDL_INIT_TIMER | SDL_INIT_VIDEO | SDL_INIT_EVENTS );
 
 `SDL_Init( ... )` simply forwards to calling [`SDL_InitSubSystem( ...
 )`](#sdl_initsubsystem). Therefore, the two may be used
 interchangeably. Though for readability of your code [`SDL_InitSubSystem(
 ... )`](#sdl_initsubsystem) might be preferred.
 
-The file I/O (for example: SDL\_RWFromFile) and threading (SDL\_CreateThread)
-subsystems are initialized by default. Message boxes (SDL\_ShowSimpleMessageBox)
+The file I/O (for example: [`SDL_RWFromFile( ... )`](#sdl_rwfromfile)) and threading ([`SDL_CreateThread( ... )`](#sdl_createthread)) subsystems are initialized by default. Message boxes ( [`SDL_ShowSimpleMessageBox( ... )`](#sdl_showsimplemessagebox) )
 also attempt to work without initializing the video subsystem, in hopes of
 being useful in showing an error dialog when SDL\_Init fails. You must
 specifically initialize other subsystems if you use them in your application.
 
-Logging (such as SDL\_Log) works without initialization, too.
+Logging (such as [`SDL_Log( ... )`](#sdl_log) ) works without
+initialization, too.
 
 Expected parameters include:
 
-- `flags` which may be any be imported with the [`:init`](https://metacpan.org/pod/SDL2%3A%3AFFI#init) tag and may be OR'd together.
+- `flags` which may be any be imported with the [`:init`](https://metacpan.org/pod/SDL2#init) tag and may be OR'd together
 
 Subsystem initialization is ref-counted, you must call [`SDL_QuitSubSystem(
 ... )`](#sdl_quitsubsystem) for each [`SDL_InitSubSystem( ...
@@ -91,15 +75,19 @@ Compatibility function to initialize the SDL library.
 In SDL2, this function and [`SDL_Init( ... )`](#sdl_init) are
 interchangeable.
 
+        SDL_InitSubSystem( SDL_INIT_TIMER | SDL_INIT_VIDEO | SDL_INIT_EVENTS );
+
 Expected parameters include:
 
-- `flags` which may be any be imported with the [`:init`](https://metacpan.org/pod/SDL2%3A%3AFFI#init) tag and may be OR'd together.
+- `flags` which may be any be imported with the [`:init`](https://metacpan.org/pod/SDL2#init) tag and may be OR'd together.
 
 Returns `0` on success or a negative error code on failure; call [`SDL_GetError( )`](#sdl_geterror) for more information.
 
 ## `SDL_Quit( )`
 
 Clean up all initialized subsystems.
+
+        SDL_Quit( );
 
 You should call this function even if you have already shutdown each
 initialized subsystem with [`SDL_QuitSubSystem( )`](#sdl_quitsubsystem). It is safe to call this function even in the case of errors in
@@ -120,6 +108,8 @@ when your application is shutdown.
 
 Shut down specific SDL subsystems.
 
+        SDL_QuitSubSystem( SDL_INIT_VIDEO );
+
 If you start a subsystem using a call to that subsystem's init function (for
 example [`SDL_VideoInit( )` ](#sdl_videoinit)) instead of [`SDL_Init( ... )`](#sdl_init) or [`SDL_InitSubSystem( ...
 )`](#sdl_initsubsystem), [`SDL_QuitSubSystem( ...
@@ -134,15 +124,22 @@ all open subsystems with [`SDL_QuitSubSystem( ... )`](#sdl_quitsubsystem).
 
 Expected parameters include:
 
-- `flags` which may be any be imported with the [`:init`](https://metacpan.org/pod/SDL2%3A%3AFFI#init) tag and may be OR'd together.
+- `flags` which may be any be imported with the [`:init`](https://metacpan.org/pod/SDL2#init) tag and may be OR'd together.
 
 ## `SDL_WasInit( ... )`
 
 Get a mask of the specified subsystems which are currently initialized.
 
+        SDL_Init( SDL_INIT_VIDEO | SDL_INIT_AUDIO );
+        warn SDL_WasInit( SDL_INIT_TIMER ); # false
+        warn SDL_WasInit( SDL_INIT_VIDEO ); # true (32 == SDL_INIT_VIDEO)
+        my $mask = SDL_WasInit( );
+        warn 'video init!'  if ($mask & SDL_INIT_VIDEO); # yep
+        warn 'video timer!' if ($mask & SDL_INIT_TIMER); # nope
+
 Expected parameters include:
 
-- `flags` which may be any be imported with the [`:init`](https://metacpan.org/pod/SDL2%3A%3AFFI#init) tag and may be OR'd together.
+- `flags` which may be any be imported with the [`:init`](https://metacpan.org/pod/SDL2#init) tag and may be OR'd together.
 
 If `flags` is `0`, it returns a mask of all initialized subsystems, otherwise
 it returns the initialization status of the specified subsystems.
@@ -430,7 +427,7 @@ Expected parameters:
 
 - `category`
 
-    The category to assign a priority to. These may be improted with the [`:logcategory`](#logcategory) tag.
+    The category to assign a priority to. These may be imported with the [`:logcategory`](#logcategory) tag.
 
 - `priority`
 
@@ -685,19 +682,19 @@ version).
 
 Example: The first version number of SDL 2 was 2000
 
-## `SDL_GetVersion( )`
+## `SDL_GetVersion( ... )`
 
 Get the version of SDL that is linked against your program.
 
-If you are linking to SDL dynamically, then it is possible that the current
-version will be different than the version you compiled against. This function
-returns the current version, while SDL\_VERSION( ) is a macro that tells you
-what version you compiled with.
+        my $ver = SDL2::Version->new;
+        SDL_GetVersion( $ver );
 
 This function may be called safely at any time, even before [`SDL_Init(
 )`](#sdl_init).
 
-Return value is a [SDL2::FFI::Version](https://metacpan.org/pod/SDL2%3A%3AFFI%3A%3AVersion) object.
+Expected parameters include:
+
+- `version` - An SDL2::Version object which will be filled with the proper values
 
 # Display and Window Management
 
@@ -1005,7 +1002,7 @@ information.
 
 ## `SDL_GetWindowPixelFormat( ... )`
 
-Get teh pixel format associated with the window.
+Get the pixel format associated with the window.
 
         my $format = SDL_GetWindowPixelFormat( $window );
 
@@ -1126,8 +1123,8 @@ Get a window from a stored ID.
 
         my $window = SDL_GetWindowFromID( 2 );
 
-The numeric ID is what [SDL::WindowEvent](https://metacpan.org/pod/SDL%3A%3AWindowEvent) references, and is necessary to map
-these events to specific [SDL::Window](https://metacpan.org/pod/SDL%3A%3AWindow) objects.
+The numeric ID is what [SDL2::WindowEvent](https://metacpan.org/pod/SDL2%3A%3AWindowEvent) references, and is necessary to map
+these events to specific [SDL2::Window](https://metacpan.org/pod/SDL2%3A%3AWindow) objects.
 
 Expected parameters include:
 
@@ -1186,7 +1183,7 @@ Set the icon for a window.
 Expected parameters include:
 
 - `window` - the window to change
-- `icon` - an [SDL2::Surface](https://metacpan.org/pod/SDL2%3A%3ASurface) structure containig the icon for the window
+- `icon` - an [SDL2::Surface](https://metacpan.org/pod/SDL2%3A%3ASurface) structure containing the icon for the window
 
 ## `SDL_SetWindowData( ... )`
 
@@ -2014,28 +2011,28 @@ Returns the value on success or a negative error code on failure; call [`SDL_Get
 
 Create an OpenGL context for an OpenGL window, and make it current.
 
-          # Window mode MUST include SDL_WINDOW_OPENGL for use with OpenGL.
-          my $window = SDL_CreateWindow(
-          'SDL2/OpenGL Demo', 0, 0, 640, 480, 
-          SDL_WINDOW_OPENGL|SDL_WINDOW_RESIZABLE);
-    
-          # Create an OpenGL context associated with the window
-          my $glcontext = SDL_GL_CreateContext( $window );
+        # Window mode MUST include SDL_WINDOW_OPENGL for use with OpenGL.
+        my $window = SDL_CreateWindow(
+        'SDL2/OpenGL Demo', 0, 0, 640, 480,
+        SDL_WINDOW_OPENGL|SDL_WINDOW_RESIZABLE);
 
-          # now you can make GL calls.
-          glClearColor( 0, 0, 0 ,1 );
-          glClear( GL_COLOR_BUFFER_BIT );
-          SDL_GL_SwapWindow( $window );
+        # Create an OpenGL context associated with the window
+        my $glcontext = SDL_GL_CreateContext( $window );
 
-          # Once finished with OpenGL functions, the SDL_GLContext can be deleted.
-          SDL_GL_DeleteContext( $glcontext );
+        # now you can make GL calls.
+        glClearColor( 0, 0, 0 ,1 );
+        glClear( GL_COLOR_BUFFER_BIT );
+        SDL_GL_SwapWindow( $window );
+
+        # Once finished with OpenGL functions, the SDL_GLContext can be deleted.
+        SDL_GL_DeleteContext( $glcontext );
 
 Windows users new to OpenGL should note that, for historical reasons, GL
 functions added after OpenGL version 1.1 are not available by default. Those
 functions must be loaded at run-time, either with an OpenGL extension-handling
 library or with [`SDL_GL_GetProcAddress( ... )`](#sdl_gl_getprocaddress) and its related functions.
 
-SDL::GLContext is opaque to the application.
+SDL2::GLContext is opaque to the application.
 
 Expected parameters include:
 
@@ -2334,7 +2331,7 @@ information.
 Create a texture from an existing surface.
 
         use Config;
-        my ($rmask, $gmask, $bmask, $amask) = 
+        my ($rmask, $gmask, $bmask, $amask) =
         $Config{byteorder} == 4321 ? (0xff000000,0x00ff0000,0x0000ff00,0x000000ff) :
                                                          (0x000000ff,0x0000ff00,0x00ff0000,0xff000000);
         my $surface = SDL_CreateRGBSurface( 0, 640, 480, 32, $rmask, $gmask, $bmask, $amask );
@@ -2638,7 +2635,7 @@ Unlock a texture, uploading the changes to video memory, if needed.
 
         SDL_UnlockTexture( $texture );
 
-**Warning**: Please note that [`SDL_LockTexture( ... )`](#sdl_locktexture) is intended to be write-only; it will notguarantee the previous
+**Warning**: Please note that [`SDL_LockTexture( ... )`](#sdl_locktexture) is intended to be write-only; it will not guarantee the previous
 contents of the texture will be provided. You must fully initialize any area of
 a texture that you lock before unlocking it, as the pixels might otherwise be
 uninitialized memory.
@@ -3015,7 +3012,7 @@ Draw a rectangle on the current rendering target.
 Expected parameters include:
 
 - `renderer` - the rendering context
-- `rect` - an [SDL::Rect](https://metacpan.org/pod/SDL%3A%3ARect) structure representing the rectangle to draw
+- `rect` - an [SDL2::Rect](https://metacpan.org/pod/SDL2%3A%3ARect) structure representing the rectangle to draw
 
 Returns `0` on success or a negative error code on failure; call [`SDL_GetError( )`](#sdl_geterror)( ) for more information.
 
@@ -3045,7 +3042,7 @@ The current drawing color is set by [`SDL_SetRenderDrawColor( ...
 )`](#sdl_setrenderdrawcolor), and the color's alpha value is ignored
 unless blending is enabled with the appropriate call to [`SDL_SetRenderDrawBlendMode( ... )`](#sdl_setrenderdrawblendmode).
 
-Expected parameters includue:
+Expected parameters include:
 
 - `renderer` - the rendering context
 - `rect` - the [SDL2::Rect](https://metacpan.org/pod/SDL2%3A%3ARect) structure representing the rectangle to fill
@@ -3111,7 +3108,7 @@ Expected parameters include:
 
 - `renderer` - the rendering context
 - `texture` - the source texture
-- `srcrect` - the source [SDL2::Rect](https://metacpan.org/pod/SDL2%3A%3ARect) structure 
+- `srcrect` - the source [SDL2::Rect](https://metacpan.org/pod/SDL2%3A%3ARect) structure
 - `dstrect` - the destination SDL\_Rect structure
 - `angle` - an angle in degrees that indicates the rotation that will be applied to dstrect, rotating it in a clockwise direction
 - `center` - a pointer to a point indicating the point around which dstrect will be rotated (if NULL, rotation will be done around `dstrect.w / 2`, `dstrect.h / 2`)
@@ -3623,8 +3620,8 @@ Returns true if the timer is removed or false if the timer wasn't found.
 
 # Raw Audio Mixing
 
-These methods provide acces to the raw audio mixing buffer for the SDL library.
-They may be imported with the `:audio` tag.
+These methods provide access to the raw audio mixing buffer for the SDL
+library. They may be imported with the `:audio` tag.
 
 ## `SDL_GetNumAudioDrivers( )`
 
@@ -3662,52 +3659,85 @@ Cleaning up initialized audio system.
 This method is used internally, and should not be used unless you have a
 specific need to close the selected audio driver. You should normally use [`SDL_Quit( )`](#sdl_quit).
 
-# Imports
+## `SDL_GetCurrentAudioDriver( )`
 
-This list of imports will be organized by their related tags. Of course, you
-may import them all by name as well.
+Get the name of the current audio driver.
+
+        my $driver = SDL_GetCurrentAudioDriver( );
+
+The returned string points to internal static memory and thus never becomes
+invalid, even if you quit the audio subsystem and initialize a new driver
+(although such a case would return a different static string from another call
+to this function, of course). As such, you should not modify or free the
+returned string.
+
+Returns the name of the current audio driver or undef if no driver has been
+initialized.
+
+## `SDL_OpenAudio( ... )`
+
+This function is a legacy means of opening the audio device.
+
+    my $obtained = SDL_OpenAudio(
+        SDL2::AudioSpec->new( { freq => 48000, channels => 2, format => AUDIO_F32 } ) );
+
+This function remains for compatibility with SDL 1.2, but also because it's
+slightly easier to use than the new functions in SDL 2.0. The new, more
+powerful, and preferred way to do this is [`SDL_OpenAudioDevice( ...
+)`](#sdl_openaudiodevice) .
+
+This function is roughly equivalent to:
+
+        SDL_OpenAudioDevice( (), 0, $desired, SDL_AUDIO_ALLOW_ANY_CHANGE );
+
+With two notable exceptions:
+
+- - If `obtained` is undefined, we use `desired` (and allow no changes), which
+means desired will be modified to have the correct values for silence,
+etc, and SDL will convert any differences between your app's specific
+request and the hardware behind the scenes.
+- - The return value is always success or failure, and not a device ID, which
+means you can only have one device open at a time with this function.
+
+    * \param desired an SDL_AudioSpec structure representing the desired output
+    *                format. Please refer to the SDL_OpenAudioDevice documentation
+    *                for details on how to prepare this structure.
+    * \param obtained an SDL_AudioSpec structure filled in with the actual
+    *                 parameters, or NULL.
+    * \returns This function opens the audio device with the desired parameters,
+    *          and returns 0 if successful, placing the actual hardware
+    *          parameters in the structure pointed to by `obtained`.
+    *
+    *          If `obtained` is NULL, the audio data passed to the callback
+    *          function will be guaranteed to be in the requested format, and
+    *          will be automatically converted to the actual hardware audio
+    *          format if necessary. If `obtained` is NULL, `desired` will
+    *          have fields modified.
+    *
+    *          This function returns a negative error code on failure to open the
+    *          audio device or failure to set up the audio thread; call
+    *          SDL_GetError() for more information.
+
+# Constants/Imports
+
+This list of constants may be imported by name or with their related tags.
+Here, we've organized them by their import tag.
 
 ## `:init`
 
 These are the flags which may be passed to [`SDL_Init( ... )`](#sdl_init). You should specify the subsystems which you will be using in your
 application.
 
-- `SDL_INIT_TIMER`
-
-    Timer subsystem.
-
-- `SDL_INIT_AUDIO`
-
-    Audio subsystem.
-
-- `SDL_INIT_VIDEO`
-
-    Video subsystem. Automatically initializes the events subsystem.
-
-- `SDL_INIT_JOYSTICK`
-
-    Joystick subsystem. Automatically initializes the events subsystem.
-
-- `SDL_INIT_HAPTIC`
-
-    Haptic (force feedback) subsystem.
-
-- `SDL_INIT_GAMECONTROLLER`
-
-    Controller subsystem. Automatically initilizes the joystick subsystem.
-
-- `SDL_INIT_EVENTS`
-
-    Events subsystem.
-
-- `SDL_INIT_EVERYTHING`
-
-    All of the above subsystems.
-
+- `SDL_INIT_TIMER` - Timer subsystem.
+- `SDL_INIT_AUDIO` -Audio subsystem.
+- `SDL_INIT_VIDEO` - Video subsystem. Automatically initializes the events subsystem.
+- `SDL_INIT_JOYSTICK` - Joystick subsystem. Automatically initializes the events subsystem.
+- `SDL_INIT_HAPTIC` - Haptic (force feedback) subsystem.
+- `SDL_INIT_GAMECONTROLLER` - Controller subsystem. Automatically initializes the joystick subsystem.
+- `SDL_INIT_EVENTS` - Events subsystem.
+- `SDL_INIT_EVERYTHING` - All of the above subsystems.
 - `SDL_INIT_SENSOR`
-- `SDL_INIT_NOPARACHUTE`
-
-    Compatibility; this flag is ignored.
+- `SDL_INIT_NOPARACHUTE` - Compatibility; this flag is ignored.
 
 ## `:hints`
 
@@ -4486,7 +4516,7 @@ These enum values can be passed to [Configuration Variable](https://metacpan.org
     on Android the context will be automatically saved and restored when pausing
     the application. Additionally, some platforms will assume usage of OpenGL if
     Vulkan isn't used. Setting this to `1` will prevent this behavior, which is
-    desireable when the application manages the graphics context, such as an
+    desirable when the application manages the graphics context, such as an
     externally managed OpenGL context or attaching a Vulkan surface to the window.
 
 - <SDL\_HINT\_VIDEO\_X11\_WINDOW\_VISUALID>
@@ -4680,8 +4710,8 @@ These enum values can be passed to [Configuration Variable](https://metacpan.org
             0   HIDAPI drivers are not used
             1   HIDAPI drivers are used (the default)
 
-        This variable is the default forall drivers, but can be overridden by the hints
-        for specific drivers below.\\
+        This variable is the default for all drivers, but can be overridden by the
+        hints for specific drivers below.
 
     - `SDL_HINT_JOYSTICK_HIDAPI_PS4`
 
@@ -5608,8 +5638,8 @@ Event subtype for window events.
 - `SDL_WINDOWEVENT_SHOWN` - Window has been shown
 - `SDL_WINDOWEVENT_HIDDEN` - Window has been hidden
 - `SDL_WINDOWEVENT_EXPOSED` - Window has been exposed and should be redrawn
-- `SDL_WINDOWEVENT_MOVED` - Window has been moved to data1, data2
-- `SDL_WINDOWEVENT_RESIZED` - Window has been resized to data1xdata2
+- `SDL_WINDOWEVENT_MOVED` - Window has been moved to `data1, data2`
+- `SDL_WINDOWEVENT_RESIZED` - Window has been resized to `data1 x data2`
 - `SDL_WINDOWEVENT_SIZE_CHANGED` - The window size has changed, either as a result of an API call or through the system or user changing the window size.
 - `SDL_WINDOWEVENT_MINIMIZED` - Window has been minimized
 - `SDL_WINDOWEVENT_MAXIMIZED` - Window has been maximized
@@ -5732,9 +5762,9 @@ The texture channel modulation used in [`SDL_RenderCopy( ...
 
 Flip constants for [`SDL_RenderCopyEx( ... )`](#sdl_rendercopyex).
 
-- `SDL_FLIP_NONE` - do not flip 
+- `SDL_FLIP_NONE` - do not flip
 - `SDL_FLIP_HORIZONTAL` - flip horizontally
-- `SDL_FLIP_VERTICAL` - flip vertically 
+- `SDL_FLIP_VERTICAL` - flip vertically
 
 ## `:blendMode`
 
@@ -5744,7 +5774,7 @@ The blend mode used in [`SDL_RenderCopy( ... )`](#sdl_rendercopy) and drawing op
 
             dstRGBA = srcRGBA
 
-- `SDL_BLENDMODE_BLEND` - alpha blending 
+- `SDL_BLENDMODE_BLEND` - alpha blending
 
             dstRGB = (srcRGB * srcA) + (dstRGB * (1-srcA))
         dstA = srcA + (dstA * (1-srcA))
@@ -5752,19 +5782,19 @@ The blend mode used in [`SDL_RenderCopy( ... )`](#sdl_rendercopy) and drawing op
 - `SDL_BLENDMODE_ADD` - additive blending
 
             dstRGB = (srcRGB * srcA) + dstRGB
-            dstA = dstA 
+            dstA = dstA
 
 - `SDL_BLENDMODE_MOD` - color modulate
 
             dstRGB = srcRGB * dstRGB
-            dstA = dstA 
+            dstA = dstA
 
 - `SDL_BLENDMODE_MUL` - color multiply
 
             dstRGB = (srcRGB * dstRGB) + (dstRGB * (1-srcA))
             dstA = (srcA * dstA) + (dstA * (1-srcA))
 
-- `SDL_BLENDMODE_INVALID` - 
+- `SDL_BLENDMODE_INVALID` -
 
 Additional custom blend modes can be returned by [`SDL_ComposeCustomBlendMode( ... )`](#sdl_composecustomblendmode)
 
@@ -5868,6 +5898,13 @@ Which audio format changes are allowed when opening a device.
 - `SDL_AUDIO_ALLOW_CHANNELS_CHANGE`
 - `SDL_AUDIO_ALLOW_SAMPLES_CHANGE`
 - `SDL_AUDIO_ALLOW_ANY_CHANGE`
+
+# Development
+
+SDL2 is still in early development: the majority of SDL's functions have yet to
+be implemented and the interface may also grow to be less sugary leading up to
+an eventual 1.0 release. If you like stable, well tested software that performs
+as documented, you should hold off on trying to use SDL2 for a bit.
 
 # LICENSE
 

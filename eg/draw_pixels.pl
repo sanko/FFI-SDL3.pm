@@ -26,15 +26,25 @@ while ( !$quit ) {
         $drawing = 0;
     }
     elsif ( $event->type == SDL_MOUSEMOTION && $drawing ) {
-        push @pixels, [ $event->motion->x, $event->motion->y ];
+        push @pixels,    #{x => $event->motion->x, y => $event->motion->y};
+            SDL2::Point->new( { x => $event->motion->x, y => $event->motion->y } );
+
+        #warn sprintf 'x: %d * y: %d', $pixels[-1]->x, $pixels[-1]->y;
     }
     SDL_SetRenderDrawColor( $renderer, 242, 242, 242, 255 );
     SDL_RenderClear($renderer);
-    SDL_SetRenderDrawColor( $renderer, 128, 128, 128, 255 );
-    SDL_RenderDrawPoint( $renderer, $_->[0], $_->[1] ) for @pixels;
+    CORE::state $i  = 0;
+    CORE::state $up = 1;
+    $up = -1 if $i >= 255;
+    $up = 1  if $i <= 0;
+    $i += $up;
+    SDL_SetRenderDrawColor( $renderer, $i, 128, 128, 255 );
+    SDL_RenderDrawPoints( $renderer, @pixels ) if @pixels;
+
+    #warn SDL_GetError() if @pixels;
     SDL_RenderPresent($renderer);
 }
 SDL_DestroyRenderer($renderer);
 SDL_DestroyWindow($window);
 SDL_Quit();
-exit;
+exit 0;

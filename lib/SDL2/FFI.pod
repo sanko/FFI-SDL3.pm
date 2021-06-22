@@ -7,10 +7,10 @@ SDL2::FFI - FFI Wrapper for SDL (Simple DirectMedia Layer) Development Library
 =head1 SYNOPSIS
 
     use SDL2::FFI qw[:all];
-    die 'Error initializing SDL: ' . SDL_GetError( ) unless SDL_Init(SDL_INIT_VIDEO) == 0;
+    die 'Error initializing SDL: ' . SDL_GetError() unless SDL_Init(SDL_INIT_VIDEO) == 0;
     my $win = SDL_CreateWindow( 'Example window!',
         SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 640, 480, SDL_WINDOW_RESIZABLE );
-    die 'Could not create window: ' . SDL_GetError( ) unless $win;
+    die 'Could not create window: ' . SDL_GetError() unless $win;
     my $event = SDL2::Event->new;
     SDL_Init(SDL_INIT_VIDEO);
     my $renderer = SDL_CreateRenderer( $win, -1, 0 );
@@ -22,61 +22,48 @@ SDL2::FFI - FFI Wrapper for SDL (Simple DirectMedia Layer) Development Library
     } until $event->type == SDL_QUIT;
     SDL_DestroyRenderer($renderer);
     SDL_DestroyWindow($win);
-    exit SDL_Quit( );
+    SDL_Quit();
 
 =head1 DESCRIPTION
 
-SDL2::FFI is an FFI::Platypus-backed wrapper around the B<S>imple
-B<D>irectMedia B<L>ayer - a cross-platform development library designed to
-provide low level access to audio, keyboard, mouse, joystick, and graphics
-hardware.
-
-=head2 Getting Started
-
-The SDL2::FFI module exports a high-level, Perl-like abstraction to use the SDL
-library.
-
-To get started, you must initialize the subsystems you need:
-
-	use SDL2::FFI;
-	my $window = SDL2::Window->new( w => 100, h => 100 );
-
-=head2 The Future
-
-SDL2::FFI is still in early development: the majority of SDL's functions have
-yet to be implemented and the interface may also grow to be less sugary leading
-up to an eventual 1.0 release. This package is named C<SDL2::FFI> because
-C<SDL2> is being squatted on and I'd rather make games than play them over
-namespaces.
+SDL2 is an FFI::Platypus-backed wrapper around the B<S>imple B<D>irectMedia
+B<L>ayer - a cross-platform development library designed to provide low level
+access to audio, keyboard, mouse, joystick, and graphics hardware.
 
 =head1 Initialization and Shutdown
 
 The functions in this category are used to set up SDL for use and generally
 have global effects in your program. These functions may be imported with the
-C<:default> tag.
+C<:init> or C<:default> tag.
 
 =head2 C<SDL_Init( ... )>
 
-Initialize the SDL library.
+Initialize the SDL library. This must be called before using most other SDL
+functions.
+
+	SDL_Init( SDL_INIT_TIMER | SDL_INIT_VIDEO | SDL_INIT_EVENTS );
 
 C<SDL_Init( ... )> simply forwards to calling L<< C<SDL_InitSubSystem( ...
 )>|/C<SDL_InitSubSystem( ... )> >>. Therefore, the two may be used
 interchangeably. Though for readability of your code L<< C<SDL_InitSubSystem(
 ... )>|/C<SDL_InitSubSystem( ... )> >> might be preferred.
 
-The file I/O (for example: SDL_RWFromFile) and threading (SDL_CreateThread)
-subsystems are initialized by default. Message boxes (SDL_ShowSimpleMessageBox)
+The file I/O (for example: L<< C<SDL_RWFromFile( ... )>|/C<SDL_RWFromFile( ...
+)> >>) and threading (L<< C<SDL_CreateThread( ... )>|/C<SDL_CreateThread( ...
+)> >>) subsystems are initialized by default. Message boxes ( L<<
+C<SDL_ShowSimpleMessageBox( ... )>|/C<SDL_ShowSimpleMessageBox( ... )> >> )
 also attempt to work without initializing the video subsystem, in hopes of
 being useful in showing an error dialog when SDL_Init fails. You must
 specifically initialize other subsystems if you use them in your application.
 
-Logging (such as SDL_Log) works without initialization, too.
+Logging (such as L<< C<SDL_Log( ... )>|/C<SDL_Log( ... )> >> ) works without
+initialization, too.
 
 Expected parameters include:
 
 =over
 
-=item C<flags> which may be any be imported with the L<< C<:init>|SDL2::FFI/C<:init> >> tag and may be OR'd together.
+=item C<flags> which may be any be imported with the L<< C<:init>|SDL2/C<:init> >> tag and may be OR'd together
 
 =back
 
@@ -97,11 +84,13 @@ Compatibility function to initialize the SDL library.
 In SDL2, this function and L<< C<SDL_Init( ... )>|/C<SDL_Init( ... )> >> are
 interchangeable.
 
+	SDL_InitSubSystem( SDL_INIT_TIMER | SDL_INIT_VIDEO | SDL_INIT_EVENTS );
+
 Expected parameters include:
 
 =over
 
-=item C<flags> which may be any be imported with the L<< C<:init>|SDL2::FFI/C<:init> >> tag and may be OR'd together.
+=item C<flags> which may be any be imported with the L<< C<:init>|SDL2/C<:init> >> tag and may be OR'd together.
 
 =back
 
@@ -111,6 +100,8 @@ C<SDL_GetError( )>|/C<SDL_GetError( )> >> for more information.
 =head2 C<SDL_Quit( )>
 
 Clean up all initialized subsystems.
+
+	SDL_Quit( );
 
 You should call this function even if you have already shutdown each
 initialized subsystem with L<< C<SDL_QuitSubSystem( )>|/C<SDL_QuitSubSystem( )>
@@ -133,6 +124,8 @@ when your application is shutdown.
 
 Shut down specific SDL subsystems.
 
+	SDL_QuitSubSystem( SDL_INIT_VIDEO );
+
 If you start a subsystem using a call to that subsystem's init function (for
 example L<< C<SDL_VideoInit( )> |/C<SDL_VideoInit( )> >>) instead of L<<
 C<SDL_Init( ... )>|/C<SDL_Init( ... )> >> or L<< C<SDL_InitSubSystem( ...
@@ -151,7 +144,7 @@ Expected parameters include:
 
 =over
 
-=item C<flags> which may be any be imported with the L<< C<:init>|SDL2::FFI/C<:init> >> tag and may be OR'd together.
+=item C<flags> which may be any be imported with the L<< C<:init>|SDL2/C<:init> >> tag and may be OR'd together.
 
 =back
 
@@ -159,11 +152,18 @@ Expected parameters include:
 
 Get a mask of the specified subsystems which are currently initialized.
 
+	SDL_Init( SDL_INIT_VIDEO | SDL_INIT_AUDIO );
+	warn SDL_WasInit( SDL_INIT_TIMER ); # false
+	warn SDL_WasInit( SDL_INIT_VIDEO ); # true (32 == SDL_INIT_VIDEO)
+	my $mask = SDL_WasInit( );
+	warn 'video init!'  if ($mask & SDL_INIT_VIDEO); # yep
+	warn 'video timer!' if ($mask & SDL_INIT_TIMER); # nope
+
 Expected parameters include:
 
 =over
 
-=item C<flags> which may be any be imported with the L<< C<:init>|SDL2::FFI/C<:init> >> tag and may be OR'd together.
+=item C<flags> which may be any be imported with the L<< C<:init>|SDL2/C<:init> >> tag and may be OR'd together.
 
 =back
 
@@ -171,7 +171,6 @@ If C<flags> is C<0>, it returns a mask of all initialized subsystems, otherwise
 it returns the initialization status of the specified subsystems.
 
 The return value does not include C<SDL_INIT_NOPARACHUTE>.
-
 
 =head1 Configuration Variables
 
@@ -501,7 +500,7 @@ Expected parameters:
 
 =item C<category>
 
-The category to assign a priority to. These may be improted with the L<<
+The category to assign a priority to. These may be imported with the L<<
 C<:logcategory>|/C<:logcategory> >> tag.
 
 =item C<priority>
@@ -816,19 +815,23 @@ version).
 
 Example: The first version number of SDL 2 was 2000
 
-=head2 C<SDL_GetVersion( )>
+=head2 C<SDL_GetVersion( ... )>
 
 Get the version of SDL that is linked against your program.
 
-If you are linking to SDL dynamically, then it is possible that the current
-version will be different than the version you compiled against. This function
-returns the current version, while SDL_VERSION( ) is a macro that tells you
-what version you compiled with.
+	my $ver = SDL2::Version->new;
+	SDL_GetVersion( $ver );
 
 This function may be called safely at any time, even before L<< C<SDL_Init(
 )>|/C<SDL_Init( )> >>.
 
-Return value is a L<SDL2::FFI::Version> object.
+Expected parameters include:
+
+=over
+
+=item C<version> - An SDL2::Version object which will be filled with the proper values
+
+=back
 
 =head1 Display and Window Management
 
@@ -1214,7 +1217,7 @@ information.
 
 =head2 C<SDL_GetWindowPixelFormat( ... )>
 
-Get teh pixel format associated with the window.
+Get the pixel format associated with the window.
 
 	my $format = SDL_GetWindowPixelFormat( $window );
 
@@ -1377,8 +1380,8 @@ Get a window from a stored ID.
 
 	my $window = SDL_GetWindowFromID( 2 );
 
-The numeric ID is what L<SDL::WindowEvent> references, and is necessary to map
-these events to specific L<SDL::Window> objects.
+The numeric ID is what L<SDL2::WindowEvent> references, and is necessary to map
+these events to specific L<SDL2::Window> objects.
 
 Expected parameters include:
 
@@ -1457,7 +1460,7 @@ Expected parameters include:
 
 =item C<window> - the window to change
 
-=item C<icon> - an L<SDL2::Surface> structure containig the icon for the window
+=item C<icon> - an L<SDL2::Surface> structure containing the icon for the window
 
 =back
 
@@ -2527,9 +2530,9 @@ Create an OpenGL context for an OpenGL window, and make it current.
 
 	# Window mode MUST include SDL_WINDOW_OPENGL for use with OpenGL.
 	my $window = SDL_CreateWindow(
-    	'SDL2/OpenGL Demo', 0, 0, 640, 480, 
+    	'SDL2/OpenGL Demo', 0, 0, 640, 480,
     	SDL_WINDOW_OPENGL|SDL_WINDOW_RESIZABLE);
-  
+
 	# Create an OpenGL context associated with the window
 	my $glcontext = SDL_GL_CreateContext( $window );
 
@@ -2547,7 +2550,7 @@ functions must be loaded at run-time, either with an OpenGL extension-handling
 library or with L<< C<SDL_GL_GetProcAddress( ... )>|/C<SDL_GL_GetProcAddress(
 ... )> >> and its related functions.
 
-SDL::GLContext is opaque to the application.
+SDL2::GLContext is opaque to the application.
 
 Expected parameters include:
 
@@ -2900,7 +2903,7 @@ Create a texture for a rendering context.
 
     my $texture = SDL_CreateTexture( $renderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_TARGET, 1024, 768);
 
-=for TODO: https://gist.github.com/malja/2193bd656fe50c203f264ce554919976    
+=for TODO: https://gist.github.com/malja/2193bd656fe50c203f264ce554919976
 
 You can set the texture scaling method by setting
 C<SDL_HINT_RENDER_SCALE_QUALITY> before creating the texture.
@@ -2931,7 +2934,7 @@ information.
 Create a texture from an existing surface.
 
 	use Config;
-	my ($rmask, $gmask, $bmask, $amask) = 
+	my ($rmask, $gmask, $bmask, $amask) =
 	$Config{byteorder} == 4321 ? (0xff000000,0x00ff0000,0x0000ff00,0x000000ff) :
     							 (0x000000ff,0x0000ff00,0x00ff0000,0xff000000);
 	my $surface = SDL_CreateRGBSurface( 0, 640, 480, 32, $rmask, $gmask, $bmask, $amask );
@@ -3336,7 +3339,7 @@ Unlock a texture, uploading the changes to video memory, if needed.
 	SDL_UnlockTexture( $texture );
 
 B<Warning>: Please note that L<< C<SDL_LockTexture( ... )>|/C<SDL_LockTexture(
-... )> >> is intended to be write-only; it will notguarantee the previous
+... )> >> is intended to be write-only; it will not guarantee the previous
 contents of the texture will be provided. You must fully initialize any area of
 a texture that you lock before unlocking it, as the pixels might otherwise be
 uninitialized memory.
@@ -3825,7 +3828,7 @@ Draw a series of connected lines on the current rendering target.
 
 Expected parameters include:
 
-=over	
+=over
 
 =item C<renderer> - the rendering context
 
@@ -3848,7 +3851,7 @@ Expected parameters include:
 
 =item C<renderer> - the rendering context
 
-=item C<rect> - an L<SDL::Rect> structure representing the rectangle to draw
+=item C<rect> - an L<SDL2::Rect> structure representing the rectangle to draw
 
 =for TODO - or undef to outline the entire rendering target
 
@@ -3890,7 +3893,7 @@ The current drawing color is set by L<< C<SDL_SetRenderDrawColor( ...
 unless blending is enabled with the appropriate call to L<<
 C<SDL_SetRenderDrawBlendMode( ... )>|/C<SDL_SetRenderDrawBlendMode( ... )> >>.
 
-Expected parameters includue:
+Expected parameters include:
 
 =over
 
@@ -3957,7 +3960,7 @@ Expected parameters include:
 
 =item C<dstrect> - the destination L<SDL2::Rect> structure; the texture will be stretched to fill the given rectangle
 
-=for TODO or NULL for the entire rendering target; 
+=for TODO or NULL for the entire rendering target;
 
 =back
 
@@ -3992,7 +3995,7 @@ Expected parameters include:
 
 =item C<texture> - the source texture
 
-=item C<srcrect> - the source L<SDL2::Rect> structure 
+=item C<srcrect> - the source L<SDL2::Rect> structure
 
 =for TODO: or NULL for the entire texture
 
@@ -4091,7 +4094,7 @@ Expected parameters include:
 =item C<points> - The points along the lines
 
 =back
- 
+
 Return C<0> on success, or C<-1> on error.
 
 =head2 C<SDL_RenderDrawRectF( ... )>
@@ -4533,7 +4536,7 @@ renderer isn't a Metal renderer.
 
 Compose a custom blend mode for renderers.
 
-	
+
 
 The functions SDL_SetRenderDrawBlendMode and SDL_SetTextureBlendMode accept the
 SDL_BlendMode returned by this function if the renderer supports it.
@@ -4565,7 +4568,7 @@ can return one of the following:
 =item C<max(src, dst)>
 
 =back
- 
+
 The red, green, and blue components are always multiplied with the first,
 second, and third components of the SDL_BlendFactor, respectively. The fourth
 component is not used.
@@ -4738,9 +4741,9 @@ Expected parameters include:
 Returns true if the timer is removed or false if the timer wasn't found.
 
 =head1 Raw Audio Mixing
- 
-These methods provide acces to the raw audio mixing buffer for the SDL library.
-They may be imported with the C<:audio> tag.
+
+These methods provide access to the raw audio mixing buffer for the SDL
+library. They may be imported with the C<:audio> tag.
 
 =head2 C<SDL_GetNumAudioDrivers( )>
 
@@ -4783,22 +4786,69 @@ This method is used internally, and should not be used unless you have a
 specific need to close the selected audio driver. You should normally use L<<
 C<SDL_Quit( )>|/C<SDL_Quit( )> >>.
 
+=head2 C<SDL_GetCurrentAudioDriver( )>
 
+Get the name of the current audio driver.
 
+	my $driver = SDL_GetCurrentAudioDriver( );
 
+The returned string points to internal static memory and thus never becomes
+invalid, even if you quit the audio subsystem and initialize a new driver
+(although such a case would return a different static string from another call
+to this function, of course). As such, you should not modify or free the
+returned string.
 
+Returns the name of the current audio driver or undef if no driver has been
+initialized.
 
+=head2 C<SDL_OpenAudio( ... )>
 
+This function is a legacy means of opening the audio device.
 
+    my $obtained = SDL_OpenAudio(
+        SDL2::AudioSpec->new( { freq => 48000, channels => 2, format => AUDIO_F32 } ) );
 
+This function remains for compatibility with SDL 1.2, but also because it's
+slightly easier to use than the new functions in SDL 2.0. The new, more
+powerful, and preferred way to do this is L<< C<SDL_OpenAudioDevice( ...
+)>|/C<SDL_OpenAudioDevice( ... )> >> .
 
+This function is roughly equivalent to:
 
+	SDL_OpenAudioDevice( (), 0, $desired, SDL_AUDIO_ALLOW_ANY_CHANGE );
 
+With two notable exceptions:
 
+=over
 
+=item - If C<obtained> is undefined, we use C<desired> (and allow no changes), which
+means desired will be modified to have the correct values for silence,
+etc, and SDL will convert any differences between your app's specific
+request and the hardware behind the scenes.
 
+=item - The return value is always success or failure, and not a device ID, which
+means you can only have one device open at a time with this function.
 
+=back
 
+ * \param desired an SDL_AudioSpec structure representing the desired output
+ *                format. Please refer to the SDL_OpenAudioDevice documentation
+ *                for details on how to prepare this structure.
+ * \param obtained an SDL_AudioSpec structure filled in with the actual
+ *                 parameters, or NULL.
+ * \returns This function opens the audio device with the desired parameters,
+ *          and returns 0 if successful, placing the actual hardware
+ *          parameters in the structure pointed to by `obtained`.
+ *
+ *          If `obtained` is NULL, the audio data passed to the callback
+ *          function will be guaranteed to be in the requested format, and
+ *          will be automatically converted to the actual hardware audio
+ *          format if necessary. If `obtained` is NULL, `desired` will
+ *          have fields modified.
+ *
+ *          This function returns a negative error code on failure to open the
+ *          audio device or failure to set up the audio thread; call
+ *          SDL_GetError() for more information.
 
 
 
@@ -4878,7 +4928,6 @@ C<SDL_Quit( )>|/C<SDL_Quit( )> >>.
 
 
 
- 
 
 
 
@@ -4988,7 +5037,6 @@ C<SDL_Quit( )>|/C<SDL_Quit( )> >>.
 
 
 
- 
 
 
 
@@ -5007,10 +5055,22 @@ C<SDL_Quit( )>|/C<SDL_Quit( )> >>.
 
 
 
-=head1 Imports
 
-This list of imports will be organized by their related tags. Of course, you
-may import them all by name as well.
+
+
+
+
+
+
+
+
+
+
+
+=head1 Constants/Imports
+
+This list of constants may be imported by name or with their related tags.
+Here, we've organized them by their import tag.
 
 =head2 C<:init>
 
@@ -5020,44 +5080,25 @@ application.
 
 =over
 
-=item C<SDL_INIT_TIMER>
+=item C<SDL_INIT_TIMER> - Timer subsystem.
 
-Timer subsystem.
+=item C<SDL_INIT_AUDIO> -Audio subsystem.
 
-=item C<SDL_INIT_AUDIO>
+=item C<SDL_INIT_VIDEO> - Video subsystem. Automatically initializes the events subsystem.
 
-Audio subsystem.
+=item C<SDL_INIT_JOYSTICK> - Joystick subsystem. Automatically initializes the events subsystem.
 
-=item C<SDL_INIT_VIDEO>
+=item C<SDL_INIT_HAPTIC> - Haptic (force feedback) subsystem.
 
-Video subsystem. Automatically initializes the events subsystem.
+=item C<SDL_INIT_GAMECONTROLLER> - Controller subsystem. Automatically initializes the joystick subsystem.
 
-=item C<SDL_INIT_JOYSTICK>
+=item C<SDL_INIT_EVENTS> - Events subsystem.
 
-Joystick subsystem. Automatically initializes the events subsystem.
-
-=item C<SDL_INIT_HAPTIC>
-
-Haptic (force feedback) subsystem.
-
-=item C<SDL_INIT_GAMECONTROLLER>
-
-Controller subsystem. Automatically initilizes the joystick subsystem.
-
-=item C<SDL_INIT_EVENTS>
-
-Events subsystem.
-
-=item C<SDL_INIT_EVERYTHING>
-
-All of the above subsystems.
+=item C<SDL_INIT_EVERYTHING> - All of the above subsystems.
 
 =item C<SDL_INIT_SENSOR>
 
-
-=item C<SDL_INIT_NOPARACHUTE>
-
-Compatibility; this flag is ignored.
+=item C<SDL_INIT_NOPARACHUTE> - Compatibility; this flag is ignored.
 
 =back
 
@@ -5891,7 +5932,7 @@ By default SDL will manage OpenGL contexts in certain situations. For example,
 on Android the context will be automatically saved and restored when pausing
 the application. Additionally, some platforms will assume usage of OpenGL if
 Vulkan isn't used. Setting this to C<1> will prevent this behavior, which is
-desireable when the application manages the graphics context, such as an
+desirable when the application manages the graphics context, such as an
 externally managed OpenGL context or attaching a Vulkan surface to the window.
 
 =item <SDL_HINT_VIDEO_X11_WINDOW_VISUALID>
@@ -6092,8 +6133,8 @@ This variable can be set to the following values:
     0   HIDAPI drivers are not used
     1   HIDAPI drivers are used (the default)
 
-This variable is the default forall drivers, but can be overridden by the hints
-for specific drivers below.\
+This variable is the default for all drivers, but can be overridden by the
+hints for specific drivers below.
 
 =item C<SDL_HINT_JOYSTICK_HIDAPI_PS4>
 
@@ -7195,9 +7236,9 @@ Event subtype for window events.
 
 =item C<SDL_WINDOWEVENT_EXPOSED> - Window has been exposed and should be redrawn
 
-=item C<SDL_WINDOWEVENT_MOVED> - Window has been moved to data1, data2
+=item C<SDL_WINDOWEVENT_MOVED> - Window has been moved to C<data1, data2>
 
-=item C<SDL_WINDOWEVENT_RESIZED> - Window has been resized to data1xdata2
+=item C<SDL_WINDOWEVENT_RESIZED> - Window has been resized to C<data1 x data2>
 
 =item C<SDL_WINDOWEVENT_SIZE_CHANGED> - The window size has changed, either as a result of an API call or through the system or user changing the window size.
 
@@ -7429,11 +7470,11 @@ Flip constants for L<< C<SDL_RenderCopyEx( ... )>|/C<SDL_RenderCopyEx( ... )>
 
 =over
 
-=item C<SDL_FLIP_NONE> - do not flip 
+=item C<SDL_FLIP_NONE> - do not flip
 
 =item C<SDL_FLIP_HORIZONTAL> - flip horizontally
 
-=item C<SDL_FLIP_VERTICAL> - flip vertically 
+=item C<SDL_FLIP_VERTICAL> - flip vertically
 
 =back
 
@@ -7445,10 +7486,10 @@ The blend mode used in L<< C<SDL_RenderCopy( ... )>|/C<SDL_RenderCopy( ... )>
 =over
 
 =item C<SDL_BLENDMODE_NONE> - no blending
-	
+
 	dstRGBA = srcRGBA
 
-=item C<SDL_BLENDMODE_BLEND> - alpha blending 
+=item C<SDL_BLENDMODE_BLEND> - alpha blending
 
 	dstRGB = (srcRGB * srcA) + (dstRGB * (1-srcA))
     dstA = srcA + (dstA * (1-srcA))
@@ -7456,19 +7497,19 @@ The blend mode used in L<< C<SDL_RenderCopy( ... )>|/C<SDL_RenderCopy( ... )>
 =item C<SDL_BLENDMODE_ADD> - additive blending
 
 	dstRGB = (srcRGB * srcA) + dstRGB
-	dstA = dstA 
+	dstA = dstA
 
 =item C<SDL_BLENDMODE_MOD> - color modulate
 
 	dstRGB = srcRGB * dstRGB
-	dstA = dstA 
+	dstA = dstA
 
 =item C<SDL_BLENDMODE_MUL> - color multiply
 
 	dstRGB = (srcRGB * dstRGB) + (dstRGB * (1-srcA))
 	dstA = (srcA * dstA) + (dstA * (1-srcA))
 
-=item C<SDL_BLENDMODE_INVALID> - 
+=item C<SDL_BLENDMODE_INVALID> -
 
 =back
 
@@ -7649,6 +7690,13 @@ Which audio format changes are allowed when opening a device.
 
 =back
 
+=head1 Development
+
+SDL2 is still in early development: the majority of SDL's functions have yet to
+be implemented and the interface may also grow to be less sugary leading up to
+an eventual 1.0 release. If you like stable, well tested software that performs
+as documented, you should hold off on trying to use SDL2 for a bit.
+
 =head1 LICENSE
 
 Copyright (C) Sanko Robinson.
@@ -7665,7 +7713,15 @@ Sanko Robinson E<lt>sanko@cpan.orgE<gt>
 
 libSDL enum iOS iPhone tvOS gamepad gamepads bitmap colorkey asyncify keycode
 ctrl+click OpenGL glibc pthread screensaver fullscreen SDL_gamecontroller.h
-XBox XInput pthread pthreads realtime rtkit Keycode mutexes resources
+XBox XInput pthread pthreads realtime rtkit Keycode mutexes resources imple
+irectMedia ayer errstr coderef patchlevel distro WinRT raspberrypi psp macOS
+NSHighResolutionCapable lowlevel vsync gamecontroller framebuffer XRandR
+XVidMode libc musl non letterbox libsamplerate AVAudioSessionCategoryAmbient
+AVAudioSessionCategoryPlayback VoIP OpenGLES opengl opengles opengles2 spammy
+popup tooltip taskbar subwindow high-dpi subpixel borderless draggable viewport
+user-resizable resizable srcA srcC GiB dstrect rect subrectangle pseudocode ms
+verystrict resampler eglSwapBuffers backbuffer scancode unhandled lifespan wgl
+glX framerate deadzones vice-versa kmsdrm jp CAMetalLayer
 
 =end stopwords
 

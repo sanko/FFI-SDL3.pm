@@ -17,7 +17,18 @@ my $cb   = SDL_AddHintCallback( SDL_HINT_XINPUT_ENABLED, sub { ddx \@_ }, \%ENV 
 #SDL_SetHint( SDL_HINT_XINPUT_ENABLED, 1 );
 #SDL_SetHint( SDL_HINT_XINPUT_ENABLED, 0 );
 #SDL_ClearHints;
-SDL_SetError( 'This operation has failed: %d', 4 );
+#SDL_SetError( 'This operation has failed: %d', 4 );
+SDL_Log( 'This operation has failed: %d', 4 );
+SDL_LogVerbose( SDL_LOG_PRIORITY_INFO,
+    'Current time: %s [%ds exec]',
+    scalar localtime(),
+    time - $^T
+);
+
+#ddx SDL_LogSetOutputFunction( sub { warn 'test!' }, {} );
+#ddx SDL_LogGetOutputFunction($e, {} );
+#ddx SDL_LogSetOutputFunction( sub { warn 'test!' } , {} );
+#ddx SDL_LogGetOutputFunction( {} );
 my $x;
 warn SDL_GetErrorMsg( $x, 300 );
 

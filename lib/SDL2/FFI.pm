@@ -1,14 +1,15 @@
 package SDL2::FFI 0.01 {
+
+    # ABSTRACT: FFI Wrapper for SDL (Simple DirectMedia Layer) Development Library
     use strictures 2;
     #
     $|++;
 
     #use Carp::Always;
     #$ENV{FFI_PLATYPUS_DLERROR} = 1;
-    use Data::Dump;
     #
     use FFI::CheckLib;
-    use FFI::Platypus 1.00;
+    use FFI::Platypus 1.46;
     use FFI::C;
 
     #use FFI::C::StructDef;
@@ -27,20 +28,11 @@ package SDL2::FFI 0.01 {
     my $bigendian = $Config{byteorder} != 4321;
 
     # I need these first
+    package SDL2::version { };
     class( SDL_version => [ major => 'uint8', minor => 'uint8', patch => 'uint8' ] );
-    attach(
-        version => {
-            SDL_GetVersion => [
-                ['SDL_version'] => sub ($inner) {
-                    my $ver = SDL2::Version->new;
-                    $inner->($ver);
-                    $ver;
-                }
-            ]
-        }
-    );
+    attach( version => { SDL_GetVersion => [ ['SDL_version'] ] } );
     #
-    my $ver      = SDL_GetVersion();
+    SDL_GetVersion( my $ver = SDL2::Version->new() );
     my $platform = $^O;                            # https://perldoc.perl.org/perlport#PLATFORMS
     my $Windows  = !!( $platform eq 'MSWin32' );
     #
@@ -79,9 +71,10 @@ package SDL2::FFI 0.01 {
     sub attach (%args) {
         for my $tag ( sort keys %args ) {
             for my $func ( sort keys %{ $args{$tag} } ) {
-                warn sprintf '$ffi->attach( %s => %s);', $func,
-                    Data::Dump::dump( @{ $args{$tag}{$func} } )
-                    if ref $args{$tag}{$func}[1] && ref $args{$tag}{$func}[1] eq 'ARRAY';
+
+                #warn sprintf '$ffi->attach( %s => %s);', $func,
+                #    Data::Dump::dump( @{ $args{$tag}{$func} } )
+                #    if ref $args{$tag}{$func}[1] && ref $args{$tag}{$func}[1] eq 'ARRAY';
                 $ffi->attach( $func => @{ $args{$tag}{$func} } );
                 push @{ $EXPORT_TAGS{$tag} }, $func;
             }
@@ -91,11 +84,12 @@ package SDL2::FFI 0.01 {
     sub class (%args) {
         for my $name ( keys %args ) {
             my $class = $name;
-            $class =~ s[^SDL_(.+)$]['SDL2::' . ucfirst $1 ]e;
-            warn sprintf '%-20s => %-20s%s', $name, $class, (
-                -f sub ($package) { $package =~ m[::(.+)]; './lib/SDL2/' . $1 . '.pod' }
-                    ->($class) ? '' : ' (undocumented)'
-            );
+            $class =~ s[^SDL_(.+)$]['SDL2::' . ucfirst $1]e;
+
+            #warn sprintf '%-20s => %-20s%s', $name, $class, (
+            #    -f sub ($package) { $package =~ m[::(.+)]; './lib/SDL2/' . $1 . '.pod' }
+            #        ->($class) ? '' : ' (undocumented)'
+            #);
             FFI::C::StructDef->new(
                 $ffi,
                 name     => $name,
@@ -288,6 +282,14 @@ package SDL2::FFI 0.01 {
             [ SDL_HINT_XINPUT_USE_OLD_JOYSTICK_MAPPING => 'SDL_XINPUT_USE_OLD_JOYSTICK_MAPPING' ]
         ]
     );
+
+    package SDL2::Point { };
+
+    package SDL2::FPoint { };
+
+    package SDL2::Rect { };
+
+    package SDL2::FRect { };
     class
         SDL_Point  => [ x => 'int',   y => 'int' ],
         SDL_FPoint => [ x => 'float', y => 'float' ],
@@ -295,28 +297,30 @@ package SDL2::FFI 0.01 {
         SDL_FRect  => [ x => 'float', y => 'float', w => 'float', h => 'float' ];
     FFI::C::ArrayDef->new(    # Used sparingly when I need to pass a list of SDL_Point objects
         $ffi,
-        name    => 'SDLx_PointList',
+        name    => 'SDL2x_PointList',
         class   => 'SDL2x::PointList',
         members => ['SDL_Point'],
     );
     FFI::C::ArrayDef->new(    # Used sparingly when I need to pass a list of SDL_Point objects
         $ffi,
-        name    => 'SDLx_FPointList',
+        name    => 'SDL2x_FPointList',
         class   => 'SDL2x::FPointList',
         members => ['SDL_Point'],
     );
     FFI::C::ArrayDef->new(    # Used sparingly when I need to pass a list of SDL_Rect objects
         $ffi,
-        name    => 'SDLx_RectList',
+        name    => 'SDL2x_RectList',
         class   => 'SDL2x::RectList',
         members => ['SDL_Rect'],
     );
     FFI::C::ArrayDef->new(    # Used sparingly when I need to pass a list of SDL_Rect objects
         $ffi,
-        name    => 'SDLx_FRectList',
+        name    => 'SDL2x_FRectList',
         class   => 'SDL2x::FRectList',
         members => ['SDL_FRect'],
     );
+
+    package SDL2::Surface { };
     class SDL_Surface => [
         flags     => 'uint32',
         format    => 'opaque',     # SDL_PixelFormat*
@@ -332,7 +336,8 @@ package SDL2::FFI 0.01 {
         refcount  => 'int'
     ];
     #
-    attach default => {
+    push @{ $EXPORT_TAGS{default} }, qw[:init];
+    attach init => {
         SDL_Init          => [ ['uint32'] => 'int' ],
         SDL_InitSubSystem => [ ['uint32'] => 'int' ],
         SDL_QuitSubSystem => [ ['uint32'] ],
@@ -444,6 +449,9 @@ package SDL2::FFI 0.01 {
         };
 
     # https://github.com/libsdl-org/SDL/blob/main/include/SDL_video.h
+    package SDL2::DisplayMode { };
+
+    package SDL2::Window { };
     class
         SDL_DisplayMode => [
         format       => 'uint32',
@@ -513,7 +521,7 @@ package SDL2::FFI 0.01 {
         [ SDL_WINDOW_METAL              => 0x20000000 ],
         [ SDL_WINDOW_INPUT_GRABBED      => sub { SDL_WINDOW_MOUSE_GRABBED() } ],
         ],
-        SDL_WindowFlags => [
+        SDL_WindowFlagsX => [
         qw[
             SDL_WINDOWEVENT_NONE
             SDL_WINDOWEVENT_SHOWN
@@ -547,6 +555,7 @@ package SDL2::FFI 0.01 {
         ];
 
     # An opaque handle to an OpenGL context.
+    package SDL2::GLContext { };
     class SDL_GLContext => [];
     enum SDL_GLattr     => [
         qw[
@@ -599,74 +608,26 @@ package SDL2::FFI 0.01 {
         [ SDL_GL_CONTEXT_RESET_LOSE_CONTEXT    => 0x0001 ]
         ];
     attach video => {
-        SDL_GetNumVideoDrivers    => [ [],         'int' ],
-        SDL_GetVideoDriver        => [ ['int'],    'string' ],
-        SDL_VideoInit             => [ ['string'], 'int' ],
-        SDL_VideoQuit             => [ [] ],
-        SDL_GetCurrentVideoDriver => [ [],      'string' ],
-        SDL_GetNumVideoDisplays   => [ [],      'int' ],
-        SDL_GetDisplayName        => [ ['int'], 'string' ],
-        SDL_GetDisplayBounds      => [
-            [ 'int', 'SDL_Rect' ],
-            'int' => sub ( $inner, $displayIndex ) {
-                my $rect = SDL2::Rect->new();
-                my $ret  = $inner->( $displayIndex, $rect );
-                $ret == 0 ? $rect : $ret;
-            }
-        ],
-        SDL_GetDisplayUsableBounds => [
-            [ 'int', 'SDL_Rect' ],
-            'int' => sub ( $inner, $displayIndex ) {
-                my $rect = SDL2::Rect->new();
-                my $ret  = $inner->( $displayIndex, $rect );
-                $ret == 0 ? $rect : $ret;
-            }
-        ],
-        SDL_GetDisplayDPI => [
-            [ 'int', 'float *', 'float *', 'float *' ],
-            'int' => sub ( $inner, $displayIndex ) {
-                my $ret = $inner->( $displayIndex, \my ( $ddpi, $hdpi, $vdpi ) ) // 0;
-                $ret == 0 ? ( $ddpi, $hdpi, $vdpi ) : $ret;
-            }
-        ],
-        SDL_GetDisplayOrientation => [ ['int'], 'int' ],
-        SDL_GetNumDisplayModes    => [ ['int'], 'int' ],
-        SDL_GetDisplayMode        => [
-            [ 'int', 'int', 'SDL_DisplayMode' ],
-            'int' => sub ( $inner, $displayIndex, $modeIndex ) {
-                my $mode = SDL2::DisplayMode->new();
-                my $ret  = $inner->( $displayIndex, $modeIndex, $mode ) // 0;
-                $ret == 0 ? $mode : $ret;
-            }
-        ],
-        SDL_GetDesktopDisplayMode => [
-            [ 'int', 'SDL_DisplayMode' ],
-            'int' => sub ( $inner, $displayIndex ) {
-                my $mode = SDL2::DisplayMode->new();
-                my $ret  = $inner->( $displayIndex, $mode ) // 0;
-                $ret == 0 ? $mode : $ret;
-            }
-        ],
-        SDL_GetCurrentDisplayMode => [
-            [ 'int', 'SDL_DisplayMode' ],
-            'int' => sub ( $inner, $displayIndex ) {
-                my $mode = SDL2::DisplayMode->new();
-                my $ret  = $inner->( $displayIndex, $mode ) // 0;
-                $ret == 0 ? $mode : $ret;
-            }
-        ],
-        SDL_GetClosestDisplayMode => [ [ 'int', 'SDL_DisplayMode', 'SDL_DisplayMode' ], 'opaque' ],
-        SDL_GetWindowDisplayIndex => [ ['SDL_Window'],                                  'int' ],
-        SDL_SetWindowDisplayMode  => [ [ 'SDL_Window', 'SDL_DisplayMode' ],             'int' ],
-        SDL_GetWindowDisplayMode  => [
-            [ 'SDL_Window', 'SDL_DisplayMode' ],
-            'int' => sub ( $inner, $displayIndex ) {
-                my $mode = SDL2::DisplayMode->new();
-                my $ret  = $inner->( $displayIndex, $mode ) // 0;
-                $ret == 0 ? $mode : $ret;
-            }
-        ],
-        SDL_GetWindowPixelFormat => [ ['SDL_Window'], 'uint32' ],
+        SDL_GetNumVideoDrivers     => [ [],         'int' ],
+        SDL_GetVideoDriver         => [ ['int'],    'string' ],
+        SDL_VideoInit              => [ ['string'], 'int' ],
+        SDL_VideoQuit              => [ [] ],
+        SDL_GetCurrentVideoDriver  => [ [],                                              'string' ],
+        SDL_GetNumVideoDisplays    => [ [],                                              'int' ],
+        SDL_GetDisplayName         => [ ['int'],                                         'string' ],
+        SDL_GetDisplayBounds       => [ [ 'int', 'SDL_Rect' ],                           'int' ],
+        SDL_GetDisplayUsableBounds => [ [ 'int', 'SDL_Rect' ],                           'int' ],
+        SDL_GetDisplayDPI          => [ [ 'int', 'float *', 'float *', 'float *' ],      'int' ],
+        SDL_GetDisplayOrientation  => [ ['int'],                                         'int' ],
+        SDL_GetNumDisplayModes     => [ ['int'],                                         'int' ],
+        SDL_GetDisplayMode         => [ [ 'int', 'int', 'SDL_DisplayMode' ],             'int' ],
+        SDL_GetDesktopDisplayMode  => [ [ 'int', 'SDL_DisplayMode' ],                    'int' ],
+        SDL_GetCurrentDisplayMode  => [ [ 'int', 'SDL_DisplayMode' ],                    'int' ],
+        SDL_GetClosestDisplayMode  => [ [ 'int', 'SDL_DisplayMode', 'SDL_DisplayMode' ], 'opaque' ],
+        SDL_GetWindowDisplayIndex  => [ ['SDL_Window'],                                  'int' ],
+        SDL_SetWindowDisplayMode   => [ [ 'SDL_Window', 'SDL_DisplayMode' ],             'int' ],
+        SDL_GetWindowDisplayMode   => [ [ 'SDL_Window', 'SDL_DisplayMode' ],             'int' ],
+        SDL_GetWindowPixelFormat   => [ ['SDL_Window'],                                  'uint32' ],
         SDL_CreateWindow => [ [ 'string', 'int', 'int', 'int', 'int', 'uint32' ] => 'SDL_Window' ],
         SDL_CreateWindowFrom => [ ['opaque']     => 'SDL_Window' ],
         SDL_GetWindowID      => [ ['SDL_Window'] => 'uint32' ],
@@ -677,48 +638,17 @@ package SDL2::FFI 0.01 {
         SDL_SetWindowIcon    => [ [ 'SDL_Window', 'SDL_Surface' ] ],
 
         # These don't work correctly yet. (cast issues)
-        SDL_SetWindowData     => [ [ 'SDL_Window', 'string', 'opaque*' ], 'opaque*' ],
-        SDL_GetWindowData     => [ [ 'SDL_Window', 'string' ], 'opaque*' ],
-        SDL_SetWindowPosition => [ [ 'SDL_Window', 'int', 'int' ] ],
-        SDL_GetWindowPosition => [
-            [ 'SDL_Window', 'int*', 'int*' ] => sub ( $inner, $window ) {
-                my ( $x, $y );
-                $inner->( $window, \$x, \$y );
-                return ( $x, $y );
-            }
-        ],
-        SDL_SetWindowSize => [ [ 'SDL_Window', 'int', 'int' ] ],
-        SDL_GetWindowSize => [
-            [ 'SDL_Window', 'int*', 'int*' ] => sub ( $inner, $window ) {
-                my ( $x, $y );
-                $inner->( $window, \$x, \$y );
-                return ( $x, $y );
-            }
-        ],
-        SDL_GetWindowBordersSize => [
-            [ 'SDL_Window', 'int*', 'int*', 'int*', 'int*' ],
-            'int' => sub ( $inner, $window ) {
-                my ( $top, $left, $bottom, $right );
-                my $ret = $inner->( $window, \$top, \$left, \$bottom, \$right );
-                return $ret == 0 ? ( $top, $left, $bottom, $right ) : $ret;
-            }
-        ],
-        SDL_SetWindowMinimumSize => [ [ 'SDL_Window', 'int', 'int' ] ],
-        SDL_GetWindowMinimumSize => [
-            [ 'SDL_Window', 'int*', 'int*' ] => sub ( $inner, $window ) {
-                my ( $x, $y );
-                $inner->( $window, \$x, \$y );
-                return ( $x, $y );
-            }
-        ],
-        SDL_SetWindowMaximumSize => [ [ 'SDL_Window', 'int', 'int' ] ],
-        SDL_GetWindowMaximumSize => [
-            [ 'SDL_Window', 'int*', 'int*' ] => sub ( $inner, $window ) {
-                my ( $x, $y );
-                $inner->( $window, \$x, \$y );
-                return ( $x, $y );
-            }
-        ],
+        SDL_SetWindowData            => [ [ 'SDL_Window', 'string', 'opaque*' ], 'opaque*' ],
+        SDL_GetWindowData            => [ [ 'SDL_Window', 'string' ], 'opaque*' ],
+        SDL_SetWindowPosition        => [ [ 'SDL_Window', 'int',  'int' ] ],
+        SDL_GetWindowPosition        => [ [ 'SDL_Window', 'int*', 'int*' ] ],
+        SDL_SetWindowSize            => [ [ 'SDL_Window', 'int',  'int' ] ],
+        SDL_GetWindowSize            => [ [ 'SDL_Window', 'int*', 'int*' ] ],
+        SDL_GetWindowBordersSize     => [ [ 'SDL_Window', 'int*', 'int*', 'int*', 'int*' ], 'int' ],
+        SDL_SetWindowMinimumSize     => [ [ 'SDL_Window', 'int',  'int' ] ],
+        SDL_GetWindowMinimumSize     => [ [ 'SDL_Window', 'int*', 'int*' ] ],
+        SDL_SetWindowMaximumSize     => [ [ 'SDL_Window', 'int',  'int' ] ],
+        SDL_GetWindowMaximumSize     => [ [ 'SDL_Window', 'int*', 'int*' ] ],
         SDL_SetWindowBordered        => [ [ 'SDL_Window', 'bool' ] ],
         SDL_SetWindowResizable       => [ [ 'SDL_Window', 'bool' ] ],
         SDL_ShowWindow               => [ ['SDL_Window'] ],
@@ -727,44 +657,33 @@ package SDL2::FFI 0.01 {
         SDL_MaximizeWindow           => [ ['SDL_Window'] ],
         SDL_MinimizeWindow           => [ ['SDL_Window'] ],
         SDL_RestoreWindow            => [ ['SDL_Window'] ],
-        SDL_SetWindowFullscreen      => [ [ 'SDL_Window', 'uint32' ], 'int' ],
-        SDL_GetWindowSurface         => [ ['SDL_Window'],             'SDL_Surface' ],
-        SDL_UpdateWindowSurface      => [ ['SDL_Window'],             'int' ],
-        SDL_UpdateWindowSurfaceRects => [
-            [ 'SDL_Window', 'opaque*', 'int' ],
-            'int' => sub ( $inner, $window, @recs ) {
-                $inner->( $window, \\@recs, scalar @recs );
-            }
-        ],
-        SDL_SetWindowGrab => [ [ 'SDL_Window', 'bool' ] ],
+        SDL_SetWindowFullscreen      => [ [ 'SDL_Window', 'uint32' ],         'int' ],
+        SDL_GetWindowSurface         => [ ['SDL_Window'],                     'SDL_Surface' ],
+        SDL_UpdateWindowSurface      => [ ['SDL_Window'],                     'int' ],
+        SDL_UpdateWindowSurfaceRects => [ [ 'SDL_Window', 'opaque*', 'int' ], 'int' ],
+        SDL_SetWindowGrab            => [ [ 'SDL_Window', 'bool' ] ],
         ( $ver->patch >= 15 ? ( SDL_SetWindowKeyboardGrab => [ [ 'SDL_Window', 'bool' ] ] ) : () ),
         ( $ver->patch >= 15 ? ( SDL_SetWindowMouseGrab    => [ [ 'SDL_Window', 'bool' ] ] ) : () ),
         SDL_GetWindowGrab => [ ['SDL_Window'], 'bool' ],
         ( $ver->patch >= 15 ? ( SDL_GetWindowKeyboardGrab => [ ['SDL_Window'], 'bool' ] ) : () ),
         ( $ver->patch >= 15 ? ( SDL_GetWindowMouseGrab    => [ ['SDL_Window'], 'bool' ] ) : () ),
-        SDL_GetGrabbedWindow    => [ [],                        'SDL_Window' ],
-        SDL_SetWindowBrightness => [ [ 'SDL_Window', 'float' ], 'int' ],
-        SDL_GetWindowBrightness => [ ['SDL_Window'],            'float' ],
-        SDL_SetWindowOpacity    => [ [ 'SDL_Window', 'float' ], 'int' ],
-        SDL_GetWindowOpacity    => [
-            [ 'SDL_Window', 'float*' ],
-            'int' => sub ( $inner, $window ) {
-                my $out_opacity;
-                my $ok = $inner->( $window, \$out_opacity );
-                $ok == 0 ? $out_opacity : $ok;
-            }
-        ],
+        SDL_GetGrabbedWindow    => [ [],                             'SDL_Window' ],
+        SDL_SetWindowBrightness => [ [ 'SDL_Window', 'float' ],      'int' ],
+        SDL_GetWindowBrightness => [ ['SDL_Window'],                 'float' ],
+        SDL_SetWindowOpacity    => [ [ 'SDL_Window', 'float' ],      'int' ],
+        SDL_GetWindowOpacity    => [ [ 'SDL_Window', 'float*' ],     'int' ],
         SDL_SetWindowModalFor   => [ [ 'SDL_Window', 'SDL_Window' ], 'int' ],
         SDL_SetWindowInputFocus => [ ['SDL_Window'],                 'int' ],
         SDL_SetWindowGammaRamp  =>
             [ [ 'SDL_Window', 'uint32[256]', 'uint32[256]', 'uint32[256]' ], 'int' ],
         SDL_GetWindowGammaRamp => [
-            [ 'SDL_Window', 'uint32[256]', 'uint32[256]', 'uint32[256]' ],
-            'int' => sub ( $inner, $window ) {
-                my @red = my @blue = my @green = map { \0 } 1 .. 256;
-                my $ok  = $inner->( $window, \@red, \@green, \@blue );
-                $ok == 0 ? ( \@red, \@green, \@blue ) : $ok;
-            }
+            [ 'SDL_Window', 'uint32[256]', 'uint32[256]', 'uint32[256]' ], 'int'
+
+                #=> sub ( $inner, $window ) {
+                #    my @red = my @blue = my @green = map { \0 } 1 .. 256;
+                #    my $ok  = $inner->( $window, \@red, \@green, \@blue );
+                #    $ok == 0 ? ( \@red, \@green, \@blue ) : $ok;
+                #}
         ],
         SDL_SetWindowHitTest => [
             [ 'SDL_Window', 'SDL_HitTest', 'opaque' ],
@@ -798,31 +717,17 @@ package SDL2::FFI 0.01 {
         SDL_GL_UnloadLibrary      => [ [] ],
         SDL_GL_ExtensionSupported => [ ['string'], 'bool' ],
         SDL_GL_ResetAttributes    => [ [] ],
-        SDL_GL_SetAttribute       => [ [ 'SDL_GLattr', 'int' ], 'int' ],
-        SDL_GL_GetAttribute       => [
-            [ 'SDL_GLattr', 'int*' ],
-            'int' => sub ( $inner, $attr ) {
-                my $value;
-                my $ok = $inner->( $attr, \$value );
-                $ok == 0 ? $value : $ok;
-            }
-        ],
-        SDL_GL_CreateContext     => [ ['SDL_Window'],                    'SDL_GLContext' ],
-        SDL_GL_MakeCurrent       => [ [ 'SDL_Window', 'SDL_GLContext' ], 'int' ],
-        SDL_GL_GetCurrentWindow  => [ [],                                'SDL_Window' ],
-        SDL_GL_GetCurrentContext => [ [],                                'SDL_GLContext' ],
-        SDL_GL_GetDrawableSize   => [
-            [ 'SDL_Window', 'int*', 'int*' ],
-            sub ( $inner, $window ) {
-                my ( $w, $h );
-                $inner->( $window, \$w, \$h );
-                ( $w, $h );
-            }
-        ],
-        SDL_GL_SetSwapInterval => [ ['int'], 'int' ],
-        SDL_GL_GetSwapInterval => [ [],      'int' ],
-        SDL_GL_SwapWindow      => [ ['SDL_Window'] ],
-        SDL_GL_DeleteContext   => [ ['SDL_GLContext'] ]
+        SDL_GL_SetAttribute       => [ [ 'SDL_GLattr', 'int' ],           'int' ],
+        SDL_GL_GetAttribute       => [ [ 'SDL_GLattr', 'int*' ],          'int' ],
+        SDL_GL_CreateContext      => [ ['SDL_Window'],                    'SDL_GLContext' ],
+        SDL_GL_MakeCurrent        => [ [ 'SDL_Window', 'SDL_GLContext' ], 'int' ],
+        SDL_GL_GetCurrentWindow   => [ [],                                'SDL_Window' ],
+        SDL_GL_GetCurrentContext  => [ [],                                'SDL_GLContext' ],
+        SDL_GL_GetDrawableSize    => [ [ 'SDL_Window', 'int*', 'int*' ], ],
+        SDL_GL_SetSwapInterval    => [ ['int'], 'int' ],
+        SDL_GL_GetSwapInterval    => [ [],      'int' ],
+        SDL_GL_SwapWindow         => [ ['SDL_Window'] ],
+        SDL_GL_DeleteContext      => [ ['SDL_GLContext'] ]
         };
     enum SDL_RendererFlags => [
         [ SDL_RENDERER_SOFTWARE      => 0x00000001 ],
@@ -830,6 +735,8 @@ package SDL2::FFI 0.01 {
         [ SDL_RENDERER_PRESENTVSYNC  => 0x00000004 ],
         [ SDL_RENDERER_TARGETTEXTURE => 0x00000008 ]
     ];
+
+    package SDL2::RenderInfo { };
     class SDL_RendererInfo => [
         name                => 'opaque',       # string
         flags               => 'uint32',
@@ -879,91 +786,46 @@ package SDL2::FFI 0.01 {
         [ SDL_BLENDFACTOR_DST_ALPHA           => 0x9 ],
         [ SDL_BLENDFACTOR_ONE_MINUS_DST_ALPHA => 0xA ]
         ];
+
+    package SDL2::Renderer { };
+
+    package SDL2::Texture { };
     class
         SDL_Renderer => [],
         SDL_Texture  => [];
     attach render => {
-        SDL_GetNumRenderDrivers => [ [], 'int' ],
-        SDL_GetRenderDriverInfo => [
-            [ 'int', 'SDL_RendererInfo' ],
-            'int',
-            sub ( $inner, $index ) {
-                my $info = SDL2::RendererInfo->new();
-                my $ok   = $inner->( $index, $info );
-                $ok == 0 ? $info : $ok;
-            }
-        ],
+        SDL_GetNumRenderDrivers     => [ [],                            'int' ],
+        SDL_GetRenderDriverInfo     => [ [ 'int', 'SDL_RendererInfo' ], 'int' ],
         SDL_CreateWindowAndRenderer => [
-            [ 'int', 'int', 'uint32', 'opaque*', 'opaque*' ],
-            'int' => sub ( $inner, $width, $height, $window_flags ) {
-                my $window   = SDL2::Window->new;
-                my $renderer = SDL2::Renderer->new;
-                my $ok       = $inner->( $width, $height, $window_flags, \$window, \$renderer );
-                $ok == 0 ? (
-                    $ffi->cast( 'opaque' => 'SDL_Window',   $window ),
-                    $ffi->cast( 'opaque' => 'SDL_Renderer', $renderer ),
-                    ) :
-                    $ok;
-            }
+            [ 'int', 'int', 'uint32', 'opaque*', 'opaque*' ], 'int'
+
+               #=> sub ( $inner, $width, $height, $window_flags ) {
+               #    my $window   = SDL2::Window->new;
+               #    my $renderer = SDL2::Renderer->new;
+               #    my $ok       = $inner->( $width, $height, $window_flags, \$window, \$renderer );
+               #    $ok == 0 ? (
+               #        $ffi->cast( 'opaque' => 'SDL_Window',   $window ),
+               #        $ffi->cast( 'opaque' => 'SDL_Renderer', $renderer ),
+               #        ) :
+               #        $ok;
+               #}
         ],
-        SDL_CreateRenderer         => [ [ 'SDL_Window', 'int', 'uint32' ], 'SDL_Renderer' ],
-        SDL_CreateSoftwareRenderer => [ ['SDL_Renderer'],                  'SDL_Surface' ],
-        SDL_GetRenderer            => [ ['SDL_Window'],                    'SDL_Renderer' ],
-        SDL_GetRendererInfo        => [
-            [ 'SDL_Renderer', 'SDL_RendererInfo' ],
-            'int' => sub ( $inner, $renderer ) {
-                my $info = SDL2::RendererInfo->new();
-                my $ok   = $inner->( $renderer, $info );
-                $ok == 0 ? $info : $ok;
-            }
-        ],
-        SDL_GetRendererOutputSize => [
-            [ 'SDL_Renderer', 'int*', 'int*' ],
-            'int' => sub ( $inner, $renderer ) {
-                my ( $w, $h );
-                my $ok = $inner->( $renderer, \$w, \$h );
-                $ok == 0 ? ( $w, $h ) : $ok;
-            }
-        ],
+        SDL_CreateRenderer         => [ [ 'SDL_Window', 'int', 'uint32' ],      'SDL_Renderer' ],
+        SDL_CreateSoftwareRenderer => [ ['SDL_Renderer'],                       'SDL_Surface' ],
+        SDL_GetRenderer            => [ ['SDL_Window'],                         'SDL_Renderer' ],
+        SDL_GetRendererInfo        => [ [ 'SDL_Renderer', 'SDL_RendererInfo' ], 'int' ],
+        SDL_GetRendererOutputSize  => [ [ 'SDL_Renderer', 'int*', 'int*' ],     'int' ],
         SDL_CreateTexture => [ [ 'SDL_Renderer', 'uint32', 'int', 'int', 'int' ], 'SDL_Texture' ],
         SDL_CreateTextureFromSurface => [ [ 'SDL_Renderer', 'SDL_Surface' ], 'SDL_Texture' ],
-        SDL_QueryTexture             => [
-            [ 'SDL_Texture', 'uint32*', 'int*', 'int*', 'int*' ],
-            'int' => sub ( $inner, $texture ) {
-                my ( $format, $access, $w, $h );
-                my $ok = $inner->( $texture, \$format, \$access, \$w, \$h );
-                $ok == 0 ? ( $format, $access, $w, $h ) : $ok;
-            }
-        ],
-        SDL_SetTextureColorMod => [ [ 'SDL_Texture', 'uint8', 'uint8', 'uint8' ], 'int' ],
-        SDL_GetTextureColorMod => [
-            [ 'SDL_Texture', 'uint8*', 'uint8*', 'uint8*' ],
-            'int' => sub ( $inner, $texture ) {
-                my ( $r, $g, $b );
-                my $ok = $inner->( $texture, \$r, \$g, \$b );
-                $ok == 0 ? ( $r, $g, $b ) : $ok;
-            }
-        ],
-        SDL_SetTextureAlphaMod => [ [ 'SDL_Texture', 'uint8' ], 'int' ],
-        SDL_GetTextureAlphaMod => [
-            [ 'SDL_Texture', 'uint8*' ],
-            'int' => sub ( $inner, $texture ) {
-                my $alpha;
-                my $ok = $inner->( $texture, \$alpha );
-                $ok == 0 ? $alpha : $ok;
-            }
-        ],
-        SDL_SetTextureBlendMode => [ [ 'SDL_Texture', 'SDL_BlendMode' ], 'int' ],
-        SDL_GetTextureBlendMode => [
-            [ 'SDL_Texture', 'int*' ],
-            'int' => sub ( $inner, $texture ) {
-                my $blendMode;
-                my $ok = $inner->( $texture, \$blendMode );
-                $ok == 0 ? $blendMode : $ok;
-            }
-        ],
-        SDL_UpdateTexture    => [ [ 'SDL_Texture', 'SDL_Rect', 'opaque*', 'int' ], 'int' ],
-        SDL_UpdateYUVTexture => [
+        SDL_QueryTexture        => [ [ 'SDL_Texture', 'uint32*', 'int*', 'int*', 'int*' ], 'int' ],
+        SDL_SetTextureColorMod  => [ [ 'SDL_Texture', 'uint8', 'uint8', 'uint8' ],         'int' ],
+        SDL_GetTextureColorMod  => [ [ 'SDL_Texture', 'uint8*', 'uint8*', 'uint8*' ],      'int' ],
+        SDL_SetTextureAlphaMod  => [ [ 'SDL_Texture', 'uint8' ],                           'int' ],
+        SDL_GetTextureAlphaMod  => [ [ 'SDL_Texture', 'uint8*' ],                          'int' ],
+        SDL_SetTextureBlendMode => [ [ 'SDL_Texture', 'SDL_BlendMode' ],                   'int' ],
+        SDL_GetTextureBlendMode => [ [ 'SDL_Texture', 'int*' ],                            'int' ],
+        SDL_UpdateTexture       => [ [ 'SDL_Texture', 'SDL_Rect', 'opaque*', 'int' ],      'int' ],
+        SDL_UpdateYUVTexture    => [
             [ 'SDL_Texture', 'SDL_Rect', 'uint8*', 'int', 'uint8*', 'int', 'uint8*', 'int' ], 'int'
         ], (
             $ver->patch >= 15 ?
@@ -971,79 +833,32 @@ package SDL2::FFI 0.01 {
                     [ [ 'SDL_Texture', 'SDL_Rect', 'uint8*', 'int', 'uint8*', 'int' ], 'int' ] ) :
                 ()
         ),
-        SDL_LockTexture          => [ [ 'SDL_Texture', 'SDL_Rect', 'opaque*' ], 'int' ],
-        SDL_LockTextureToSurface => [
-            [ 'SDL_Texture', 'SDL_Rect', 'SDL_Surface' ],
-            'int' => sub ( $inner, $texture, $rect ) {
-                my $surface = SDL2::Surface->new();
-                my $ok      = $inner->( $texture, $rect, $surface );
-                $ok == 0 ? $surface : $ok;
-            }
-        ],
+        SDL_LockTexture           => [ [ 'SDL_Texture', 'SDL_Rect', 'opaque*' ], 'int' ],
+        SDL_LockTextureToSurface  => [ [ 'SDL_Texture', 'SDL_Rect', 'SDL_Surface' ], 'int' ],
         SDL_UnlockTexture         => [ ['SDL_Texture'] ],
-        SDL_RenderTargetSupported => [ ['SDL_Renderer'],                  'bool' ],
-        SDL_SetRenderTarget       => [ [ 'SDL_Renderer', 'SDL_Texture' ], 'int' ],
-        SDL_GetRenderTarget       => [ ['SDL_Renderer'],                  'SDL_Texture' ],
-        SDL_RenderSetLogicalSize  => [ [ 'SDL_Renderer', 'int', 'int' ],  'int' ],
-        SDL_RenderGetLogicalSize  => [
-            [ 'SDL_Renderer', 'int*', 'int*' ],
-            'int' => sub ( $inner, $renderer ) {
-                my ( $w, $h );
-                $inner->( $renderer, \$w, \$h );
-                ( $w, $h );
-            }
-        ],
-        SDL_RenderSetIntegerScale => [ [ 'SDL_Renderer', 'bool' ],     'int' ],
-        SDL_RenderGetIntegerScale => [ ['SDL_Renderer'],               'bool' ],
-        SDL_RenderSetViewport     => [ [ 'SDL_Renderer', 'SDL_Rect' ], 'int' ],
-        SDL_RenderGetViewport     => [
-            [ 'SDL_Renderer', 'SDL_Rect' ],
-            'int' => sub ( $inner, $renderer ) {
-                my $rect = SDL2::Rect->new();
-                $inner->( $renderer, $rect );
-                $rect;
-            }
-        ],
-        SDL_RenderSetClipRect => [ [ 'SDL_Renderer', 'SDL_Rect' ], 'int' ],
-        SDL_RenderGetClipRect => [
-            [ 'SDL_Renderer', 'SDL_Rect' ] => sub ( $inner, $renderer ) {
-                my $rect = SDL2::Rect->new();
-                $inner->( $renderer, $rect );
-                $rect;
-            }
-        ],
-        SDL_RenderIsClipEnabled => [ ['SDL_Renderer'],                     'bool' ],
-        SDL_RenderSetScale      => [ [ 'SDL_Renderer', 'float', 'float' ], 'int' ],
-        SDL_RenderGetScale      => [
-            [ 'SDL_Renderer', 'float*', 'float*' ],
-            sub ( $inner, $renderer ) {
-                my ( $scaleX, $scaleY );
-                $inner->( $renderer, \$scaleX, \$scaleY );
-                ( $scaleX, $scaleY );
-            }
-        ],
+        SDL_RenderTargetSupported => [ ['SDL_Renderer'],                   'bool' ],
+        SDL_SetRenderTarget       => [ [ 'SDL_Renderer', 'SDL_Texture' ],  'int' ],
+        SDL_GetRenderTarget       => [ ['SDL_Renderer'],                   'SDL_Texture' ],
+        SDL_RenderSetLogicalSize  => [ [ 'SDL_Renderer', 'int', 'int' ],   'int' ],
+        SDL_RenderGetLogicalSize  => [ [ 'SDL_Renderer', 'int*', 'int*' ], 'int' ],
+        SDL_RenderSetIntegerScale => [ [ 'SDL_Renderer', 'bool' ],         'int' ],
+        SDL_RenderGetIntegerScale => [ ['SDL_Renderer'],                   'bool' ],
+        SDL_RenderSetViewport     => [ [ 'SDL_Renderer', 'SDL_Rect' ],     'int' ],
+        SDL_RenderGetViewport     => [ [ 'SDL_Renderer', 'SDL_Rect' ],     'int' ],
+        SDL_RenderSetClipRect     => [ [ 'SDL_Renderer', 'SDL_Rect' ],     'int' ],
+        SDL_RenderGetClipRect     => [ [ 'SDL_Renderer', 'SDL_Rect' ] ],
+        SDL_RenderIsClipEnabled   => [ ['SDL_Renderer'], 'bool' ],
+        SDL_RenderSetScale        => [ [ 'SDL_Renderer', 'float', 'float' ], 'int' ],
+        SDL_RenderGetScale     => [ [ 'SDL_Renderer', 'float*', 'float*' ], ],
         SDL_SetRenderDrawColor => [ [ 'SDL_Renderer', 'uint8', 'uint8', 'uint8', 'uint8' ], 'int' ],
-        SDL_GetRenderDrawColor => [
-            [ 'SDL_Renderer', 'uint8*', 'uint8*', 'uint8*', 'uint8*' ],
-            'int' => sub ( $inner, $renderer ) {
-                my ( $r, $g, $b, $a );
-                my $ok = $inner->( $renderer, \$r, \$g, \$b, \$a );
-                $ok == 0 ? ( $r, $g, $b, $a ) : $ok;
-            }
-        ],
+        SDL_GetRenderDrawColor =>
+            [ [ 'SDL_Renderer', 'uint8*', 'uint8*', 'uint8*', 'uint8*' ], 'int' ],
         SDL_SetRenderDrawBlendMode => [ [ 'SDL_Renderer', 'SDL_BlendMode' ], 'int' ],
-        SDL_GetRenderDrawBlendMode => [
-            [ 'SDL_Renderer', 'int*' ],
-            'int' => sub ( $inner, $renderer ) {
-                my $blendMode;
-                my $ok = $inner->( $renderer, \$blendMode );
-                $ok == 0 ? $blendMode : $ok;
-            }
-        ],
-        SDL_RenderClear      => [ ['SDL_Renderer'],                 'int' ],
-        SDL_RenderDrawPoint  => [ [ 'SDL_Renderer', 'int', 'int' ], 'int' ],
-        SDL_RenderDrawPoints => [
-            [ 'SDL_Renderer', 'SDLx_PointList', 'int' ],
+        SDL_GetRenderDrawBlendMode => [ [ 'SDL_Renderer', 'int*' ],          'int' ],
+        SDL_RenderClear            => [ ['SDL_Renderer'],                    'int' ],
+        SDL_RenderDrawPoint        => [ [ 'SDL_Renderer', 'int', 'int' ],    'int' ],
+        SDL_RenderDrawPoints       => [
+            [ 'SDL_Renderer', 'SDL2x_PointList', 'int' ],
             'int' => sub ( $inner, $renderer, @points ) {
 
           # XXX - This is a workaround for FFI::C::Array not being able to accept a list of objects
@@ -1059,7 +874,7 @@ package SDL2::FFI 0.01 {
         ],
         SDL_RenderDrawLine  => [ [ 'SDL_Renderer', 'int', 'int', 'int', 'int' ], 'int' ],
         SDL_RenderDrawLines => [
-            [ 'SDL_Renderer', 'SDLx_PointList', 'int' ],
+            [ 'SDL_Renderer', 'SDL2x_PointList', 'int' ],
             'int' => sub ( $inner, $renderer, @points ) {
 
           # XXX - This is a workaround for FFI::C::Array not being able to accept a list of objects
@@ -1075,7 +890,7 @@ package SDL2::FFI 0.01 {
         ],
         SDL_RenderDrawRect  => [ [ 'SDL_Renderer', 'SDL_Rect' ], 'int' ],
         SDL_RenderDrawRects => [
-            [ 'SDL_Renderer', 'SDLx_RectList', 'int' ],
+            [ 'SDL_Renderer', 'SDL2x_RectList', 'int' ],
             'int' => sub ( $inner, $renderer, @rects ) {
 
           # XXX - This is a workaround for FFI::C::Array not being able to accept a list of objects
@@ -1095,7 +910,7 @@ package SDL2::FFI 0.01 {
         ],
         SDL_RenderFillRect  => [ [ 'SDL_Renderer', 'SDL_Rect' ], 'int' ],
         SDL_RenderFillRects => [
-            [ 'SDL_Renderer', 'SDLx_RectList', 'int' ],
+            [ 'SDL_Renderer', 'SDL2x_RectList', 'int' ],
             'int' => sub ( $inner, $renderer, @rects ) {
 
           # XXX - This is a workaround for FFI::C::Array not being able to accept a list of objects
@@ -1124,7 +939,7 @@ package SDL2::FFI 0.01 {
         ],
         SDL_RenderDrawPointF  => [ [ 'SDL_Renderer', 'float', 'float' ], 'int' ],
         SDL_RenderDrawPointsF => [
-            [ 'SDL_Renderer', 'SDLx_FPointList', 'int' ],
+            [ 'SDL_Renderer', 'SDL2x_FPointList', 'int' ],
             'int' => sub ( $inner, $renderer, @points ) {
 
           # XXX - This is a workaround for FFI::C::Array not being able to accept a list of objects
@@ -1140,7 +955,7 @@ package SDL2::FFI 0.01 {
         ],
         SDL_RenderDrawLineF  => [ [ 'SDL_Renderer', 'float', 'float', 'float', 'float' ], 'int' ],
         SDL_RenderDrawLinesF => [
-            [ 'SDL_Renderer', 'SDLx_FPointList', 'int' ],
+            [ 'SDL_Renderer', 'SDL2x_FPointList', 'int' ],
             'int' => sub ( $inner, $renderer, @points ) {
 
           # XXX - This is a workaround for FFI::C::Array not being able to accept a list of objects
@@ -1155,7 +970,7 @@ package SDL2::FFI 0.01 {
             }
         ],
         SDL_RenderDrawRectF => [
-            [ 'SDL_Renderer', 'SDLx_FRectList', 'int' ],
+            [ 'SDL_Renderer', 'SDL2x_FRectList', 'int' ],
             'int' => sub ( $inner, $renderer, @rects ) {
 
           # XXX - This is a workaround for FFI::C::Array not being able to accept a list of objects
@@ -1174,7 +989,7 @@ package SDL2::FFI 0.01 {
             }
         ],
         SDL_RenderDrawRectsF => [
-            [ 'SDL_Renderer', 'SDLx_FRectList', 'int' ],
+            [ 'SDL_Renderer', 'SDL2x_FRectList', 'int' ],
             'int' => sub ( $inner, $renderer, @rects ) {
 
           # XXX - This is a workaround for FFI::C::Array not being able to accept a list of objects
@@ -1193,7 +1008,7 @@ package SDL2::FFI 0.01 {
             }
         ],
         SDL_RenderFillRectsF => [
-            [ 'SDL_Renderer', 'SDLx_FRectList', 'int' ],
+            [ 'SDL_Renderer', 'SDL2x_FRectList', 'int' ],
             'int' => sub ( $inner, $renderer, @rects ) {
 
           # XXX - This is a workaround for FFI::C::Array not being able to accept a list of objects
@@ -1224,21 +1039,14 @@ package SDL2::FFI 0.01 {
         ],
         SDL_RenderReadPixels =>
             [ [ 'SDL_Renderer', 'SDL_Rect', 'uint32', 'opaque', 'int' ], 'int' ],
-        SDL_RenderPresent   => [ ['SDL_Renderer'] ],
-        SDL_DestroyTexture  => [ ['SDL_Texture'] ],
-        SDL_DestroyRenderer => [ ['SDL_Renderer'] ],
-        SDL_RenderFlush     => [ ['SDL_Renderer'], 'int' ],
-        SDL_GL_BindTexture  => [
-            [ 'SDL_Texture', 'float*', 'float*' ],
-            'int' => sub ( $inner, $texture ) {
-                my ( $texw, $texh );
-                my $ok = $inner->( $texture, \$texw, \$texh );
-                $ok == 0 ? ( $texw, $texh ) : $ok;
-            }
-        ],
-        SDL_GL_UnbindTexture             => [ ['SDL_Texture'],  'int' ],
-        SDL_RenderGetMetalLayer          => [ ['SDL_Renderer'], 'opaque' ],
-        SDL_RenderGetMetalCommandEncoder => [ ['SDL_Renderer'], 'opaque' ]
+        SDL_RenderPresent                => [ ['SDL_Renderer'] ],
+        SDL_DestroyTexture               => [ ['SDL_Texture'] ],
+        SDL_DestroyRenderer              => [ ['SDL_Renderer'] ],
+        SDL_RenderFlush                  => [ ['SDL_Renderer'],                      'int' ],
+        SDL_GL_BindTexture               => [ [ 'SDL_Texture', 'float*', 'float*' ], 'int' ],
+        SDL_GL_UnbindTexture             => [ ['SDL_Texture'],                       'int' ],
+        SDL_RenderGetMetalLayer          => [ ['SDL_Renderer'],                      'opaque' ],
+        SDL_RenderGetMetalCommandEncoder => [ ['SDL_Renderer'],                      'opaque' ]
     };
     $ffi->type( '(int,opaque)->uint32' => 'SDL_TimerCallback' );
     attach timer => {
@@ -1307,6 +1115,9 @@ package SDL2::FFI 0.01 {
         ],
     ];
     $ffi->type( '(opaque,string,int)->void' => 'SDL_AudioCallback' );
+    $ffi->type( 'int'                       => 'SDL_AudioFormat' );
+
+    package SDL2::AudioSpec { };
     class SDL_AudioSpec => [
         freq     => 'int',
         format   => 'uint16',
@@ -1318,6 +1129,8 @@ package SDL2::FFI 0.01 {
         callback => 'opaque',    # SDL_AudioCallback
         userdata => 'opaque'     # void *
     ];
+
+    package SDL2::AudioCVT { };
     class SDL_AudioCVT => [
         needed       => 'int',
         src_format   => 'uint16',    # SDL_AudioFormat
@@ -1332,36 +1145,83 @@ package SDL2::FFI 0.01 {
         filter_index => 'int'
     ];
     $ffi->type( '(opaque,uint16)->void' => 'SDL_AudioFilter' );
-    define audio => [ [ SDL_AUDIOCVT_MAX_FILTERS => 9 ], ];
-    attach audio => {
-        SDL_GetNumAudioDrivers    => [ [],         'int' ],
-        SDL_GetAudioDriver        => [ ['int'],    'string' ],
-        SDL_AudioInit             => [ ['string'], 'int' ],
-        SDL_AudioQuit             => [ [] ],
-        SDL_GetCurrentAudioDriver => [ [], 'string' ],
-        SDL_OpenAudio             => [
+
+    package SDL2::AudioStream { };
+
+    package SDL2::AudioDeviceID { };
+
+    package SDL2::AudioStatus { };
+
+    package SDL2::RWops { };
+    class SDL_AudioStream => [], SDL_AudioDeviceID => [], SDL_AudioStatus => [], SDL_RWops => [];
+    define audio          => [ [ SDL_AUDIOCVT_MAX_FILTERS => 9 ], ];
+    attach audio          => {
+        SDL_AudioInit            => [ ["string"], "int" ],
+        SDL_AudioQuit            => [ [] ],
+        SDL_AudioStreamAvailable => [ ["SDL_AudioStream"], "int" ],
+        SDL_AudioStreamClear     => [ ["SDL_AudioStream"] ],
+        SDL_AudioStreamFlush     => [ ["SDL_AudioStream"], "int" ],
+        SDL_AudioStreamGet       => [ [ "SDL_AudioStream", "opaque*", "int" ], "int" ],
+        SDL_AudioStreamPut       => [ [ "SDL_AudioStream", "opaque*", "int" ], "int" ],
+        SDL_BuildAudioCVT        => [
+            [   "SDL_AudioCVT",    "SDL_AudioFormat", "uint8", "int",
+                "SDL_AudioFormat", "uint8",           "int",
+            ],
+            "int",
+        ],
+        SDL_ClearQueuedAudio   => [ ["SDL_AudioDeviceID"] ],
+        SDL_CloseAudio         => [ [] ],
+        SDL_CloseAudioDevice   => [ ["SDL_AudioDeviceID"] ],
+        SDL_ConvertAudio       => [ ["SDL_AudioCVT"],                             "int" ],
+        SDL_DequeueAudio       => [ [ "SDL_AudioDeviceID", "opaque*", "uint32" ], "uint32" ],
+        SDL_FreeAudioStream    => [ ["SDL_AudioStream"] ],
+        SDL_FreeWAV            => [ ["uint8 *"] ],
+        SDL_GetAudioDeviceName => [ [ "int", "int" ], "string" ], (
+            $ver->patch >= 15 ?
+                ( SDL_GetAudioDeviceSpec => [ [ "int", "int", "SDL_AudioSpec" ], "int" ] ) :
+                ()
+        ),
+        SDL_GetAudioDeviceStatus  => [ ["SDL_AudioDeviceID"], "SDL_AudioStatus" ],
+        SDL_GetAudioDriver        => [ ["int"],               "string" ],
+        SDL_GetAudioStatus        => [ [],                    "SDL_AudioStatus" ],
+        SDL_GetCurrentAudioDriver => [ [],                    "string" ],
+        SDL_GetNumAudioDevices    => [ ["int"],               "int" ],
+        SDL_GetNumAudioDrivers    => [ [],                    "int" ],
+        SDL_GetQueuedAudioSize    => [ ["SDL_AudioDeviceID"], "uint32" ],
+
+       #SDL_LoadWAV_RW            => [
+       #                               ["SDL_RWops", "int", "SDL_AudioSpec", "uint8**", "uint32 *"],
+       #                               "SDL_AudioSpec",
+       #                             ],
+        SDL_LockAudio       => [ [] ],
+        SDL_LockAudioDevice => [ ["SDL_AudioDeviceID"] ],
+        SDL_MixAudio        => [ [ "uint8 *", "uint8 *", "uint32", "int" ] ],
+        SDL_MixAudioFormat  => [ [ "uint8 *", "uint8 *", "SDL_AudioFormat", "uint32", "int" ] ],
+        SDL_NewAudioStream  => [
+            [ "SDL_AudioFormat", "uint8", "int", "SDL_AudioFormat", "uint8", "int", ],
+            "SDL_AudioStream",
+        ],
+        SDL_OpenAudio => [
             [ 'SDL_AudioSpec', 'SDL_AudioSpec' ],
             'int' => sub ( $inner, $desired, $obtained = () ) {
                 deprecate <<'END';
 SDL_OpenAudio( ... ) remains for compatibility with SDL 1.2. The new, more
 powerful, and preferred way to do this is SDL_OpenAudioDevice( ... );
 END
-
-                #my $obtained = SDL2::AudioSpec->new();
-                my $ok = $inner->( $desired, $obtained );
-                $ok == 0 ? $obtained : $ok;
+                $inner->( $desired, $obtained );
             }
         ],
-        SDL_GetNumAudioDevices => [ ['int'], 'int' ],
+        SDL_OpenAudioDevice =>
+            [ [ "string", "int", "SDL_AudioSpec", "SDL_AudioSpec", "int" ], "SDL_AudioDeviceID", ],
+        SDL_PauseAudio        => [ ["int"] ],
+        SDL_PauseAudioDevice  => [ [ "SDL_AudioDeviceID", "int" ] ],
+        SDL_QueueAudio        => [ [ "SDL_AudioDeviceID", "opaque*", "uint32" ], "int" ],
+        SDL_UnlockAudio       => [ [] ],
+        SDL_UnlockAudioDevice => [ ["SDL_AudioDeviceID"] ],
     };
 
-    # START HERE!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    # https://wiki.libsdl.org/CategoryPlatform
+    # Everything below this line will be rewritten!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     #
-    class SDL_RWops => [];
-
-    #class SDL_PixelFormat => [];
-    $ffi->attach( SDL_RWFromFile  => [ 'string', 'string' ], 'SDL_RWops' );
     $ffi->attach( SDL_FreeSurface => ['SDL_Surface'] );
     $ffi->attach( SDL_SaveBMP_RW  => [ 'SDL_Surface', 'SDL_RWops', 'int' ], 'int' );
     attach future => {
@@ -1373,6 +1233,7 @@ END
             'SDL_BlendMode'
         ],
     };
+    $ffi->attach( SDL_RWFromFile => [ 'string', 'string' ], 'SDL_RWops' );
 
     sub SDL_SaveBMP ( $surface, $file ) {
         SDL_SaveBMP_RW( $surface, SDL_RWFromFile( $file, 'wb' ), 1 );
@@ -1415,29 +1276,42 @@ END
 
     # https://wiki.libsdl.org/CategoryVideo
     # Macros defined in SDL_video.h
-    sub SDL_WINDOWPOS_UNDEFINED_MASK ()      {0x1FFF0000}
-    sub SDL_WINDOWPOS_UNDEFINED_DISPLAY ($X) { ( SDL_WINDOWPOS_UNDEFINED_MASK | ($X) ) }
-    sub SDL_WINDOWPOS_UNDEFINED ()           { SDL_WINDOWPOS_UNDEFINED_DISPLAY(0) }
-    sub SDL_WINDOWPOS_ISUNDEFINED ($X) { ( ( ($X) & 0xFFFF0000 ) == SDL_WINDOWPOS_UNDEFINED_MASK ) }
-    #
-    sub SDL_WINDOWPOS_CENTERED_MASK ()      {0x2FFF0000}
-    sub SDL_WINDOWPOS_CENTERED_DISPLAY ($X) { ( SDL_WINDOWPOS_CENTERED_MASK | ($X) ) }
-    sub SDL_WINDOWPOS_CENTERED ()           { SDL_WINDOWPOS_CENTERED_DISPLAY(0) }
-    sub SDL_WINDOWPOS_ISCENTERED ($X) { ( ( ($X) & 0xFFFF0000 ) == SDL_WINDOWPOS_CENTERED_MASK ) }
+    define video => [
+        [ SDL_WINDOWPOS_UNDEFINED_MASK => 0x1FFF0000 ],
+        [   SDL_WINDOWPOS_UNDEFINED_DISPLAY =>
+                sub ($X) { ( SDL_WINDOWPOS_UNDEFINED_MASK() | ($X) ) }
+        ],
+        [ SDL_WINDOWPOS_UNDEFINED => sub () { SDL_WINDOWPOS_UNDEFINED_DISPLAY(0) } ],
+        [   SDL_WINDOWPOS_ISUNDEFINED =>
+                sub ($X) { ( ( ($X) & 0xFFFF0000 ) == SDL_WINDOWPOS_UNDEFINED_MASK() ) }
+        ],
+        #
+        [ SDL_WINDOWPOS_CENTERED_MASK    => sub () {0x2FFF0000} ],
+        [ SDL_WINDOWPOS_CENTERED_DISPLAY => sub ($X) { ( SDL_WINDOWPOS_CENTERED_MASK() | ($X) ) } ],
+        [ SDL_WINDOWPOS_CENTERED         => sub() { SDL_WINDOWPOS_CENTERED_DISPLAY(0) } ],
+        [   SDL_WINDOWPOS_ISCENTERED =>
+                sub ($X) { ( ( ($X) & 0xFFFF0000 ) == SDL_WINDOWPOS_CENTERED_MASK() ) }
+        ],
+    ];
 
     # https://wiki.libsdl.org/CategoryPixels
+    package SDL2::Color { };
     FFI::C::StructDef->new(
         $ffi,
         name    => 'SDL_Color',
         class   => 'SDL2::Color',
         members => [ r => 'uint8', g => 'uint8', b => 'uint8', a => 'uint8' ]
     );
+
+    package SDL2::Palette { };
     FFI::C::StructDef->new(
         $ffi,
         name    => 'SDL_Palette',
         class   => 'SDL2::Palette',
         members => [ ncolors => 'int', colors => 'SDL_Color' ]
     );
+
+    package SDL2::PixelFormat { };
     FFI::C::StructDef->new(
         $ffi,
         name    => 'SDL_PixelFormat',
@@ -1476,85 +1350,83 @@ END
     };
 
     # https://wiki.libsdl.org/CategoryEvents
-    sub SDL_RELEASED () {0}
-    sub SDL_PRESSED()   {1}
+    define events => [
+        [ SDL_RELEASED => 0 ], [ SDL_PRESSED => 1 ],
 
-    # SDL_EventType
-    sub SDL_FIRSTEVENT () {0}    #     /**< Unused (do not remove) */
+        # SDL_EventType
+        [ SDL_FIRSTEVENT => 0 ],    #     /**< Unused (do not remove) */
 
+        #
+        [ SDL_QUIT                    => 0x100 ],                      # /**< User-requested quit */
+        [ SDL_APP_TERMINATING         => sub () { SDL_QUIT() + 1 } ],
+        [ SDL_APP_LOWMEMORY           => sub () { SDL_QUIT() + 2 } ],
+        [ SDL_APP_WILLENTERBACKGROUND => sub () { SDL_QUIT() + 3 } ],
+        [ SDL_APP_DIDENTERBACKGROUND  => sub () { SDL_QUIT() + 4 } ],
+        [ SDL_APP_WILLENTERFOREGROUND => sub () { SDL_QUIT() + 5 } ],
+        [ SDL_APP_DIDENTERFOREGROUND  => sub () { SDL_QUIT() + 6 } ],
+        #
+        [ SDL_DISPLAYEVENT => 0x150 ],
+        #
+        [ SDL_WINDOWEVENT => 0x200 ], [ SDL_SYSWMEVENT => sub () { SDL_WINDOWEVENT() + 1 } ],
+        #
+        [ SDL_KEYDOWN       => 0x300 ], [ SDL_KEYUP => sub () { SDL_KEYDOWN() + 1 } ],
+        [ SDL_TEXTEDITING   => sub () { SDL_KEYDOWN() + 2 } ],
+        [ SDL_TEXTINPUT     => sub () { SDL_KEYDOWN() + 3 } ],
+        [ SDL_KEYMAPCHANGED => sub () { SDL_KEYDOWN() + 4 } ],
+        #
+        [ SDL_MOUSEMOTION   => 0x400 ], [ SDL_MOUSEBUTTONDOWN => sub () { SDL_MOUSEMOTION() + 1 } ],
+        [ SDL_MOUSEBUTTONUP => sub () { SDL_MOUSEMOTION() + 2 } ],
+        [ SDL_MOUSEWHEEL    => sub () { SDL_MOUSEMOTION() + 3 } ],
+        #
+        [ SDL_JOYAXISMOTION    => 0x600 ],
+        [ SDL_JOYBALLMOTION    => sub () { SDL_JOYAXISMOTION() + 1 } ],
+        [ SDL_JOYHATMOTION     => sub () { SDL_JOYAXISMOTION() + 2 } ],
+        [ SDL_JOYBUTTONDOWN    => sub () { SDL_JOYAXISMOTION() + 3 } ],
+        [ SDL_JOYBUTTONUP      => sub () { SDL_JOYAXISMOTION() + 4 } ],
+        [ SDL_JOYDEVICEADDED   => sub () { SDL_JOYAXISMOTION() + 5 } ],
+        [ SDL_JOYDEVICEREMOVED => sub () { SDL_JOYAXISMOTION() + 6 } ],
+        #
+        [ SDL_CONTROLLERAXISMOTION     => 0x650 ],
+        [ SDL_CONTROLLERBUTTONDOWN     => sub () { SDL_CONTROLLERAXISMOTION() + 1 } ],
+        [ SDL_CONTROLLERBUTTONUP       => sub () { SDL_CONTROLLERAXISMOTION() + 2 } ],
+        [ SDL_CONTROLLERDEVICEADDED    => sub () { SDL_CONTROLLERAXISMOTION() + 3 } ],
+        [ SDL_CONTROLLERDEVICEREMOVED  => sub () { SDL_CONTROLLERAXISMOTION() + 4 } ],
+        [ SDL_CONTROLLERDEVICEREMAPPED => sub () { SDL_CONTROLLERAXISMOTION() + 5 } ],
+        #
+        [ SDL_FINGERDOWN   => 0x700 ], [ SDL_FINGERUP => sub () { SDL_FINGERDOWN() + 1 } ],
+        [ SDL_FINGERMOTION => sub () { SDL_FINGERDOWN() + 2 } ],
+        #
+        [ SDL_DOLLARGESTURE => 0x800 ], [ SDL_DOLLARRECORD => sub () { SDL_DOLLARGESTURE() + 1 } ],
+        [ SDL_MULTIGESTURE  => sub () { SDL_DOLLARGESTURE() + 2 } ],
+        #
+        [ SDL_CLIPBOARDUPDATE => 0x900 ],
+        #
+        [ SDL_DROPFILE     => 0x1000 ], [ SDL_DROPTEXT => sub () { SDL_DROPFILE() + 1 } ],
+        [ SDL_DROPBEGIN    => sub () { SDL_DROPFILE() + 2 } ],
+        [ SDL_DROPCOMPLETE => sub () { SDL_DROPFILE() + 3 } ],
+        #
+        [ SDL_AUDIODEVICEADDED   => 0x1100 ],
+        [ SDL_AUDIODEVICEREMOVED => sub () { SDL_AUDIODEVICEADDED() + 1 } ],
+        #
+        [ SDL_SENSORUPDATE => 0x1200 ],
+        #
+        [ SDL_RENDER_TARGETS_RESET => 0x2000 ],
+        [ SDL_RENDER_DEVICE_RESET  => sub () { SDL_RENDER_TARGETS_RESET() + 1 } ],
+        #
+        [ SDL_USEREVENT => 0x8000 ],
+        #
+        [ SDL_LASTEVENT => 0xFFFF ],
+    ];
     #
-    sub SDL_QUIT ()                   {0x100}              # /**< User-requested quit */
-    sub SDL_APP_TERMINATING ()        { SDL_QUIT() + 1 }
-    sub SDL_APP_LOWMEMORY ()          { SDL_QUIT() + 2 }
-    sub SDL_APP_WILLENTERBACKGROUND() { SDL_QUIT() + 3 }
-    sub SDL_APP_DIDENTERBACKGROUND () { SDL_QUIT() + 4 }
-    sub SDL_APP_WILLENTERFOREGROUND() { SDL_QUIT() + 5 }
-    sub SDL_APP_DIDENTERFOREGROUND()  { SDL_QUIT() + 6 }
-    #
-    sub SDL_DISPLAYEVENT () {0x150}
-    #
-    sub SDL_WINDOWEVENT () {0x200}
-    sub SDL_SYSWMEVENT ()  { SDL_WINDOWEVENT() + 1 }
-    #
-    sub SDL_KEYDOWN ()       {0x300}
-    sub SDL_KEYUP ()         { SDL_KEYDOWN() + 1 }
-    sub SDL_TEXTEDITING ()   { SDL_KEYDOWN() + 2 }
-    sub SDL_TEXTINPUT ()     { SDL_KEYDOWN() + 3 }
-    sub SDL_KEYMAPCHANGED () { SDL_KEYDOWN() + 4 }
-    #
-    sub SDL_MOUSEMOTION ()    {0x400}
-    sub SDL_MOUSEBUTTONDOWN() { SDL_MOUSEMOTION() + 1 }
-    sub SDL_MOUSEBUTTONUP()   { SDL_MOUSEMOTION() + 2 }
-    sub SDL_MOUSEWHEEL()      { SDL_MOUSEMOTION() + 3 }
-    #
-    sub SDL_JOYAXISMOTION ()   {0x600}
-    sub SDL_JOYBALLMOTION()    { SDL_JOYAXISMOTION() + 1 }
-    sub SDL_JOYHATMOTION()     { SDL_JOYAXISMOTION() + 2 }
-    sub SDL_JOYBUTTONDOWN()    { SDL_JOYAXISMOTION() + 3 }
-    sub SDL_JOYBUTTONUP()      { SDL_JOYAXISMOTION() + 4 }
-    sub SDL_JOYDEVICEADDED()   { SDL_JOYAXISMOTION() + 5 }
-    sub SDL_JOYDEVICEREMOVED() { SDL_JOYAXISMOTION() + 6 }
-    #
-    sub SDL_CONTROLLERAXISMOTION ()    {0x650}
-    sub SDL_CONTROLLERBUTTONDOWN()     { SDL_CONTROLLERAXISMOTION() + 1 }
-    sub SDL_CONTROLLERBUTTONUP()       { SDL_CONTROLLERAXISMOTION() + 2 }
-    sub SDL_CONTROLLERDEVICEADDED()    { SDL_CONTROLLERAXISMOTION() + 3 }
-    sub SDL_CONTROLLERDEVICEREMOVED()  { SDL_CONTROLLERAXISMOTION() + 4 }
-    sub SDL_CONTROLLERDEVICEREMAPPED() { SDL_CONTROLLERAXISMOTION() + 5 }
-    #
-    sub SDL_FINGERDOWN ()  {0x700}
-    sub SDL_FINGERUP()     { SDL_FINGERDOWN() + 1 }
-    sub SDL_FINGERMOTION() { SDL_FINGERDOWN() + 2 }
-    #
-    sub SDL_DOLLARGESTURE () {0x800}
-    sub SDL_DOLLARRECORD()   { SDL_DOLLARGESTURE() + 1 }
-    sub SDL_MULTIGESTURE()   { SDL_DOLLARGESTURE() + 2 }
-    #
-    sub SDL_CLIPBOARDUPDATE () {0x900}
-    #
-    sub SDL_DROPFILE ()    {0x1000}
-    sub SDL_DROPTEXT()     { SDL_DROPFILE() + 1 }
-    sub SDL_DROPBEGIN()    { SDL_DROPFILE() + 2 }
-    sub SDL_DROPCOMPLETE() { SDL_DROPFILE() + 3 }
-    #
-    sub SDL_AUDIODEVICEADDED ()  {0x1100}
-    sub SDL_AUDIODEVICEREMOVED() { SDL_AUDIODEVICEADDED() + 1 }
-    #
-    sub SDL_SENSORUPDATE () {0x1200}
-    #
-    sub SDL_RENDER_TARGETS_RESET () {0x2000}
-    sub SDL_RENDER_DEVICE_RESET()   { SDL_RENDER_TARGETS_RESET() + 1 }
-    #
-    sub SDL_USEREVENT () {0x8000}
-    #
-    sub SDL_LASTEVENT () {0xFFFF}
-    #
+    package SDL2::CommonEvent { };
     FFI::C::StructDef->new(
         $ffi,
         name    => 'SDL_CommonEvent',
         class   => 'SDL2::CommonEvent',
         members => [ type => 'uint32', timestamp => 'uint32' ]
     );
+
+    package SDL2::DisplayEvent { };
     FFI::C::StructDef->new(
         $ffi,
         name    => 'SDL_DisplayEvent',
@@ -1570,6 +1442,8 @@ END
             data1     => 'sint32'
         ]
     );
+
+    package SDL2::WindowEvent { };
     FFI::C::StructDef->new(
         $ffi,
         name    => 'SDL_WindowEvent',
@@ -1586,6 +1460,8 @@ END
             data2     => 'sint32'
         ]
     );
+
+    package SDL2::KeyboardEvent { };
     FFI::C::StructDef->new(
         $ffi,
         name    => 'SDL_KeyboardEvent',
@@ -1602,6 +1478,8 @@ END
         ]
     );
     sub SDL_TEXTEDITINGEVENT_TEXT_SIZE () {32}
+
+    package SDL2::TextEditingEvent { };
     FFI::C::StructDef->new(
         $ffi,
         name    => 'SDL_TextEditingEvent',
@@ -1616,6 +1494,8 @@ END
         ]
     );
     sub SDL_TEXTINPUTEVENT_TEXT_SIZE () {32}
+
+    package SDL2::TextInputEvent { };
     FFI::C::StructDef->new(
         $ffi,
         name    => 'SDL_TextInputEvent',
@@ -1627,6 +1507,8 @@ END
             text      => 'char[' . SDL_TEXTEDITINGEVENT_TEXT_SIZE . ']'
         ]
     );
+
+    package SDL2::MouseMotionEvent { };
     FFI::C::StructDef->new(
         $ffi,
         name    => 'SDL_MouseMotionEvent',
@@ -1643,6 +1525,8 @@ END
             yrel      => 'sint32'
         ]
     );
+
+    package SDL2::MouseButtonEvent { };
     FFI::C::StructDef->new(
         $ffi,
         name    => 'SDL_MouseButtonEvent',
@@ -1660,6 +1544,8 @@ END
             y         => 'sint32'
         ]
     );
+
+    package SDL2::MouseWheelEvent { };
     FFI::C::StructDef->new(
         $ffi,
         name    => 'SDL_MouseWheelEvent',
@@ -1674,6 +1560,8 @@ END
             direction => 'uint32'
         ]
     );
+
+    package SDL2::JoyAxisEvent { };
     FFI::C::StructDef->new(
         $ffi,
         name    => 'SDL_JoyAxisEvent',
@@ -1689,6 +1577,8 @@ END
             padding4  => 'uint16'
         ]
     );
+
+    package SDL2::JoyBallEvent { };
     FFI::C::StructDef->new(
         $ffi,
         name    => 'SDL_JoyBallEvent',
@@ -1704,6 +1594,8 @@ END
             yrel      => 'uint16',
         ]
     );
+
+    package SDl2::JoyHatEvent { };
     FFI::C::StructDef->new(
         $ffi,
         name    => 'SDL_JoyHatEvent',
@@ -1718,6 +1610,8 @@ END
             padding2  => 'uint8'
         ]
     );
+
+    package SDL2::JoyButtonEvent { };
     FFI::C::StructDef->new(
         $ffi,
         name    => 'SDL_JoyButtonEvent',
@@ -1732,12 +1626,16 @@ END
             padding2  => 'uint8'
         ]
     );
+
+    package SDL2::JoyDeviceEvent { };
     FFI::C::StructDef->new(
         $ffi,
         name    => 'SDL_JoyDeviceEvent',
         class   => 'SDL2::JoyDeviceEvent',
         members => [ type => 'uint32', timestamp => 'uint32', which => 'sint32' ]
     );
+
+    package SDL2::ControllerAxisEvent { };
     FFI::C::StructDef->new(
         $ffi,
         name    => 'SDL_ControllerAxisEvent',
@@ -1754,6 +1652,8 @@ END
             padding4  => 'uint8'
         ]
     );
+
+    package SDL2::ControllerButtonEvent { };
     FFI::C::StructDef->new(
         $ffi,
         name    => 'SDL_ControllerButtonEvent',
@@ -1768,12 +1668,16 @@ END
             padding2  => 'uint8',
         ]
     );
+
+    package SDL2::ControllerDeviceEvent { };
     FFI::C::StructDef->new(
         $ffi,
         name    => 'SDL_ControllerDeviceEvent',
         class   => 'SDL2::ControllerDeviceEvent',
         members => [ type => 'uint32', timestamp => 'uint32', which => 'sint32' ]
     );
+
+    package SDL2::AudioDeviceEvent { };
     FFI::C::StructDef->new(
         $ffi,
         name    => 'SDL_AudioDeviceEvent',
@@ -1788,6 +1692,8 @@ END
             padding3  => 'uint8'
         ]
     );
+
+    package SDL2::TouchFingerEvent { };
     FFI::C::StructDef->new(
         $ffi,
         name    => 'SDL_TouchFingerEvent',
@@ -1804,6 +1710,8 @@ END
             pressure  => 'float'
         ]
     );
+
+    package SDL2::MultiGestureEvent { };
     FFI::C::StructDef->new(
         $ffi,
         name    => 'SDL_MultiGestureEvent',
@@ -1820,6 +1728,8 @@ END
             padding    => 'uint16'
         ]
     );
+
+    package SDL2::DollarGestureEvent { };
     FFI::C::StructDef->new(
         $ffi,
         name    => 'SDL_DollarGestureEvent',
@@ -1835,6 +1745,8 @@ END
             y          => 'float'
         ]
     );
+
+    package SDL2::DropEvent { };
     FFI::C::StructDef->new(
         $ffi,
         name    => 'SDL_DropEvent',
@@ -1842,6 +1754,8 @@ END
         members =>
             [ type => 'uint32', timestamp => 'uint32', file => 'char[256]', windowID => 'uint32' ]
     );
+
+    package SDL2::SensorEvent { };
     FFI::C::StructDef->new(
         $ffi,
         name    => 'SDL_SensorEvent',
@@ -1849,18 +1763,24 @@ END
         members =>
             [ type => 'uint32', timestamp => 'uint32', which => 'sint32', data => 'float[6]' ]
     );
+
+    package SDL2::QuitEvent { };
     FFI::C::StructDef->new(
         $ffi,
         name    => 'SDL_QuitEvent',
         class   => 'SDL2::QuitEvent',
         members => [ type => 'uint32', timestamp => 'uint32', ]
     );
+
+    package SDL2::OSEvent { };
     FFI::C::StructDef->new(
         $ffi,
         name    => 'SDL_OSEvent',
         class   => 'SDL2::OSEvent',
         members => [ type => 'uint32', timestamp => 'uint32', ]
     );
+
+    package SDL2::UserEvent { };
     FFI::C::StructDef->new(
         $ffi,
         name    => 'SDL_UserEvent',
@@ -1874,12 +1794,16 @@ END
             data2     => 'opaque',    # void *
         ]
     );
+
+    package SDL2::SysWMmsg { };
     FFI::C::StructDef->new(
         $ffi,
         name    => 'SDL_SysWMmsg',
         class   => 'SDL2::SysWMmsg',
         members => []
     );
+
+    package SDL2::SysWMEvent { };
     FFI::C::StructDef->new(
         $ffi,
         name    => 'SDL_SysWMEvent',
@@ -1891,6 +1815,8 @@ END
         ]
     );
     use FFI::C::UnionDef;
+
+    package SDL2::Event { };
     FFI::C::UnionDef->new(
         $ffi,
         name    => 'SDL_Event',
@@ -1934,22 +1860,24 @@ END
                 SDL_GETEVENT]
         ]
     );
-    $ffi->attach(
-        SDL_PeepEvents => [ 'SDL_Event', 'int', 'SDL_eventaction', 'uint32', 'uint32' ] => 'int' );
-    $ffi->attach( SDL_HasEvent         => ['uint32']             => 'bool' );
-    $ffi->attach( SDL_HasEvents        => [ 'uint32', 'uint32' ] => 'bool' );
-    $ffi->attach( SDL_FlushEvent       => ['uint32'] );
-    $ffi->attach( SDL_FlushEvents      => [ 'uint32', 'uint32' ] );
-    $ffi->attach( SDL_PollEvent        => ['SDL_Event']          => 'int' );
-    $ffi->attach( SDL_WaitEvent        => ['SDL_Event']          => 'int' );
-    $ffi->attach( SDL_WaitEventTimeout => [ 'SDL_Event', 'int' ] => 'int' );
-    $ffi->attach( SDL_PushEvent        => ['SDL_Event']          => 'int' );
     $ffi->type( '(opaque, opaque)->int' => 'SDL_EventFilter' );
-    $ffi->attach( SDL_SetEventFilter => [ 'SDL_EventFilter', 'opaque' ] );
-    $ffi->attach( SDL_GetEventFilter => [ 'SDL_EventFilter', 'opaque' ] => 'bool' );
-    $ffi->attach( SDL_AddEventWatch  => [ 'SDL_EventFilter', 'opaque' ] );
-    $ffi->attach( SDL_DelEventWatch  => [ 'SDL_EventFilter', 'opaque' ] );
-    $ffi->attach( SDL_FilterEvents   => [ 'SDL_EventFilter', 'opaque' ] );
+    attach events => {
+        SDL_PeepEvents =>
+            [ [ 'SDL_Event', 'int', 'SDL_eventaction', 'uint32', 'uint32' ] => 'int' ],
+        SDL_HasEvent         => [ ['uint32']             => 'bool' ],
+        SDL_HasEvents        => [ [ 'uint32', 'uint32' ] => 'bool' ],
+        SDL_FlushEvent       => [ ['uint32'] ],
+        SDL_FlushEvents      => [ [ 'uint32', 'uint32' ] ],
+        SDL_PollEvent        => [ ['SDL_Event']          => 'int' ],
+        SDL_WaitEvent        => [ ['SDL_Event']          => 'int' ],
+        SDL_WaitEventTimeout => [ [ 'SDL_Event', 'int' ] => 'int' ],
+        SDL_PushEvent        => [ ['SDL_Event']          => 'int' ],
+        SDL_SetEventFilter   => [ [ 'SDL_EventFilter', 'opaque' ] ],
+        SDL_GetEventFilter   => [ [ 'SDL_EventFilter', 'opaque' ] => 'bool' ],
+        SDL_AddEventWatch    => [ [ 'SDL_EventFilter', 'opaque' ] ],
+        SDL_DelEventWatch    => [ [ 'SDL_EventFilter', 'opaque' ] ],
+        SDL_FilterEvents     => [ [ 'SDL_EventFilter', 'opaque' ] ]
+    };
     #
     sub SDL_QUERY ()   {-1}
     sub SDL_IGNORE ()  {0}
@@ -1961,6 +1889,7 @@ END
     $ffi->attach( SDL_RegisterEvents => ['int'] => 'uint32' );
 
     # From src/events/SDL_mouse_c.h
+    package SDL2::Cursor { };
     FFI::C::StructDef->new(
         $ffi,
         name    => 'SDL_Cursor',
@@ -2014,17 +1943,6 @@ END
     $ffi->attach( SDL_GetDefaultCursor   => []      => 'SDL_Cursor' );
     $ffi->attach( SDL_FreeCursor         => []      => 'SDL_Cursor' );
     $ffi->attach( SDL_ShowCursor         => ['int'] => 'int' );
-    sub SDL_BUTTON ($X)      { ( 1 << ( ($X) - 1 ) ) }
-    sub SDL_BUTTON_LEFT ()   {1}
-    sub SDL_BUTTON_MIDDLE () {2}
-    sub SDL_BUTTON_RIGHT ()  {3}
-    sub SDL_BUTTON_X1 ()     {4}
-    sub SDL_BUTTON_X2 ()     {5}
-    sub SDL_BUTTON_LMASK ()  { SDL_BUTTON(SDL_BUTTON_LEFT) }
-    sub SDL_BUTTON_MMASK ()  { SDL_BUTTON(SDL_BUTTON_MIDDLE) }
-    sub SDL_BUTTON_RMASK ()  { SDL_BUTTON(SDL_BUTTON_RIGHT) }
-    sub SDL_BUTTON_X1MASK () { SDL_BUTTON(SDL_BUTTON_X1) }
-    sub SDL_BUTTON_X2MASK () { SDL_BUTTON(SDL_BUTTON_X2) }
 
     # https://wiki.libsdl.org/CategoryPixels
     sub SDL_ALPHA_OPAQUE()      {255}
@@ -2293,11 +2211,13 @@ END
         SDL_DEFINE_PIXELFORMAT( SDL_PIXELTYPE_PACKED32(), SDL_PACKEDORDER_BGRX(),
             SDL_PACKEDLAYOUT_8888(), 24, 4 );
     }
-
-    sub SDL_PIXELFORMAT_ARGB8888 () {
-        SDL_DEFINE_PIXELFORMAT( SDL_PIXELTYPE_PACKED32(), SDL_PACKEDORDER_ARGB(),
-            SDL_PACKEDLAYOUT_8888(), 32, 4 );
-    }
+    define pixel_format => [
+        [   SDL_PIXELFORMAT_ARGB8888 => sub () {
+                SDL_DEFINE_PIXELFORMAT( SDL_PIXELTYPE_PACKED32(), SDL_PACKEDORDER_ARGB(),
+                    SDL_PACKEDLAYOUT_8888(), 32, 4 );
+            }
+        ]
+    ];
 
     sub SDL_PIXELFORMAT_RGBA8888 () {
         SDL_DEFINE_PIXELFORMAT( SDL_PIXELTYPE_PACKED32(), SDL_PACKEDORDER_RGBA(),
@@ -2388,18 +2308,34 @@ END
             SDL_SetMainReady => [ [] => 'void' ]
         }
     );
+    define(
+        SDL_Mouse => [
+            [ SDL_BUTTON        => sub ($x) { 1 << ( ($x) - 1 ) } ],
+            [ SDL_BUTTON_LEFT   => 1 ],
+            [ SDL_BUTTON_MIDDLE => 2 ],
+            [ SDL_BUTTON_RIGHT  => 3 ],
+            [ SDL_BUTTON_X1     => 4 ],
+            [ SDL_BUTTON_X2     => 5 ],
+            [ SDL_BUTTON_LMASK  => sub () { SDL_BUTTON( SDL_BUTTON_LEFT() ); } ],
+            [ SDL_BUTTON_MMASK  => sub () { SDL_BUTTON( SDL_BUTTON_MIDDLE() ); } ],
+            [ SDL_BUTTON_RMASK  => sub () { SDL_BUTTON( SDL_BUTTON_RIGHT() ); } ],
+            [ SDL_BUTTON_X1MASK => sub () { SDL_BUTTON( SDL_BUTTON_X1() ); } ],
+            [ SDL_BUTTON_X2MASK => sub () { SDL_BUTTON( SDL_BUTTON_X2() ); } ]
+        ]
+    );
 
     #warn SDL2::SDLK_UP();
     #warn SDL2::SDLK_DOWN();
     # https://github.com/libsdl-org/SDL/blob/main/include/SDL_hints.h
     # Export symbols!
     our @EXPORT_OK = map {@$_} values %EXPORT_TAGS;
-#### REMOVE THIS BEFORE STABLE RELEASE!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! #####
-    #@EXPORT_OK = @EXPORT_OK, keys
-    #    %{ { map { $_ => 1 } grep {/^SDL_/} keys %SDL2::FFI::, map {@$_} values %EXPORT_TAGS } };
-####################################################################################################
-    $EXPORT_TAGS{default} = [];             # Export nothing by default
-    $EXPORT_TAGS{all}     = \@EXPORT_OK;    # Export everything with :all tag
+
+    #$EXPORT_TAGS{default} = [];             # Export nothing by default
+    $EXPORT_TAGS{all} = \@EXPORT_OK;    # Export everything with :all tag
+
+    #use Data::Dump;
+    #ddx \%EXPORT_TAGS;
+    #ddx \%SDL2::;
 }
 1;
 

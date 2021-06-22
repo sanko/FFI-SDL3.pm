@@ -1,6 +1,7 @@
 use strictures 2;
 use lib '../lib';
 use SDL2::FFI qw[:all];
+use Data::Dump;
 
 # https://gigi.nullneuron.net/gigilabs/drawing-lines-with-sdl2/
 my $quit  = 0;
@@ -8,11 +9,10 @@ my $event = SDL2::Event->new;
 SDL_Init(SDL_INIT_VIDEO);
 my $window = SDL_CreateWindow( "My SDL Empty Window",
     SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 640, 480, SDL_WINDOW_RESIZABLE );
-warn SDL_GetError();
 my $renderer = SDL_CreateRenderer( $window, -1, 0 );
-
+#
+#
 #die ref $renderer;
-warn SDL_GetError();
 my ( $y1, $y2, $x1, $x2 );
 my $drawing = 0;
 my @lines;
@@ -50,9 +50,7 @@ while ( !$quit ) {
     }
     if (@lines) {
         SDL_SetRenderDrawColor( $renderer, 128, 128, 128, 255 );
-        for my $line (@lines) {
-            SDL_RenderDrawLine( $renderer, $line->{x1}, $line->{y1}, $line->{x2}, $line->{y2} );
-        }
+        SDL_RenderDrawLine( $renderer, $_->{x1}, $_->{y1}, $_->{x2}, $_->{y2} ) for @lines;
     }
     SDL_RenderPresent($renderer);
 }

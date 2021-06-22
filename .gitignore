@@ -33,3 +33,14 @@ MYMETA.*
 .tidyall.d/
 /eg/39*
 /eg/_Inline
+
+# Current dev tinkering
+eg/audio.h
+eg/blah.c
+eg/h2xs.pl
+eg/hello_world.pl
+eg/inline_sdl2.pl
+eg/parse_headers.pl
+eg/scratch.pl
+eg/tempCodeRunnerFile.pl
+eg/SDL_WasInt.pl

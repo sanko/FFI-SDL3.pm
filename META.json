@@ -47,7 +47,7 @@
             "Data::Dump" : "0",
             "Exporter::Tiny" : "0",
             "FFI::C" : "0",
-            "FFI::Platypus" : "0",
+            "FFI::Platypus" : "1.46",
             "File::ShareDir" : "0",
             "File::Spec::Functions" : "0",
             "perl" : "5.02000",

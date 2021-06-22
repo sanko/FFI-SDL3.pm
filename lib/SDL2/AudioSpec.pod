@@ -6,7 +6,7 @@ SDL2::AudioSpec - The Structure that Defines a Point with Integers
 
 =head1 SYNOPSIS
 
-    use SDL2::FFI qw[:all];
+    use SDL2 qw[:all];
     # TODO: I need to whip up a quick example
 
 =head1 DESCRIPTION
@@ -39,7 +39,7 @@ For multi-channel audio, the default SDL channel mapping is:
 
 =item C<samples> - Audio buffer size in sample FRAMES (total samples divided by channel count)
 
-=item C<padding> - Necessary for some complile environments
+=item C<padding> - Necessary for some compile environments
 
 =item C<size> - Audio buffer size in bytes (calculated)
 

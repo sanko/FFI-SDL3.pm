@@ -6,7 +6,7 @@ SDL2::Rect - A Rectangle with the Origin at the Upper Left in Integers
 
 =head1 SYNOPSIS
 
-    use SDL2::FFI qw[:all];
+    use SDL2 qw[:all];
     my $rect = SDL2::Rect->new( { x => 1, y => 1, w => 100, h => 100 } );
 
 =head1 DESCRIPTION
@@ -19,7 +19,7 @@ Sanko Robinson E<lt>sanko@cpan.orgE<gt>
 
 =begin stopwords
 
- 
+
 
 =end stopwords
 

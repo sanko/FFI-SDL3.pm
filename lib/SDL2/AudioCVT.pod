@@ -6,7 +6,7 @@ SDL2::AudioCVT - The Structure that Holds a Set of Audio Conversion Filters
 
 =head1 SYNOPSIS
 
-    use SDL2::FFI qw[:all];
+    use SDL2 qw[:all];
     # TODO: I need to whip up a quick example
 
 =head1 DESCRIPTION
@@ -15,9 +15,9 @@ SDL2::AudioCVT is a structure to hold a set of audio conversion filters and
 buffers.
 
 Note that various parts of the conversion pipeline can take advantage of SIMD
-operations (like SSE2, for example). SDL::AudioCVT doesn't require you to pass
-it aligned data, but can possibly run much faster if you set both its (buf)
-field to a pointer that is aligned to 16 bytes, and its (len) field to
+operations (like SSE2, for example). SDL2::AudioCVT doesn't require you to pass
+it aligned data, but can possibly run much faster if you set both its (C<buf>)
+field to a pointer that is aligned to 16 bytes, and its (C<len>) field to
 something that's a multiple of 16, if possible.
 
 =head1 Fields
@@ -40,7 +40,7 @@ something that's a multiple of 16, if possible.
 
 =item C<len_mult> - Buffer must be C<len * len_mult> big
 
-=item C<len_ratio> - Given len, final size is C<len * len_ratio>
+=item C<len_ratio> - Given C<len>, final size is C<len * len_ratio>
 
 =item C<filters> - List of filter functions
 
