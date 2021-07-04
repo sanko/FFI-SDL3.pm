@@ -2,4 +2,6 @@ Revision history for Perl extension SDL2::FFI
 
 {{$NEXT}}
 
+0.01 2021-07-04T06:05:40Z
+
     - original version; not for broad use
