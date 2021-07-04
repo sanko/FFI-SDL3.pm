@@ -1595,7 +1595,7 @@ END
         ]
     );
 
-    package SDl2::JoyHatEvent { };
+    package SDL2::JoyHatEvent { };
     FFI::C::StructDef->new(
         $ffi,
         name    => 'SDL_JoyHatEvent',
