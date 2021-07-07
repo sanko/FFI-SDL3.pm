@@ -1,4 +1,4 @@
-package SDL2::FFI 0.01 {
+package SDL2::FFI 0.02 {
 
     # ABSTRACT: FFI Wrapper for SDL (Simple DirectMedia Layer) Development Library
     use strictures 2;
