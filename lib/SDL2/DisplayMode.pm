@@ -1,3 +1,13 @@
+# https://github.com/libsdl-org/SDL/blob/main/include/SDL_video.h
+package SDL2::DisplayMode {
+    use SDL2::Utils;
+    has
+        format       => 'uint32',
+        w            => 'int',
+        h            => 'int',
+        refresh_rate => 'int',
+        driverdata   => 'opaque';
+
 =encoding utf-8
 
 =head1 NAME
@@ -43,3 +53,6 @@ Sanko Robinson E<lt>sanko@cpan.orgE<gt>
 =end stopwords
 
 =cut
+
+};
+1;

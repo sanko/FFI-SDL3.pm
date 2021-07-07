@@ -1,3 +1,7 @@
+package SDL2::Rect {
+    use SDL2::Utils;
+    has x => 'int', y => 'int', w => 'int', h => 'int';
+
 =encoding utf-8
 
 =head1 NAME
@@ -24,3 +28,6 @@ Sanko Robinson E<lt>sanko@cpan.orgE<gt>
 =end stopwords
 
 =cut
+
+};
+1;

@@ -1,340 +1,237 @@
-package SDL2::FFI 0.02 {
+package SDL2::FFI 0.03 {
+    use lib '../lib', 'lib', '/home/sanko/Projects/SDL2.pm/lib';
 
     # ABSTRACT: FFI Wrapper for SDL (Simple DirectMedia Layer) Development Library
     use strictures 2;
+    use SDL2::Utils;
     #
     $|++;
+    our %EXPORT_TAGS;
 
     #use Carp::Always;
     #$ENV{FFI_PLATYPUS_DLERROR} = 1;
     #
-    use FFI::CheckLib;
-    use FFI::Platypus 1.46;
-    use FFI::C;
-
-    #use FFI::C::StructDef;
-    use FFI::Platypus::Memory qw[malloc strcpy free];
-    use FFI::C::ArrayDef;
-    use FFI::Platypus::Closure;
     #
     use experimental 'signatures';
     use base 'Exporter::Tiny';
-    use Alien::libsdl2;
     #
-    my $ffi = FFI::Platypus->new( api => 1, experimental => 2,
-        lib => [ Alien::libsdl2->dynamic_libs ] );
-    FFI::C->ffi($ffi);
     use Config;
     my $bigendian = $Config{byteorder} != 4321;
 
     # I need these first
-    package SDL2::version { };
-    class( SDL_version => [ major => 'uint8', minor => 'uint8', patch => 'uint8' ] );
+    use SDL2::version;
     attach( version => { SDL_GetVersion => [ ['SDL_version'] ] } );
     #
-    SDL_GetVersion( my $ver = SDL2::Version->new() );
+    SDL_GetVersion( my $ver = SDL2::version->new() );
     my $platform = $^O;                            # https://perldoc.perl.org/perlport#PLATFORMS
     my $Windows  = !!( $platform eq 'MSWin32' );
     #
-    # Export symbols!
-    our %EXPORT_TAGS;
-
-    # Sugar
-    sub deprecate ($str) {
-        warnings::warn( 'deprecated', $str ) if warnings::enabled('deprecated');
-    }
-
-    sub define (%args) {
-        for my $tag ( keys %args ) {
-
-            #print $_->[0] . ' ' for sort { $a->[0] cmp $b->[0] } @{ $Defines{$tag} };
-            no strict 'refs';
-            ref $_->[1] eq 'CODE' ? *{ __PACKAGE__ . '::' . $_->[0] } = $_->[1] :
-                constant->import( $_->[0] => $_->[1] )
-                for @{ $args{$tag} };
-
-            #constant->import( $_ => $_ ) for @{ $Defines{$tag} };
-            $EXPORT_TAGS{ lc substr $tag, 4 }
-                = [ sort map { ref $_ ? $_->[0] : $_ } @{ $args{$tag} } ];
-        }
-    }
-
-    sub enum (%args) {
-        for my $tag ( keys %args ) {
-            FFI::C->enum( $tag => $args{$tag} );
-            $EXPORT_TAGS{ lc substr $tag, 4 }
-                = [ sort map { ref $_ ? ref $_ eq 'CODE' ? $_->() : $_->[0] : $_ }
-                    @{ $args{$tag} } ];
-        }
-    }
-
-    sub attach (%args) {
-        for my $tag ( sort keys %args ) {
-            for my $func ( sort keys %{ $args{$tag} } ) {
-
-                #warn sprintf '$ffi->attach( %s => %s);', $func,
-                #    Data::Dump::dump( @{ $args{$tag}{$func} } )
-                #    if ref $args{$tag}{$func}[1] && ref $args{$tag}{$func}[1] eq 'ARRAY';
-                $ffi->attach( $func => @{ $args{$tag}{$func} } );
-                push @{ $EXPORT_TAGS{$tag} }, $func;
-            }
-        }
-    }
-
-    sub class (%args) {
-        for my $name ( keys %args ) {
-            my $class = $name;
-            $class =~ s[^SDL_(.+)$]['SDL2::' . ucfirst $1]e;
-
-            #warn sprintf '%-20s => %-20s%s', $name, $class, (
-            #    -f sub ($package) { $package =~ m[::(.+)]; './lib/SDL2/' . $1 . '.pod' }
-            #        ->($class) ? '' : ' (undocumented)'
-            #);
-            FFI::C::StructDef->new(
-                $ffi,
-                name     => $name,
-                class    => $class,
-                members  => $args{$name},
-                nullable => 1
-            );
-        }
-    }
+    use SDL2::Point;
+    use SDL2::FPoint;
+    use SDL2::FRect;
+    use SDL2::Rect;
+    use SDL2::DisplayMode;
+    use SDL2::Surface;
+    use SDL2::Window;
     #
-    enum(
+    enum
+
         # https://github.com/libsdl-org/SDL/blob/main/include/SDL_hints.h
         SDL_HintPriority => [qw[SDL_HINT_DEFAULT SDL_HINT_NORMAL SDL_HINT_OVERRIDE]],
         SDL_LogCategory  => [
-            qw[
-                SDL_LOG_CATEGORY_APPLICATION SDL_LOG_CATEGORY_ERROR SDL_LOG_CATEGORY_ASSERT
-                SDL_LOG_CATEGORY_SYSTEM      SDL_LOG_CATEGORY_AUDIO SDL_LOG_CATEGORY_VIDEO
-                SDL_LOG_CATEGORY_RENDER      SDL_LOG_CATEGORY_INPUT SDL_LOG_CATEGORY_TEST
-                SDL_LOG_CATEGORY_RESERVED1   SDL_LOG_CATEGORY_RESERVED2
-                SDL_LOG_CATEGORY_RESERVED3   SDL_LOG_CATEGORY_RESERVED4
-                SDL_LOG_CATEGORY_RESERVED5   SDL_LOG_CATEGORY_RESERVED6
-                SDL_LOG_CATEGORY_RESERVED7   SDL_LOG_CATEGORY_RESERVED8
-                SDL_LOG_CATEGORY_RESERVED9   SDL_LOG_CATEGORY_RESERVED10
-                SDL_LOG_CATEGORY_CUSTOM
-            ]
+        qw[
+            SDL_LOG_CATEGORY_APPLICATION SDL_LOG_CATEGORY_ERROR SDL_LOG_CATEGORY_ASSERT
+            SDL_LOG_CATEGORY_SYSTEM      SDL_LOG_CATEGORY_AUDIO SDL_LOG_CATEGORY_VIDEO
+            SDL_LOG_CATEGORY_RENDER      SDL_LOG_CATEGORY_INPUT SDL_LOG_CATEGORY_TEST
+            SDL_LOG_CATEGORY_RESERVED1   SDL_LOG_CATEGORY_RESERVED2
+            SDL_LOG_CATEGORY_RESERVED3   SDL_LOG_CATEGORY_RESERVED4
+            SDL_LOG_CATEGORY_RESERVED5   SDL_LOG_CATEGORY_RESERVED6
+            SDL_LOG_CATEGORY_RESERVED7   SDL_LOG_CATEGORY_RESERVED8
+            SDL_LOG_CATEGORY_RESERVED9   SDL_LOG_CATEGORY_RESERVED10
+            SDL_LOG_CATEGORY_CUSTOM
+        ]
         ],
         SDL_LogPriority => [
-            [ SDL_LOG_PRIORITY_VERBOSE => 1 ], qw[SDL_LOG_PRIORITY_DEBUG SDL_LOG_PRIORITY_INFO
-                SDL_LOG_PRIORITY_WARN SDL_LOG_PRIORITY_ERROR SDL_LOG_PRIORITY_CRITICAL
-                SDL_NUM_LOG_PRIORITIES]
-        ],
-    );
-    define(
-        SDL_Init => [
-            [ SDL_INIT_TIMER          => 0x00000001 ],
-            [ SDL_INIT_AUDIO          => 0x00000010 ],
-            [ SDL_INIT_VIDEO          => 0x00000020 ],
-            [ SDL_INIT_JOYSTICK       => 0x00000200 ],
-            [ SDL_INIT_HAPTIC         => 0x00001000 ],
-            [ SDL_INIT_GAMECONTROLLER => 0x00002000 ],
-            [ SDL_INIT_EVENTS         => 0x00004000 ],
-            [ SDL_INIT_SENSOR         => 0x00008000 ],
-            [ SDL_INIT_NOPARACHUTE    => 0x00100000 ],
-            [   SDL_INIT_EVERYTHING => sub {
-                    SDL_INIT_TIMER() | SDL_INIT_AUDIO() | SDL_INIT_VIDEO() | SDL_INIT_EVENTS()
-                        | SDL_INIT_JOYSTICK() | SDL_INIT_HAPTIC() | SDL_INIT_GAMECONTROLLER()
-                        | SDL_INIT_SENSOR();
-                }
-            ]
+        [ SDL_LOG_PRIORITY_VERBOSE => 1 ], qw[SDL_LOG_PRIORITY_DEBUG SDL_LOG_PRIORITY_INFO
+            SDL_LOG_PRIORITY_WARN SDL_LOG_PRIORITY_ERROR SDL_LOG_PRIORITY_CRITICAL
+            SDL_NUM_LOG_PRIORITIES]
+        ];
+    define SDL_Init => [
+        [ SDL_INIT_TIMER          => 0x00000001 ],
+        [ SDL_INIT_AUDIO          => 0x00000010 ],
+        [ SDL_INIT_VIDEO          => 0x00000020 ],
+        [ SDL_INIT_JOYSTICK       => 0x00000200 ],
+        [ SDL_INIT_HAPTIC         => 0x00001000 ],
+        [ SDL_INIT_GAMECONTROLLER => 0x00002000 ],
+        [ SDL_INIT_EVENTS         => 0x00004000 ],
+        [ SDL_INIT_SENSOR         => 0x00008000 ],
+        [ SDL_INIT_NOPARACHUTE    => 0x00100000 ],
+        [   SDL_INIT_EVERYTHING => sub {
+                SDL_INIT_TIMER() | SDL_INIT_AUDIO() | SDL_INIT_VIDEO() | SDL_INIT_EVENTS()
+                    | SDL_INIT_JOYSTICK() | SDL_INIT_HAPTIC() | SDL_INIT_GAMECONTROLLER()
+                    | SDL_INIT_SENSOR();
+            }
+        ]
         ],
 
         # https://github.com/libsdl-org/SDL/blob/main/include/SDL_hints.h
         SDL_Hint => [
-            [ SDL_HINT_ACCELEROMETER_AS_JOYSTICK   => 'SDL_ACCELEROMETER_AS_JOYSTICK' ],
-            [ SDL_HINT_ALLOW_ALT_TAB_WHILE_GRABBED => 'SDL_ALLOW_ALT_TAB_WHILE_GRABBED' ],
-            [ SDL_HINT_ALLOW_TOPMOST               => 'SDL_ALLOW_TOPMOST' ],
-            [   SDL_HINT_ANDROID_APK_EXPANSION_MAIN_FILE_VERSION =>
-                    'SDL_ANDROID_APK_EXPANSION_MAIN_FILE_VERSION'
-            ],
-            [   SDL_HINT_ANDROID_APK_EXPANSION_PATCH_FILE_VERSION =>
-                    'SDL_ANDROID_APK_EXPANSION_PATCH_FILE_VERSION'
-            ],
-            [ SDL_HINT_ANDROID_BLOCK_ON_PAUSE => 'SDL_ANDROID_BLOCK_ON_PAUSE' ],
-            [   SDL_HINT_ANDROID_BLOCK_ON_PAUSE_PAUSEAUDIO =>
-                    'SDL_ANDROID_BLOCK_ON_PAUSE_PAUSEAUDIO'
-            ],
-            [ SDL_HINT_ANDROID_SEPARATE_MOUSE_AND_TOUCH => 'SDL_ANDROID_SEPARATE_MOUSE_AND_TOUCH' ],
-            [ SDL_HINT_ANDROID_TRAP_BACK_BUTTON         => 'SDL_ANDROID_TRAP_BACK_BUTTON' ],
-            [ SDL_HINT_APPLE_TV_CONTROLLER_UI_EVENTS    => 'SDL_APPLE_TV_CONTROLLER_UI_EVENTS' ],
-            [ SDL_HINT_APPLE_TV_REMOTE_ALLOW_ROTATION   => 'SDL_APPLE_TV_REMOTE_ALLOW_ROTATION' ],
-            [ SDL_HINT_AUDIO_CATEGORY                   => 'SDL_AUDIO_CATEGORY' ],
-            [ SDL_HINT_AUDIO_DEVICE_APP_NAME            => 'SDL_AUDIO_DEVICE_APP_NAME' ],
-            [ SDL_HINT_AUDIO_DEVICE_STREAM_NAME         => 'SDL_AUDIO_DEVICE_STREAM_NAME' ],
-            [ SDL_HINT_AUDIO_DEVICE_STREAM_ROLE         => 'SDL_AUDIO_DEVICE_STREAM_ROLE' ],
-            [ SDL_HINT_AUDIO_RESAMPLING_MODE            => 'SDL_AUDIO_RESAMPLING_MODE' ],
-            [ SDL_HINT_AUTO_UPDATE_JOYSTICKS            => 'SDL_AUTO_UPDATE_JOYSTICKS' ],
-            [ SDL_HINT_AUTO_UPDATE_SENSORS              => 'SDL_AUTO_UPDATE_SENSORS' ],
-            [ SDL_HINT_BMP_SAVE_LEGACY_FORMAT           => 'SDL_BMP_SAVE_LEGACY_FORMAT' ],
-            [ SDL_HINT_DISPLAY_USABLE_BOUNDS            => 'SDL_DISPLAY_USABLE_BOUNDS' ],
-            [ SDL_HINT_EMSCRIPTEN_ASYNCIFY              => 'SDL_EMSCRIPTEN_ASYNCIFY' ],
-            [ SDL_HINT_EMSCRIPTEN_KEYBOARD_ELEMENT      => 'SDL_EMSCRIPTEN_KEYBOARD_ELEMENT' ],
-            [ SDL_HINT_ENABLE_STEAM_CONTROLLERS         => 'SDL_ENABLE_STEAM_CONTROLLERS' ],
-            [ SDL_HINT_EVENT_LOGGING                    => 'SDL_EVENT_LOGGING' ],
-            [ SDL_HINT_FRAMEBUFFER_ACCELERATION         => 'SDL_FRAMEBUFFER_ACCELERATION' ],
-            [ SDL_HINT_GAMECONTROLLERCONFIG             => 'SDL_GAMECONTROLLERCONFIG' ],
-            [ SDL_HINT_GAMECONTROLLERCONFIG_FILE        => 'SDL_GAMECONTROLLERCONFIG_FILE' ],
-            [ SDL_HINT_GAMECONTROLLERTYPE               => 'SDL_GAMECONTROLLERTYPE' ],
-            [ SDL_HINT_GAMECONTROLLER_IGNORE_DEVICES    => 'SDL_GAMECONTROLLER_IGNORE_DEVICES' ],
-            [   SDL_HINT_GAMECONTROLLER_IGNORE_DEVICES_EXCEPT =>
-                    'SDL_GAMECONTROLLER_IGNORE_DEVICES_EXCEPT'
-            ],
-            [ SDL_HINT_GAMECONTROLLER_USE_BUTTON_LABELS => 'SDL_GAMECONTROLLER_USE_BUTTON_LABELS' ],
-            [ SDL_HINT_GRAB_KEYBOARD                    => 'SDL_GRAB_KEYBOARD' ],
-            [ SDL_HINT_IDLE_TIMER_DISABLED              => 'SDL_IDLE_TIMER_DISABLED' ],
-            [ SDL_HINT_IME_INTERNAL_EDITING             => 'SDL_IME_INTERNAL_EDITING' ],
-            [ SDL_HINT_IOS_HIDE_HOME_INDICATOR          => 'SDL_IOS_HIDE_HOME_INDICATOR' ],
-            [ SDL_HINT_JOYSTICK_ALLOW_BACKGROUND_EVENTS => 'SDL_JOYSTICK_ALLOW_BACKGROUND_EVENTS' ],
-            [ SDL_HINT_JOYSTICK_HIDAPI                  => 'SDL_JOYSTICK_HIDAPI' ],
-            [ SDL_HINT_JOYSTICK_HIDAPI_CORRELATE_XINPUT => 'SDL_JOYSTICK_HIDAPI_CORRELATE_XINPUT' ],
-            [ SDL_HINT_JOYSTICK_HIDAPI_GAMECUBE         => 'SDL_JOYSTICK_HIDAPI_GAMECUBE' ],
-            [ SDL_HINT_JOYSTICK_HIDAPI_JOY_CONS         => 'SDL_JOYSTICK_HIDAPI_JOY_CONS' ],
-            [ SDL_HINT_JOYSTICK_HIDAPI_PS4              => 'SDL_JOYSTICK_HIDAPI_PS4' ],
-            [ SDL_HINT_JOYSTICK_HIDAPI_PS4_RUMBLE       => 'SDL_JOYSTICK_HIDAPI_PS4_RUMBLE' ],
-            [ SDL_HINT_JOYSTICK_HIDAPI_PS5              => 'SDL_JOYSTICK_HIDAPI_PS5' ],
-            [ SDL_HINT_JOYSTICK_HIDAPI_PS5_PLAYER_LED   => 'SDL_JOYSTICK_HIDAPI_PS5_PLAYER_LED' ],
-            [ SDL_HINT_JOYSTICK_HIDAPI_PS5_RUMBLE       => 'SDL_JOYSTICK_HIDAPI_PS5_RUMBLE' ],
-            [ SDL_HINT_JOYSTICK_HIDAPI_STADIA           => 'SDL_JOYSTICK_HIDAPI_STADIA' ],
-            [ SDL_HINT_JOYSTICK_HIDAPI_STEAM            => 'SDL_JOYSTICK_HIDAPI_STEAM' ],
-            [ SDL_HINT_JOYSTICK_HIDAPI_SWITCH           => 'SDL_JOYSTICK_HIDAPI_SWITCH' ],
-            [ SDL_HINT_JOYSTICK_HIDAPI_SWITCH_HOME_LED  => 'SDL_JOYSTICK_HIDAPI_SWITCH_HOME_LED' ],
-            [ SDL_HINT_JOYSTICK_HIDAPI_XBOX             => 'SDL_JOYSTICK_HIDAPI_XBOX' ],
-            [ SDL_HINT_JOYSTICK_RAWINPUT                => 'SDL_JOYSTICK_RAWINPUT' ],
-            [ SDL_HINT_JOYSTICK_THREAD                  => 'SDL_JOYSTICK_THREAD' ],
-            [ SDL_HINT_KMSDRM_REQUIRE_DRM_MASTER        => 'SDL_KMSDRM_REQUIRE_DRM_MASTER' ],
-            [ SDL_HINT_LINUX_JOYSTICK_DEADZONES         => 'SDL_LINUX_JOYSTICK_DEADZONES' ],
-            [ SDL_HINT_MAC_BACKGROUND_APP               => 'SDL_MAC_BACKGROUND_APP' ],
-            [   SDL_HINT_MAC_CTRL_CLICK_EMULATE_RIGHT_CLICK =>
-                    'SDL_MAC_CTRL_CLICK_EMULATE_RIGHT_CLICK'
-            ],
-            [ SDL_HINT_MOUSE_DOUBLE_CLICK_RADIUS     => 'SDL_MOUSE_DOUBLE_CLICK_RADIUS' ],
-            [ SDL_HINT_MOUSE_DOUBLE_CLICK_TIME       => 'SDL_MOUSE_DOUBLE_CLICK_TIME' ],
-            [ SDL_HINT_MOUSE_FOCUS_CLICKTHROUGH      => 'SDL_MOUSE_FOCUS_CLICKTHROUGH' ],
-            [ SDL_HINT_MOUSE_NORMAL_SPEED_SCALE      => 'SDL_MOUSE_NORMAL_SPEED_SCALE' ],
-            [ SDL_HINT_MOUSE_RELATIVE_MODE_WARP      => 'SDL_MOUSE_RELATIVE_MODE_WARP' ],
-            [ SDL_HINT_MOUSE_RELATIVE_SCALING        => 'SDL_MOUSE_RELATIVE_SCALING' ],
-            [ SDL_HINT_MOUSE_RELATIVE_SPEED_SCALE    => 'SDL_MOUSE_RELATIVE_SPEED_SCALE' ],
-            [ SDL_HINT_MOUSE_TOUCH_EVENTS            => 'SDL_MOUSE_TOUCH_EVENTS' ],
-            [ SDL_HINT_NO_SIGNAL_HANDLERS            => 'SDL_NO_SIGNAL_HANDLERS' ],
-            [ SDL_HINT_OPENGL_ES_DRIVER              => 'SDL_OPENGL_ES_DRIVER' ],
-            [ SDL_HINT_ORIENTATIONS                  => 'SDL_ORIENTATIONS' ],
-            [ SDL_HINT_PREFERRED_LOCALES             => 'SDL_PREFERRED_LOCALES' ],
-            [ SDL_HINT_QTWAYLAND_CONTENT_ORIENTATION => 'SDL_QTWAYLAND_CONTENT_ORIENTATION' ],
-            [ SDL_HINT_QTWAYLAND_WINDOW_FLAGS        => 'SDL_QTWAYLAND_WINDOW_FLAGS' ],
-            [ SDL_HINT_RENDER_BATCHING               => 'SDL_RENDER_BATCHING' ],
-            [ SDL_HINT_RENDER_DIRECT3D11_DEBUG       => 'SDL_RENDER_DIRECT3D11_DEBUG' ],
-            [ SDL_HINT_RENDER_DIRECT3D_THREADSAFE    => 'SDL_RENDER_DIRECT3D_THREADSAFE' ],
-            [ SDL_HINT_RENDER_DRIVER                 => 'SDL_RENDER_DRIVER' ],
-            [ SDL_HINT_RENDER_LOGICAL_SIZE_MODE      => 'SDL_RENDER_LOGICAL_SIZE_MODE' ],
-            [ SDL_HINT_RENDER_OPENGL_SHADERS         => 'SDL_RENDER_OPENGL_SHADERS' ],
-            [ SDL_HINT_RENDER_SCALE_QUALITY          => 'SDL_RENDER_SCALE_QUALITY' ],
-            [ SDL_HINT_RENDER_VSYNC                  => 'SDL_RENDER_VSYNC' ],
-            [ SDL_HINT_RETURN_KEY_HIDES_IME          => 'SDL_RETURN_KEY_HIDES_IME' ],
-            [ SDL_HINT_RPI_VIDEO_LAYER               => 'SDL_RPI_VIDEO_LAYER' ],
-            [   SDL_HINT_THREAD_FORCE_REALTIME_TIME_CRITICAL =>
-                    'SDL_THREAD_FORCE_REALTIME_TIME_CRITICAL'
-            ],
-            [ SDL_HINT_THREAD_PRIORITY_POLICY          => 'SDL_THREAD_PRIORITY_POLICY' ],
-            [ SDL_HINT_THREAD_STACK_SIZE               => 'SDL_THREAD_STACK_SIZE' ],
-            [ SDL_HINT_TIMER_RESOLUTION                => 'SDL_TIMER_RESOLUTION' ],
-            [ SDL_HINT_TOUCH_MOUSE_EVENTS              => 'SDL_TOUCH_MOUSE_EVENTS' ],
-            [ SDL_HINT_TV_REMOTE_AS_JOYSTICK           => 'SDL_TV_REMOTE_AS_JOYSTICK' ],
-            [ SDL_HINT_VIDEO_ALLOW_SCREENSAVER         => 'SDL_VIDEO_ALLOW_SCREENSAVER' ],
-            [ SDL_HINT_VIDEO_DOUBLE_BUFFER             => 'SDL_VIDEO_DOUBLE_BUFFER' ],
-            [ SDL_HINT_VIDEO_EXTERNAL_CONTEXT          => 'SDL_VIDEO_EXTERNAL_CONTEXT' ],
-            [ SDL_HINT_VIDEO_HIGHDPI_DISABLED          => 'SDL_VIDEO_HIGHDPI_DISABLED' ],
-            [ SDL_HINT_VIDEO_MAC_FULLSCREEN_SPACES     => 'SDL_VIDEO_MAC_FULLSCREEN_SPACES' ],
-            [ SDL_HINT_VIDEO_MINIMIZE_ON_FOCUS_LOSS    => 'SDL_VIDEO_MINIMIZE_ON_FOCUS_LOSS' ],
-            [ SDL_HINT_VIDEO_WINDOW_SHARE_PIXEL_FORMAT => 'SDL_VIDEO_WINDOW_SHARE_PIXEL_FORMAT' ],
-            [ SDL_HINT_VIDEO_WIN_D3DCOMPILE            => 'SDL_VIDEO_WIN_D3DCOMPILE' ],
-            [ SDL_HINT_VIDEO_WIN_D3DCOMPILER           => 'SDL_VIDEO_WIN_D3DCOMPILER' ],
-            [ SDL_HINT_VIDEO_X11_FORCE_EGL             => 'SDL_VIDEO_X11_FORCE_EGL' ],
-            [   SDL_HINT_VIDEO_X11_NET_WM_BYPASS_COMPOSITOR =>
-                    'SDL_VIDEO_X11_NET_WM_BYPASS_COMPOSITOR'
-            ],
-            [ SDL_HINT_VIDEO_X11_NET_WM_PING         => 'SDL_VIDEO_X11_NET_WM_PING' ],
-            [ SDL_HINT_VIDEO_X11_WINDOW_VISUALID     => 'SDL_VIDEO_X11_WINDOW_VISUALID' ],
-            [ SDL_HINT_VIDEO_X11_XINERAMA            => 'SDL_VIDEO_X11_XINERAMA' ],
-            [ SDL_HINT_VIDEO_X11_XRANDR              => 'SDL_VIDEO_X11_XRANDR' ],
-            [ SDL_HINT_VIDEO_X11_XVIDMODE            => 'SDL_VIDEO_X11_XVIDMODE' ],
-            [ SDL_HINT_WAVE_FACT_CHUNK               => 'SDL_WAVE_FACT_CHUNK' ],
-            [ SDL_HINT_WAVE_RIFF_CHUNK_SIZE          => 'SDL_WAVE_RIFF_CHUNK_SIZE' ],
-            [ SDL_HINT_WAVE_TRUNCATION               => 'SDL_WAVE_TRUNCATION' ],
-            [ SDL_HINT_WINDOWS_DISABLE_THREAD_NAMING => 'SDL_WINDOWS_DISABLE_THREAD_NAMING' ],
-            [ SDL_HINT_WINDOWS_ENABLE_MESSAGELOOP    => 'SDL_WINDOWS_ENABLE_MESSAGELOOP' ],
-            [   SDL_HINT_WINDOWS_FORCE_MUTEX_CRITICAL_SECTIONS =>
-                    'SDL_WINDOWS_FORCE_MUTEX_CRITICAL_SECTIONS'
-            ],
-            [ SDL_HINT_WINDOWS_FORCE_SEMAPHORE_KERNEL => 'SDL_WINDOWS_FORCE_SEMAPHORE_KERNEL' ],
-            [ SDL_HINT_WINDOWS_INTRESOURCE_ICON       => 'SDL_WINDOWS_INTRESOURCE_ICON' ],
-            [ SDL_HINT_WINDOWS_INTRESOURCE_ICON_SMALL => 'SDL_WINDOWS_INTRESOURCE_ICON_SMALL' ],
-            [ SDL_HINT_WINDOWS_NO_CLOSE_ON_ALT_F4     => 'SDL_WINDOWS_NO_CLOSE_ON_ALT_F4' ],
-            [ SDL_HINT_WINDOWS_USE_D3D9EX             => 'SDL_WINDOWS_USE_D3D9EX' ],
-            [   SDL_HINT_WINDOW_FRAME_USABLE_WHILE_CURSOR_HIDDEN =>
-                    'SDL_WINDOW_FRAME_USABLE_WHILE_CURSOR_HIDDEN'
-            ],
-            [ SDL_HINT_WINRT_HANDLE_BACK_BUTTON        => 'SDL_WINRT_HANDLE_BACK_BUTTON' ],
-            [ SDL_HINT_WINRT_PRIVACY_POLICY_LABEL      => 'SDL_WINRT_PRIVACY_POLICY_LABEL' ],
-            [ SDL_HINT_WINRT_PRIVACY_POLICY_URL        => 'SDL_WINRT_PRIVACY_POLICY_URL' ],
-            [ SDL_HINT_XINPUT_ENABLED                  => 'SDL_XINPUT_ENABLED' ],
-            [ SDL_HINT_XINPUT_USE_OLD_JOYSTICK_MAPPING => 'SDL_XINPUT_USE_OLD_JOYSTICK_MAPPING' ]
-        ]
-    );
-
-    package SDL2::Point { };
-
-    package SDL2::FPoint { };
-
-    package SDL2::Rect { };
-
-    package SDL2::FRect { };
-    class
-        SDL_Point  => [ x => 'int',   y => 'int' ],
-        SDL_FPoint => [ x => 'float', y => 'float' ],
-        SDL_Rect   => [ x => 'int',   y => 'int',   w => 'int',   h => 'int' ],
-        SDL_FRect  => [ x => 'float', y => 'float', w => 'float', h => 'float' ];
+        [ SDL_HINT_ACCELEROMETER_AS_JOYSTICK   => 'SDL_ACCELEROMETER_AS_JOYSTICK' ],
+        [ SDL_HINT_ALLOW_ALT_TAB_WHILE_GRABBED => 'SDL_ALLOW_ALT_TAB_WHILE_GRABBED' ],
+        [ SDL_HINT_ALLOW_TOPMOST               => 'SDL_ALLOW_TOPMOST' ],
+        [   SDL_HINT_ANDROID_APK_EXPANSION_MAIN_FILE_VERSION =>
+                'SDL_ANDROID_APK_EXPANSION_MAIN_FILE_VERSION'
+        ],
+        [   SDL_HINT_ANDROID_APK_EXPANSION_PATCH_FILE_VERSION =>
+                'SDL_ANDROID_APK_EXPANSION_PATCH_FILE_VERSION'
+        ],
+        [ SDL_HINT_ANDROID_BLOCK_ON_PAUSE            => 'SDL_ANDROID_BLOCK_ON_PAUSE' ],
+        [ SDL_HINT_ANDROID_BLOCK_ON_PAUSE_PAUSEAUDIO => 'SDL_ANDROID_BLOCK_ON_PAUSE_PAUSEAUDIO' ],
+        [ SDL_HINT_ANDROID_SEPARATE_MOUSE_AND_TOUCH  => 'SDL_ANDROID_SEPARATE_MOUSE_AND_TOUCH' ],
+        [ SDL_HINT_ANDROID_TRAP_BACK_BUTTON          => 'SDL_ANDROID_TRAP_BACK_BUTTON' ],
+        [ SDL_HINT_APPLE_TV_CONTROLLER_UI_EVENTS     => 'SDL_APPLE_TV_CONTROLLER_UI_EVENTS' ],
+        [ SDL_HINT_APPLE_TV_REMOTE_ALLOW_ROTATION    => 'SDL_APPLE_TV_REMOTE_ALLOW_ROTATION' ],
+        [ SDL_HINT_AUDIO_CATEGORY                    => 'SDL_AUDIO_CATEGORY' ],
+        [ SDL_HINT_AUDIO_DEVICE_APP_NAME             => 'SDL_AUDIO_DEVICE_APP_NAME' ],
+        [ SDL_HINT_AUDIO_DEVICE_STREAM_NAME          => 'SDL_AUDIO_DEVICE_STREAM_NAME' ],
+        [ SDL_HINT_AUDIO_DEVICE_STREAM_ROLE          => 'SDL_AUDIO_DEVICE_STREAM_ROLE' ],
+        [ SDL_HINT_AUDIO_RESAMPLING_MODE             => 'SDL_AUDIO_RESAMPLING_MODE' ],
+        [ SDL_HINT_AUTO_UPDATE_JOYSTICKS             => 'SDL_AUTO_UPDATE_JOYSTICKS' ],
+        [ SDL_HINT_AUTO_UPDATE_SENSORS               => 'SDL_AUTO_UPDATE_SENSORS' ],
+        [ SDL_HINT_BMP_SAVE_LEGACY_FORMAT            => 'SDL_BMP_SAVE_LEGACY_FORMAT' ],
+        [ SDL_HINT_DISPLAY_USABLE_BOUNDS             => 'SDL_DISPLAY_USABLE_BOUNDS' ],
+        [ SDL_HINT_EMSCRIPTEN_ASYNCIFY               => 'SDL_EMSCRIPTEN_ASYNCIFY' ],
+        [ SDL_HINT_EMSCRIPTEN_KEYBOARD_ELEMENT       => 'SDL_EMSCRIPTEN_KEYBOARD_ELEMENT' ],
+        [ SDL_HINT_ENABLE_STEAM_CONTROLLERS          => 'SDL_ENABLE_STEAM_CONTROLLERS' ],
+        [ SDL_HINT_EVENT_LOGGING                     => 'SDL_EVENT_LOGGING' ],
+        [ SDL_HINT_FRAMEBUFFER_ACCELERATION          => 'SDL_FRAMEBUFFER_ACCELERATION' ],
+        [ SDL_HINT_GAMECONTROLLERCONFIG              => 'SDL_GAMECONTROLLERCONFIG' ],
+        [ SDL_HINT_GAMECONTROLLERCONFIG_FILE         => 'SDL_GAMECONTROLLERCONFIG_FILE' ],
+        [ SDL_HINT_GAMECONTROLLERTYPE                => 'SDL_GAMECONTROLLERTYPE' ],
+        [ SDL_HINT_GAMECONTROLLER_IGNORE_DEVICES     => 'SDL_GAMECONTROLLER_IGNORE_DEVICES' ],
+        [   SDL_HINT_GAMECONTROLLER_IGNORE_DEVICES_EXCEPT =>
+                'SDL_GAMECONTROLLER_IGNORE_DEVICES_EXCEPT'
+        ],
+        [ SDL_HINT_GAMECONTROLLER_USE_BUTTON_LABELS   => 'SDL_GAMECONTROLLER_USE_BUTTON_LABELS' ],
+        [ SDL_HINT_GRAB_KEYBOARD                      => 'SDL_GRAB_KEYBOARD' ],
+        [ SDL_HINT_IDLE_TIMER_DISABLED                => 'SDL_IDLE_TIMER_DISABLED' ],
+        [ SDL_HINT_IME_INTERNAL_EDITING               => 'SDL_IME_INTERNAL_EDITING' ],
+        [ SDL_HINT_IOS_HIDE_HOME_INDICATOR            => 'SDL_IOS_HIDE_HOME_INDICATOR' ],
+        [ SDL_HINT_JOYSTICK_ALLOW_BACKGROUND_EVENTS   => 'SDL_JOYSTICK_ALLOW_BACKGROUND_EVENTS' ],
+        [ SDL_HINT_JOYSTICK_HIDAPI                    => 'SDL_JOYSTICK_HIDAPI' ],
+        [ SDL_HINT_JOYSTICK_HIDAPI_CORRELATE_XINPUT   => 'SDL_JOYSTICK_HIDAPI_CORRELATE_XINPUT' ],
+        [ SDL_HINT_JOYSTICK_HIDAPI_GAMECUBE           => 'SDL_JOYSTICK_HIDAPI_GAMECUBE' ],
+        [ SDL_HINT_JOYSTICK_HIDAPI_JOY_CONS           => 'SDL_JOYSTICK_HIDAPI_JOY_CONS' ],
+        [ SDL_HINT_JOYSTICK_HIDAPI_PS4                => 'SDL_JOYSTICK_HIDAPI_PS4' ],
+        [ SDL_HINT_JOYSTICK_HIDAPI_PS4_RUMBLE         => 'SDL_JOYSTICK_HIDAPI_PS4_RUMBLE' ],
+        [ SDL_HINT_JOYSTICK_HIDAPI_PS5                => 'SDL_JOYSTICK_HIDAPI_PS5' ],
+        [ SDL_HINT_JOYSTICK_HIDAPI_PS5_PLAYER_LED     => 'SDL_JOYSTICK_HIDAPI_PS5_PLAYER_LED' ],
+        [ SDL_HINT_JOYSTICK_HIDAPI_PS5_RUMBLE         => 'SDL_JOYSTICK_HIDAPI_PS5_RUMBLE' ],
+        [ SDL_HINT_JOYSTICK_HIDAPI_STADIA             => 'SDL_JOYSTICK_HIDAPI_STADIA' ],
+        [ SDL_HINT_JOYSTICK_HIDAPI_STEAM              => 'SDL_JOYSTICK_HIDAPI_STEAM' ],
+        [ SDL_HINT_JOYSTICK_HIDAPI_SWITCH             => 'SDL_JOYSTICK_HIDAPI_SWITCH' ],
+        [ SDL_HINT_JOYSTICK_HIDAPI_SWITCH_HOME_LED    => 'SDL_JOYSTICK_HIDAPI_SWITCH_HOME_LED' ],
+        [ SDL_HINT_JOYSTICK_HIDAPI_XBOX               => 'SDL_JOYSTICK_HIDAPI_XBOX' ],
+        [ SDL_HINT_JOYSTICK_RAWINPUT                  => 'SDL_JOYSTICK_RAWINPUT' ],
+        [ SDL_HINT_JOYSTICK_THREAD                    => 'SDL_JOYSTICK_THREAD' ],
+        [ SDL_HINT_KMSDRM_REQUIRE_DRM_MASTER          => 'SDL_KMSDRM_REQUIRE_DRM_MASTER' ],
+        [ SDL_HINT_LINUX_JOYSTICK_DEADZONES           => 'SDL_LINUX_JOYSTICK_DEADZONES' ],
+        [ SDL_HINT_MAC_BACKGROUND_APP                 => 'SDL_MAC_BACKGROUND_APP' ],
+        [ SDL_HINT_MAC_CTRL_CLICK_EMULATE_RIGHT_CLICK => 'SDL_MAC_CTRL_CLICK_EMULATE_RIGHT_CLICK' ],
+        [ SDL_HINT_MOUSE_DOUBLE_CLICK_RADIUS          => 'SDL_MOUSE_DOUBLE_CLICK_RADIUS' ],
+        [ SDL_HINT_MOUSE_DOUBLE_CLICK_TIME            => 'SDL_MOUSE_DOUBLE_CLICK_TIME' ],
+        [ SDL_HINT_MOUSE_FOCUS_CLICKTHROUGH           => 'SDL_MOUSE_FOCUS_CLICKTHROUGH' ],
+        [ SDL_HINT_MOUSE_NORMAL_SPEED_SCALE           => 'SDL_MOUSE_NORMAL_SPEED_SCALE' ],
+        [ SDL_HINT_MOUSE_RELATIVE_MODE_WARP           => 'SDL_MOUSE_RELATIVE_MODE_WARP' ],
+        [ SDL_HINT_MOUSE_RELATIVE_SCALING             => 'SDL_MOUSE_RELATIVE_SCALING' ],
+        [ SDL_HINT_MOUSE_RELATIVE_SPEED_SCALE         => 'SDL_MOUSE_RELATIVE_SPEED_SCALE' ],
+        [ SDL_HINT_MOUSE_TOUCH_EVENTS                 => 'SDL_MOUSE_TOUCH_EVENTS' ],
+        [ SDL_HINT_NO_SIGNAL_HANDLERS                 => 'SDL_NO_SIGNAL_HANDLERS' ],
+        [ SDL_HINT_OPENGL_ES_DRIVER                   => 'SDL_OPENGL_ES_DRIVER' ],
+        [ SDL_HINT_ORIENTATIONS                       => 'SDL_ORIENTATIONS' ],
+        [ SDL_HINT_PREFERRED_LOCALES                  => 'SDL_PREFERRED_LOCALES' ],
+        [ SDL_HINT_QTWAYLAND_CONTENT_ORIENTATION      => 'SDL_QTWAYLAND_CONTENT_ORIENTATION' ],
+        [ SDL_HINT_QTWAYLAND_WINDOW_FLAGS             => 'SDL_QTWAYLAND_WINDOW_FLAGS' ],
+        [ SDL_HINT_RENDER_BATCHING                    => 'SDL_RENDER_BATCHING' ],
+        [ SDL_HINT_RENDER_DIRECT3D11_DEBUG            => 'SDL_RENDER_DIRECT3D11_DEBUG' ],
+        [ SDL_HINT_RENDER_DIRECT3D_THREADSAFE         => 'SDL_RENDER_DIRECT3D_THREADSAFE' ],
+        [ SDL_HINT_RENDER_DRIVER                      => 'SDL_RENDER_DRIVER' ],
+        [ SDL_HINT_RENDER_LOGICAL_SIZE_MODE           => 'SDL_RENDER_LOGICAL_SIZE_MODE' ],
+        [ SDL_HINT_RENDER_OPENGL_SHADERS              => 'SDL_RENDER_OPENGL_SHADERS' ],
+        [ SDL_HINT_RENDER_SCALE_QUALITY               => 'SDL_RENDER_SCALE_QUALITY' ],
+        [ SDL_HINT_RENDER_VSYNC                       => 'SDL_RENDER_VSYNC' ],
+        [ SDL_HINT_RETURN_KEY_HIDES_IME               => 'SDL_RETURN_KEY_HIDES_IME' ],
+        [ SDL_HINT_RPI_VIDEO_LAYER                    => 'SDL_RPI_VIDEO_LAYER' ],
+        [   SDL_HINT_THREAD_FORCE_REALTIME_TIME_CRITICAL =>
+                'SDL_THREAD_FORCE_REALTIME_TIME_CRITICAL'
+        ],
+        [ SDL_HINT_THREAD_PRIORITY_POLICY             => 'SDL_THREAD_PRIORITY_POLICY' ],
+        [ SDL_HINT_THREAD_STACK_SIZE                  => 'SDL_THREAD_STACK_SIZE' ],
+        [ SDL_HINT_TIMER_RESOLUTION                   => 'SDL_TIMER_RESOLUTION' ],
+        [ SDL_HINT_TOUCH_MOUSE_EVENTS                 => 'SDL_TOUCH_MOUSE_EVENTS' ],
+        [ SDL_HINT_TV_REMOTE_AS_JOYSTICK              => 'SDL_TV_REMOTE_AS_JOYSTICK' ],
+        [ SDL_HINT_VIDEO_ALLOW_SCREENSAVER            => 'SDL_VIDEO_ALLOW_SCREENSAVER' ],
+        [ SDL_HINT_VIDEO_DOUBLE_BUFFER                => 'SDL_VIDEO_DOUBLE_BUFFER' ],
+        [ SDL_HINT_VIDEO_EXTERNAL_CONTEXT             => 'SDL_VIDEO_EXTERNAL_CONTEXT' ],
+        [ SDL_HINT_VIDEO_HIGHDPI_DISABLED             => 'SDL_VIDEO_HIGHDPI_DISABLED' ],
+        [ SDL_HINT_VIDEO_MAC_FULLSCREEN_SPACES        => 'SDL_VIDEO_MAC_FULLSCREEN_SPACES' ],
+        [ SDL_HINT_VIDEO_MINIMIZE_ON_FOCUS_LOSS       => 'SDL_VIDEO_MINIMIZE_ON_FOCUS_LOSS' ],
+        [ SDL_HINT_VIDEO_WINDOW_SHARE_PIXEL_FORMAT    => 'SDL_VIDEO_WINDOW_SHARE_PIXEL_FORMAT' ],
+        [ SDL_HINT_VIDEO_WIN_D3DCOMPILE               => 'SDL_VIDEO_WIN_D3DCOMPILE' ],
+        [ SDL_HINT_VIDEO_WIN_D3DCOMPILER              => 'SDL_VIDEO_WIN_D3DCOMPILER' ],
+        [ SDL_HINT_VIDEO_X11_FORCE_EGL                => 'SDL_VIDEO_X11_FORCE_EGL' ],
+        [ SDL_HINT_VIDEO_X11_NET_WM_BYPASS_COMPOSITOR => 'SDL_VIDEO_X11_NET_WM_BYPASS_COMPOSITOR' ],
+        [ SDL_HINT_VIDEO_X11_NET_WM_PING              => 'SDL_VIDEO_X11_NET_WM_PING' ],
+        [ SDL_HINT_VIDEO_X11_WINDOW_VISUALID          => 'SDL_VIDEO_X11_WINDOW_VISUALID' ],
+        [ SDL_HINT_VIDEO_X11_XINERAMA                 => 'SDL_VIDEO_X11_XINERAMA' ],
+        [ SDL_HINT_VIDEO_X11_XRANDR                   => 'SDL_VIDEO_X11_XRANDR' ],
+        [ SDL_HINT_VIDEO_X11_XVIDMODE                 => 'SDL_VIDEO_X11_XVIDMODE' ],
+        [ SDL_HINT_WAVE_FACT_CHUNK                    => 'SDL_WAVE_FACT_CHUNK' ],
+        [ SDL_HINT_WAVE_RIFF_CHUNK_SIZE               => 'SDL_WAVE_RIFF_CHUNK_SIZE' ],
+        [ SDL_HINT_WAVE_TRUNCATION                    => 'SDL_WAVE_TRUNCATION' ],
+        [ SDL_HINT_WINDOWS_DISABLE_THREAD_NAMING      => 'SDL_WINDOWS_DISABLE_THREAD_NAMING' ],
+        [ SDL_HINT_WINDOWS_ENABLE_MESSAGELOOP         => 'SDL_WINDOWS_ENABLE_MESSAGELOOP' ],
+        [   SDL_HINT_WINDOWS_FORCE_MUTEX_CRITICAL_SECTIONS =>
+                'SDL_WINDOWS_FORCE_MUTEX_CRITICAL_SECTIONS'
+        ],
+        [ SDL_HINT_WINDOWS_FORCE_SEMAPHORE_KERNEL => 'SDL_WINDOWS_FORCE_SEMAPHORE_KERNEL' ],
+        [ SDL_HINT_WINDOWS_INTRESOURCE_ICON       => 'SDL_WINDOWS_INTRESOURCE_ICON' ],
+        [ SDL_HINT_WINDOWS_INTRESOURCE_ICON_SMALL => 'SDL_WINDOWS_INTRESOURCE_ICON_SMALL' ],
+        [ SDL_HINT_WINDOWS_NO_CLOSE_ON_ALT_F4     => 'SDL_WINDOWS_NO_CLOSE_ON_ALT_F4' ],
+        [ SDL_HINT_WINDOWS_USE_D3D9EX             => 'SDL_WINDOWS_USE_D3D9EX' ],
+        [   SDL_HINT_WINDOW_FRAME_USABLE_WHILE_CURSOR_HIDDEN =>
+                'SDL_WINDOW_FRAME_USABLE_WHILE_CURSOR_HIDDEN'
+        ],
+        [ SDL_HINT_WINRT_HANDLE_BACK_BUTTON        => 'SDL_WINRT_HANDLE_BACK_BUTTON' ],
+        [ SDL_HINT_WINRT_PRIVACY_POLICY_LABEL      => 'SDL_WINRT_PRIVACY_POLICY_LABEL' ],
+        [ SDL_HINT_WINRT_PRIVACY_POLICY_URL        => 'SDL_WINRT_PRIVACY_POLICY_URL' ],
+        [ SDL_HINT_XINPUT_ENABLED                  => 'SDL_XINPUT_ENABLED' ],
+        [ SDL_HINT_XINPUT_USE_OLD_JOYSTICK_MAPPING => 'SDL_XINPUT_USE_OLD_JOYSTICK_MAPPING' ]
+        ];
     FFI::C::ArrayDef->new(    # Used sparingly when I need to pass a list of SDL_Point objects
-        $ffi,
+        ffi,
         name    => 'SDL2x_PointList',
         class   => 'SDL2x::PointList',
         members => ['SDL_Point'],
     );
     FFI::C::ArrayDef->new(    # Used sparingly when I need to pass a list of SDL_Point objects
-        $ffi,
+        ffi,
         name    => 'SDL2x_FPointList',
         class   => 'SDL2x::FPointList',
         members => ['SDL_Point'],
     );
     FFI::C::ArrayDef->new(    # Used sparingly when I need to pass a list of SDL_Rect objects
-        $ffi,
+        ffi,
         name    => 'SDL2x_RectList',
         class   => 'SDL2x::RectList',
         members => ['SDL_Rect'],
     );
     FFI::C::ArrayDef->new(    # Used sparingly when I need to pass a list of SDL_Rect objects
-        $ffi,
+        ffi,
         name    => 'SDL2x_FRectList',
         class   => 'SDL2x::FRectList',
         members => ['SDL_FRect'],
     );
-
-    package SDL2::Surface { };
-    class SDL_Surface => [
-        flags     => 'uint32',
-        format    => 'opaque',     # SDL_PixelFormat*
-        w         => 'int',
-        h         => 'int',
-        pitch     => 'int',
-        pixels    => 'opaque',     # void*
-        userdata  => 'opaque',     # void*
-        locked    => 'int',
-        lock_data => 'opaque',     # void*
-        clip_rect => 'SDL_Rect',
-        map       => 'opaque',     # SDL_BlitMap*
-        refcount  => 'int'
-    ];
     #
     push @{ $EXPORT_TAGS{default} }, qw[:init];
     attach init => {
@@ -345,9 +242,9 @@ package SDL2::FFI 0.02 {
         SDL_Quit          => [ [] ],
     };
     #
-    $ffi->type( '(opaque,string,string,string)->void' => 'SDL_HintCallback' );
-    $ffi->type( '(opaque,int,int,string)->void'       => 'SDL_LogOutputFunction' );
-    $ffi->type( '(opaque,opaque,opaque)->int'         => 'SDL_HitTest' );
+    ffi->type( '(opaque,string,string,string)->void' => 'SDL_HintCallback' );
+    ffi->type( '(opaque,int,int,string)->void'       => 'SDL_LogOutputFunction' );
+    ffi->type( '(opaque,opaque,opaque)->int'         => 'SDL_HitTest' );
     attach hints => {
         SDL_SetHintWithPriority => [ [ 'string', 'string', 'int' ] => 'bool' ],
         SDL_SetHint             => [ [ 'string', 'string' ]        => 'bool' ],
@@ -447,53 +344,6 @@ package SDL2::FFI 0.02 {
             }
         ]
         };
-
-    # https://github.com/libsdl-org/SDL/blob/main/include/SDL_video.h
-    package SDL2::DisplayMode { };
-
-    package SDL2::Window { };
-    class
-        SDL_DisplayMode => [
-        format       => 'uint32',
-        w            => 'int',
-        h            => 'int',
-        refresh_rate => 'int',
-        driverdata   => 'opaque'
-        ],
-        SDL_Window => [
-        magic                 => 'opaque',
-        id                    => 'uint32',
-        title                 => 'opaque',         # char *
-        icon                  => 'SDL_Surface',
-        x                     => 'int',
-        y                     => 'int',
-        w                     => 'int',
-        h                     => 'int',
-        min_w                 => 'int',
-        min_h                 => 'int',
-        max_w                 => 'int',
-        max_h                 => 'int',
-        flags                 => 'uint32',
-        last_fullscreen_flags => 'uint32',
-        windowed              => 'SDL_Rect',
-        fullscreen_mode       => 'opaque',         # SDL_DisplayMode
-        opacity               => 'float',
-        brightness            => 'float',
-        gamma                 => 'uint16[255]',    # uint16*
-        saved_gamma           => 'uint16[255]',    # uint16*
-        surface               => 'opaque',         # SDL_Surface*
-        surface_valid         => 'bool',
-        is_hiding             => 'bool',
-        is_destroying         => 'bool',
-        is_dropping           => 'bool',
-        shaper                => 'opaque',         # SDL_WindowShaper
-        hit_test              => 'opaque',         # SDL_HitTest
-        hit_test_data         => 'opaque',         # void*
-        data                  => 'opaque',         # SDL_WindowUserData*
-        driverdata            => 'opaque',         # void*
-        prev                  => 'opaque',         # SDL_Window*
-        next                  => 'opaque'          # SDL_Window*
-        ];
     enum
         SDL_WindowFlags => [
         [ SDL_WINDOW_FULLSCREEN         => 0x00000001 ],
@@ -555,9 +405,8 @@ package SDL2::FFI 0.02 {
         ];
 
     # An opaque handle to an OpenGL context.
-    package SDL2::GLContext { };
-    class SDL_GLContext => [];
-    enum SDL_GLattr     => [
+    package SDL2::GLContext { use SDL2::Utils; has() };
+    enum SDL_GLattr => [
         qw[
             SDL_GL_RED_SIZE
             SDL_GL_GREEN_SIZE
@@ -693,8 +542,8 @@ package SDL2::FFI 0.02 {
                     $cb = FFI::Platypus::Closure->new(
                         sub ( $win, $area, $data ) {
                             $callback->(
-                                $ffi->cast( 'opaque' => 'SDL_Window', $win ),
-                                $ffi->cast( 'opaque' => 'SDL_Point',  $area ),
+                                ffi->cast( 'opaque' => 'SDL_Window', $win ),
+                                ffi->cast( 'opaque' => 'SDL_Point',  $area ),
                                 $callback_data
                             );
                         }
@@ -736,15 +585,15 @@ package SDL2::FFI 0.02 {
         [ SDL_RENDERER_TARGETTEXTURE => 0x00000008 ]
     ];
 
-    package SDL2::RenderInfo { };
-    class SDL_RendererInfo => [
-        name                => 'opaque',       # string
-        flags               => 'uint32',
-        num_texture_formats => 'uint32',
-        texture_formats     => 'uint32[16]',
-        max_texture_width   => 'int',
-        max_texture_height  => 'int'
-    ];
+    package SDL2::RendererInfo {
+        use SDL2::Utils;
+        has name                => 'opaque',       # string
+            flags               => 'uint32',
+            num_texture_formats => 'uint32',
+            texture_formats     => 'uint32[16]',
+            max_texture_width   => 'int',
+            max_texture_height  => 'int';
+    };
     enum
         SDL_ScaleMode     => [qw[SDL_SCALEMODENEAREST SDL_SCALEMODELINEAR SDL_SCALEMODEBEST]],
         SDL_TextureAccess =>
@@ -787,12 +636,9 @@ package SDL2::FFI 0.02 {
         [ SDL_BLENDFACTOR_ONE_MINUS_DST_ALPHA => 0xA ]
         ];
 
-    package SDL2::Renderer { };
+    package SDL2::Renderer { use SDL2::Utils; has() };
 
-    package SDL2::Texture { };
-    class
-        SDL_Renderer => [],
-        SDL_Texture  => [];
+    package SDL2::Texture { use SDL2::Utils; has() };
     attach render => {
         SDL_GetNumRenderDrivers     => [ [],                            'int' ],
         SDL_GetRenderDriverInfo     => [ [ 'int', 'SDL_RendererInfo' ], 'int' ],
@@ -804,8 +650,8 @@ package SDL2::FFI 0.02 {
                #    my $renderer = SDL2::Renderer->new;
                #    my $ok       = $inner->( $width, $height, $window_flags, \$window, \$renderer );
                #    $ok == 0 ? (
-               #        $ffi->cast( 'opaque' => 'SDL_Window',   $window ),
-               #        $ffi->cast( 'opaque' => 'SDL_Renderer', $renderer ),
+               #        ffi->cast( 'opaque' => 'SDL_Window',   $window ),
+               #        ffi->cast( 'opaque' => 'SDL_Renderer', $renderer ),
                #        ) :
                #        $ok;
                #}
@@ -1048,7 +894,7 @@ package SDL2::FFI 0.02 {
         SDL_RenderGetMetalLayer          => [ ['SDL_Renderer'],                      'opaque' ],
         SDL_RenderGetMetalCommandEncoder => [ ['SDL_Renderer'],                      'opaque' ]
     };
-    $ffi->type( '(int,opaque)->uint32' => 'SDL_TimerCallback' );
+    ffi->type( '(int,opaque)->uint32' => 'SDL_TimerCallback' );
     attach timer => {
         SDL_GetTicks                => [ [], 'uint32' ],
         SDL_GetPerformanceCounter   => [ [], 'uint64' ],
@@ -1114,48 +960,61 @@ package SDL2::FFI 0.02 {
             }
         ],
     ];
-    $ffi->type( '(opaque,string,int)->void' => 'SDL_AudioCallback' );
-    $ffi->type( 'int'                       => 'SDL_AudioFormat' );
+    ffi->type( '(opaque,string,int)->void' => 'SDL_AudioCallback' );
+    ffi->type( 'int'                       => 'SDL_AudioFormat' );
 
-    package SDL2::AudioSpec { };
-    class SDL_AudioSpec => [
-        freq     => 'int',
-        format   => 'uint16',
-        channels => 'uint8',
-        silence  => 'uint8',
-        samples  => 'uint16',
-        padding  => 'uint16',
-        size     => 'uint32',
-        callback => 'opaque',    # SDL_AudioCallback
-        userdata => 'opaque'     # void *
-    ];
+    package SDL2::AudioSpec {
+        use SDL2::Utils;
+        has
+            freq     => 'int',
+            format   => 'uint16',
+            channels => 'uint8',
+            silence  => 'uint8',
+            samples  => 'uint16',
+            padding  => 'uint16',
+            size     => 'uint32',
+            callback => 'opaque',    # SDL_AudioCallback
+            userdata => 'opaque'     # void *
+    };
 
-    package SDL2::AudioCVT { };
-    class SDL_AudioCVT => [
-        needed       => 'int',
-        src_format   => 'uint16',    # SDL_AudioFormat
-        dst_format   => 'uint16',    # SDL_AudioFormat
-        rate_incr    => 'double',
-        buf          => 'opaque',    # uint8 *
-        len          => 'int',
-        len_cvt      => 'int',
-        len_mult     => 'int',
-        len_ratio    => 'double',
-        filters      => 'opaque',    #SDL_AudioFilter[SDL_AUDIOCVT_MAX_FILTERS + 1];
-        filter_index => 'int'
-    ];
-    $ffi->type( '(opaque,uint16)->void' => 'SDL_AudioFilter' );
+    package SDL2::AudioCVT {
+        use SDL2::Utils;
+        has
+            needed       => 'int',
+            src_format   => 'uint16',    # SDL_AudioFormat
+            dst_format   => 'uint16',    # SDL_AudioFormat
+            rate_incr    => 'double',
+            buf          => 'opaque',    # uint8 *
+            len          => 'int',
+            len_cvt      => 'int',
+            len_mult     => 'int',
+            len_ratio    => 'double',
+            filters      => 'opaque',    #SDL_AudioFilter[SDL_AUDIOCVT_MAX_FILTERS + 1];
+            filter_index => 'int';
+    };
+    ffi->type( '(opaque,uint16)->void' => 'SDL_AudioFilter' );
 
-    package SDL2::AudioStream { };
+    package SDL2::AudioStream {
+        use SDL2::Utils;
+        has();
+    };
 
-    package SDL2::AudioDeviceID { };
+    package SDL2::AudioDeviceID {
+        use SDL2::Utils;
+        has();
+    };
 
-    package SDL2::AudioStatus { };
+    package SDL2::AudioStatus {
+        use SDL2::Utils;
+        has();
+    };
 
-    package SDL2::RWops { };
-    class SDL_AudioStream => [], SDL_AudioDeviceID => [], SDL_AudioStatus => [], SDL_RWops => [];
-    define audio          => [ [ SDL_AUDIOCVT_MAX_FILTERS => 9 ], ];
-    attach audio          => {
+    package SDL2::RWops {    # TODO: https://github.com/libsdl-org/SDL/blob/main/include/SDL_rwops.h
+        use SDL2::Utils;
+        has();
+    };
+    define audio => [ [ SDL_AUDIOCVT_MAX_FILTERS => 9 ], ];
+    attach audio => {
         SDL_AudioInit            => [ ["string"], "int" ],
         SDL_AudioQuit            => [ [] ],
         SDL_AudioStreamAvailable => [ ["SDL_AudioStream"], "int" ],
@@ -1227,8 +1086,8 @@ END
     attach surface => { SDL_LoadBMP_RW => [ [ 'SDL_RWops', 'int' ], 'SDL_Surface' ], };
     sub SDL_LoadBMP ($file) { SDL_LoadBMP_RW( SDL_RWFromFile( $file, "rb" ), 1 ) }
     push @{ $EXPORT_TAGS{'surface'} }, 'SDL_FreeSurface';
-    $ffi->attach( SDL_FreeSurface => ['SDL_Surface'] );
-    $ffi->attach( SDL_SaveBMP_RW  => [ 'SDL_Surface', 'SDL_RWops', 'int' ], 'int' );
+    ffi->attach( SDL_FreeSurface => ['SDL_Surface'] );
+    ffi->attach( SDL_SaveBMP_RW  => [ 'SDL_Surface', 'SDL_RWops', 'int' ], 'int' );
     attach future => {
         SDL_ComposeCustomBlendMode => [
             [   'SDL_BlendFactor',    'SDL_BlendFactor',
@@ -1238,31 +1097,31 @@ END
             'SDL_BlendMode'
         ],
     };
-    $ffi->attach( SDL_RWFromFile => [ 'string', 'string' ], 'SDL_RWops' );
+    ffi->attach( SDL_RWFromFile => [ 'string', 'string' ], 'SDL_RWops' );
 
     sub SDL_SaveBMP ( $surface, $file ) {
         SDL_SaveBMP_RW( $surface, SDL_RWFromFile( $file, 'wb' ), 1 );
     }
-    $ffi->attach( SDL_GetPlatform => [] => 'string' );
-    $ffi->attach( SDL_CreateRGBSurface =>
+    ffi->attach( SDL_GetPlatform => [] => 'string' );
+    ffi->attach( SDL_CreateRGBSurface =>
             [ 'uint32', 'int', 'int', 'int', 'uint32', 'uint32', 'uint32', 'uint32' ] =>
             'SDL_Surface' );
 
     # https://wiki.libsdl.org/CategoryCPU
-    $ffi->attach( SDL_GetCPUCacheLineSize => [] => 'int' );
-    $ffi->attach( SDL_GetCPUCount         => [] => 'int' );
-    $ffi->attach( SDL_GetSystemRAM        => [] => 'int' );
-    $ffi->attach( SDL_Has3DNow            => [] => 'bool' );
-    $ffi->attach( SDL_HasAVX              => [] => 'bool' );
-    $ffi->attach( SDL_HasAVX2             => [] => 'bool' );
-    $ffi->attach( SDL_HasAltiVec          => [] => 'bool' );
-    $ffi->attach( SDL_HasMMX              => [] => 'bool' );
-    $ffi->attach( SDL_HasRDTSC            => [] => 'bool' );
-    $ffi->attach( SDL_HasSSE              => [] => 'bool' );
-    $ffi->attach( SDL_HasSSE2             => [] => 'bool' );
-    $ffi->attach( SDL_HasSSE3             => [] => 'bool' );
-    $ffi->attach( SDL_HasSSE41            => [] => 'bool' );
-    $ffi->attach( SDL_HasSSE42            => [] => 'bool' );
+    ffi->attach( SDL_GetCPUCacheLineSize => [] => 'int' );
+    ffi->attach( SDL_GetCPUCount         => [] => 'int' );
+    ffi->attach( SDL_GetSystemRAM        => [] => 'int' );
+    ffi->attach( SDL_Has3DNow            => [] => 'bool' );
+    ffi->attach( SDL_HasAVX              => [] => 'bool' );
+    ffi->attach( SDL_HasAVX2             => [] => 'bool' );
+    ffi->attach( SDL_HasAltiVec          => [] => 'bool' );
+    ffi->attach( SDL_HasMMX              => [] => 'bool' );
+    ffi->attach( SDL_HasRDTSC            => [] => 'bool' );
+    ffi->attach( SDL_HasSSE              => [] => 'bool' );
+    ffi->attach( SDL_HasSSE2             => [] => 'bool' );
+    ffi->attach( SDL_HasSSE3             => [] => 'bool' );
+    ffi->attach( SDL_HasSSE41            => [] => 'bool' );
+    ffi->attach( SDL_HasSSE42            => [] => 'bool' );
 
     # https://wiki.libsdl.org/CategoryPower
     FFI::C->enum(
@@ -1273,11 +1132,11 @@ END
                 SDL_POWERSTATE_CHARGING   SDL_POWERSTATE_CHARGED]
         ]
     );
-    $ffi->attach( SDL_GetPowerInfo => [ 'int*', 'int*' ] => 'int' );
+    ffi->attach( SDL_GetPowerInfo => [ 'int*', 'int*' ] => 'int' );
 
     # https://wiki.libsdl.org/CategoryStandard
-    $ffi->attach( SDL_acos => ['double'] => 'double' );
-    $ffi->attach( SDL_asin => ['double'] => 'double' );    # Not in wiki
+    ffi->attach( SDL_acos => ['double'] => 'double' );
+    ffi->attach( SDL_asin => ['double'] => 'double' );    # Not in wiki
 
     # https://wiki.libsdl.org/CategoryVideo
     # Macros defined in SDL_video.h
@@ -1300,28 +1159,21 @@ END
     ];
 
     # https://wiki.libsdl.org/CategoryPixels
-    package SDL2::Color { };
-    FFI::C::StructDef->new(
-        $ffi,
-        name    => 'SDL_Color',
-        class   => 'SDL2::Color',
-        members => [ r => 'uint8', g => 'uint8', b => 'uint8', a => 'uint8' ]
-    );
+    package SDL2::Color {
+        use SDL2::Utils;
+        has r => 'uint8', g => 'uint8', b => 'uint8', a => 'uint8';
+    };
 
-    package SDL2::Palette { };
-    FFI::C::StructDef->new(
-        $ffi,
-        name    => 'SDL_Palette',
-        class   => 'SDL2::Palette',
-        members => [ ncolors => 'int', colors => 'SDL_Color' ]
-    );
+    package SDL2::Palette {
+        use SDL2::Utils;
+        has
+            ncolors => 'int',
+            colors  => 'SDL_Color';
+    };
 
-    package SDL2::PixelFormat { };
-    FFI::C::StructDef->new(
-        $ffi,
-        name    => 'SDL_PixelFormat',
-        class   => 'SDL2::PixelFormat',
-        members => [
+    package SDL2::PixelFormat {
+        use SDL2::Utils;
+        has
             format        => 'uint32',
             palette       => 'SDL_Palette',
             BitsPerPixel  => 'uint8',
@@ -1341,14 +1193,13 @@ END
             Ashift        => 'uint8',
             refcount      => 'int',
             next          => 'opaque'         # SDL_PixelFormat *
-        ]
-    );
+    };
     attach future => {
         SDL_FillRect => [ [ 'SDL_Surface', 'opaque', 'uint32' ], 'int' ],
         SDL_MapRGB   => [
             [ 'SDL_PixelFormat', 'uint8', 'uint8', 'uint8' ] => 'uint32' =>
                 sub ( $inner, $format, $r, $g, $b ) {
-                $format = $ffi->cast( 'opaque', 'SDL_PixelFormat', $format ) if !ref $format;
+                $format = ffi->cast( 'opaque', 'SDL_PixelFormat', $format ) if !ref $format;
                 $inner->( $format, $r, $g, $b );
             }
         ]
@@ -1423,20 +1274,16 @@ END
         [ SDL_LASTEVENT => 0xFFFF ],
     ];
     #
-    package SDL2::CommonEvent { };
-    FFI::C::StructDef->new(
-        $ffi,
-        name    => 'SDL_CommonEvent',
-        class   => 'SDL2::CommonEvent',
-        members => [ type => 'uint32', timestamp => 'uint32' ]
-    );
+    package SDL2::CommonEvent {
+        use SDL2::Utils;
+        has
+            type      => 'uint32',
+            timestamp => 'uint32';
+    };
 
-    package SDL2::DisplayEvent { };
-    FFI::C::StructDef->new(
-        $ffi,
-        name    => 'SDL_DisplayEvent',
-        class   => 'SDL2::DisplayEvent',
-        members => [
+    package SDL2::DisplayEvent {
+        use SDL2::Utils;
+        has
             type      => 'uint32',
             timestamp => 'uint32',
             display   => 'uint32',
@@ -1444,16 +1291,12 @@ END
             padding1  => 'uint8',
             padding2  => 'uint8',
             padding3  => 'uint8',
-            data1     => 'sint32'
-        ]
-    );
+            data1     => 'sint32';
+    };
 
-    package SDL2::WindowEvent { };
-    FFI::C::StructDef->new(
-        $ffi,
-        name    => 'SDL_WindowEvent',
-        class   => 'SDL2::WindowEvent',
-        members => [
+    package SDL2::WindowEvent {
+        use SDL2::Utils;
+        has
             type      => 'uint32',
             timestamp => 'uint32',
             windowId  => 'uint32',
@@ -1462,16 +1305,12 @@ END
             padding2  => 'uint8',
             padding3  => 'uint8',
             data1     => 'sint32',
-            data2     => 'sint32'
-        ]
-    );
+            data2     => 'sint32';
+    };
 
-    package SDL2::KeyboardEvent { };
-    FFI::C::StructDef->new(
-        $ffi,
-        name    => 'SDL_KeyboardEvent',
-        class   => 'SDL2::KeyboardEvent',
-        members => [
+    package SDL2::KeyboardEvent {
+        use SDL2::Utils;
+        has
             type      => 'uint32',
             timestamp => 'uint32',
             windowId  => 'uint32',
@@ -1480,45 +1319,31 @@ END
             padding2  => 'uint8',
             padding3  => 'uint8',
             keysym    => 'opaque'    # SDL_Keysym
-        ]
-    );
-    sub SDL_TEXTEDITINGEVENT_TEXT_SIZE () {32}
+    };
 
-    package SDL2::TextEditingEvent { };
-    FFI::C::StructDef->new(
-        $ffi,
-        name    => 'SDL_TextEditingEvent',
-        class   => 'SDL2::TextEditingEvent',
-        members => [
+    package SDL2::TextEditingEvent {
+        use SDL2::Utils;
+        has
             type      => 'uint32',
             timestamp => 'uint32',
             windowId  => 'uint32',
-            text      => 'char[' . SDL_TEXTEDITINGEVENT_TEXT_SIZE . ']',
+            text      => 'char[32]',
             start     => 'sint32',
-            length    => 'sint32'
-        ]
-    );
-    sub SDL_TEXTINPUTEVENT_TEXT_SIZE () {32}
+            length    => 'sint32';
+    };
 
-    package SDL2::TextInputEvent { };
-    FFI::C::StructDef->new(
-        $ffi,
-        name    => 'SDL_TextInputEvent',
-        class   => 'SDL2::TextInputEvent',
-        members => [
+    package SDL2::TextInputEvent {
+        use SDL2::Utils;
+        has
             type      => 'uint32',
             timestamp => 'uint32',
             windowId  => 'uint32',
-            text      => 'char[' . SDL_TEXTEDITINGEVENT_TEXT_SIZE . ']'
-        ]
-    );
+            text      => 'char[32]';
+    };
 
-    package SDL2::MouseMotionEvent { };
-    FFI::C::StructDef->new(
-        $ffi,
-        name    => 'SDL_MouseMotionEvent',
-        class   => 'SDL2::MouseMotionEvent',
-        members => [
+    package SDL2::MouseMotionEvent {
+        use SDL2::Utils;
+        has
             type      => 'uint32',
             timestamp => 'uint32',
             windowId  => 'uint32',
@@ -1527,16 +1352,12 @@ END
             x         => 'sint32',
             y         => 'sint32',
             xrel      => 'sint32',
-            yrel      => 'sint32'
-        ]
-    );
+            yrel      => 'sint32';
+    };
 
-    package SDL2::MouseButtonEvent { };
-    FFI::C::StructDef->new(
-        $ffi,
-        name    => 'SDL_MouseButtonEvent',
-        class   => 'SDL2::MouseButtonEvent',
-        members => [
+    package SDL2::MouseButtonEvent {
+        use SDL2::Utils;
+        has
             type      => 'uint32',
             timestamp => 'uint32',
             windowID  => 'uint32',
@@ -1546,32 +1367,24 @@ END
             clicks    => 'uint8',
             padding1  => 'uint8',
             x         => 'sint32',
-            y         => 'sint32'
-        ]
-    );
+            y         => 'sint32';
+    };
 
-    package SDL2::MouseWheelEvent { };
-    FFI::C::StructDef->new(
-        $ffi,
-        name    => 'SDL_MouseWheelEvent',
-        class   => 'SDL2::MouseWheelEvent',
-        members => [
+    package SDL2::MouseWheelEvent {
+        use SDL2::Utils;
+        has
             type      => 'uint32',
             timestamp => 'uint32',
             windowId  => 'uint32',
             which     => 'uint8',
             x         => 'sint32',
             y         => 'sint32',
-            direction => 'uint32'
-        ]
-    );
+            direction => 'uint32';
+    };
 
-    package SDL2::JoyAxisEvent { };
-    FFI::C::StructDef->new(
-        $ffi,
-        name    => 'SDL_JoyAxisEvent',
-        class   => 'SDL2::JoyAxisEvent',
-        members => [
+    package SDL2::JoyAxisEvent {
+        use SDL2::Utils;
+        has
             type      => 'uint32',
             timestamp => 'uint32',
             which     => 'opaque',    # SDL_JoystickID
@@ -1579,16 +1392,12 @@ END
             padding2  => 'uint8',
             padding3  => 'uint8',
             value     => 'sint16',
-            padding4  => 'uint16'
-        ]
-    );
+            padding4  => 'uint16';
+    };
 
-    package SDL2::JoyBallEvent { };
-    FFI::C::StructDef->new(
-        $ffi,
-        name    => 'SDL_JoyBallEvent',
-        class   => 'SDL2::JoyBallEvent',
-        members => [
+    package SDL2::JoyBallEvent {
+        use SDL2::Utils;
+        has
             type      => 'uint32',
             timestamp => 'uint32',
             which     => 'opaque',    # SDL_JoystickID
@@ -1597,55 +1406,44 @@ END
             padding3  => 'uint8',
             xrel      => 'sint16',
             yrel      => 'uint16',
-        ]
-    );
+            ;
+    };
 
-    package SDL2::JoyHatEvent { };
-    FFI::C::StructDef->new(
-        $ffi,
-        name    => 'SDL_JoyHatEvent',
-        class   => 'SDL2::JoyHatEvent',
-        members => [
+    package SDL2::JoyHatEvent {
+        use SDL2::Utils;
+        has
             type      => 'uint32',
             timestamp => 'uint32',
             which     => 'opaque',    # SDL_JoystickID
             hat       => 'uint8',
             value     => 'uint8',
             padding1  => 'uint8',
-            padding2  => 'uint8'
-        ]
-    );
+            padding2  => 'uint8';
+    };
 
-    package SDL2::JoyButtonEvent { };
-    FFI::C::StructDef->new(
-        $ffi,
-        name    => 'SDL_JoyButtonEvent',
-        class   => 'SDL2::JoyButtonEvent',
-        members => [
+    package SDL2::JoyButtonEvent {
+        use SDL2::Utils;
+        has
             type      => 'uint32',
             timestamp => 'uint32',
             which     => 'opaque',    # SDL_JoystickID
             button    => 'uint8',
             state     => 'uint8',
             padding1  => 'uint8',
-            padding2  => 'uint8'
-        ]
-    );
+            padding2  => 'uint8';
+    };
 
-    package SDL2::JoyDeviceEvent { };
-    FFI::C::StructDef->new(
-        $ffi,
-        name    => 'SDL_JoyDeviceEvent',
-        class   => 'SDL2::JoyDeviceEvent',
-        members => [ type => 'uint32', timestamp => 'uint32', which => 'sint32' ]
-    );
+    package SDL2::JoyDeviceEvent {
+        use SDL2::Utils;
+        has
+            type      => 'uint32',
+            timestamp => 'uint32',
+            which     => 'sint32';
+    };
 
-    package SDL2::ControllerAxisEvent { };
-    FFI::C::StructDef->new(
-        $ffi,
-        name    => 'SDL_ControllerAxisEvent',
-        class   => 'SDL2::ControllerAxisEvent',
-        members => [
+    package SDL2::ControllerAxisEvent {
+        use SDL2::Utils;
+        has
             type      => 'uint32',
             timestamp => 'uint32',
             which     => 'opaque',    # SDL_JoystickID
@@ -1654,16 +1452,12 @@ END
             padding2  => 'uint8',
             padding3  => 'uint8',
             value     => 'sint16',
-            padding4  => 'uint8'
-        ]
-    );
+            padding4  => 'uint8';
+    };
 
-    package SDL2::ControllerButtonEvent { };
-    FFI::C::StructDef->new(
-        $ffi,
-        name    => 'SDL_ControllerButtonEvent',
-        class   => 'SDL2::ControllerButtonEvent',
-        members => [
+    package SDL2::ControllerButtonEvent {
+        use SDL2::Utils;
+        has
             type      => 'uint32',
             timestamp => 'uint32',
             which     => 'opaque',    # SDL_JoystickID
@@ -1671,39 +1465,32 @@ END
             state     => 'uint8',
             padding1  => 'uint8',
             padding2  => 'uint8',
-        ]
-    );
+            ;
+    };
 
-    package SDL2::ControllerDeviceEvent { };
-    FFI::C::StructDef->new(
-        $ffi,
-        name    => 'SDL_ControllerDeviceEvent',
-        class   => 'SDL2::ControllerDeviceEvent',
-        members => [ type => 'uint32', timestamp => 'uint32', which => 'sint32' ]
-    );
+    package SDL2::ControllerDeviceEvent {
+        use SDL2::Utils;
+        has
+            type      => 'uint32',
+            timestamp => 'uint32',
+            which     => 'sint32';
+    };
 
-    package SDL2::AudioDeviceEvent { };
-    FFI::C::StructDef->new(
-        $ffi,
-        name    => 'SDL_AudioDeviceEvent',
-        class   => 'SDL2::AudioDeviceEvent',
-        members => [
+    package SDL2::AudioDeviceEvent {
+        use SDL2::Utils;
+        has
             type      => 'uint32',
             timestamp => 'uint32',
             which     => 'uint32',
             iscapture => 'uint8',
             padding1  => 'uint8',
             padding2  => 'uint8',
-            padding3  => 'uint8'
-        ]
-    );
+            padding3  => 'uint8';
+    };
 
-    package SDL2::TouchFingerEvent { };
-    FFI::C::StructDef->new(
-        $ffi,
-        name    => 'SDL_TouchFingerEvent',
-        class   => 'SDL2::TouchFingerEvent',
-        members => [
+    package SDL2::TouchFingerEvent {
+        use SDL2::Utils;
+        has
             type      => 'uint32',
             timestamp => 'uint32',
             touchId   => 'opaque',    # SDL_TouchID
@@ -1712,16 +1499,12 @@ END
             y         => 'float',
             dx        => 'float',
             dy        => 'float',
-            pressure  => 'float'
-        ]
-    );
+            pressure  => 'float';
+    };
 
-    package SDL2::MultiGestureEvent { };
-    FFI::C::StructDef->new(
-        $ffi,
-        name    => 'SDL_MultiGestureEvent',
-        class   => 'SDL2::MultiGestureEvent',
-        members => [
+    package SDL2::MultiGestureEvent {
+        use SDL2::Utils;
+        has
             type       => 'uint32',
             timestamp  => 'uint32',
             touchId    => 'opaque',    # SDL_TouchID
@@ -1730,16 +1513,12 @@ END
             x          => 'float',
             y          => 'float',
             numFingers => 'uint16',
-            padding    => 'uint16'
-        ]
-    );
+            padding    => 'uint16';
+    };
 
-    package SDL2::DollarGestureEvent { };
-    FFI::C::StructDef->new(
-        $ffi,
-        name    => 'SDL_DollarGestureEvent',
-        class   => 'SDL2::DollarGestureEvent',
-        members => [
+    package SDL2::DollarGestureEvent {
+        use SDL2::Utils;
+        has
             type       => 'uint32',
             timestamp  => 'uint32',
             touchId    => 'opaque',    # SDL_TouchID
@@ -1747,83 +1526,66 @@ END
             numFingers => 'uint32',
             error      => 'float',
             x          => 'float',
-            y          => 'float'
-        ]
-    );
+            y          => 'float';
+    };
 
-    package SDL2::DropEvent { };
-    FFI::C::StructDef->new(
-        $ffi,
-        name    => 'SDL_DropEvent',
-        class   => 'SDL2::DropEvent',
-        members =>
-            [ type => 'uint32', timestamp => 'uint32', file => 'char[256]', windowID => 'uint32' ]
-    );
+    package SDL2::DropEvent {
+        use SDL2::Utils;
+        has
+            type      => 'uint32',
+            timestamp => 'uint32',
+            file      => 'char[256]',
+            windowID  => 'uint32';
+    };
 
-    package SDL2::SensorEvent { };
-    FFI::C::StructDef->new(
-        $ffi,
-        name    => 'SDL_SensorEvent',
-        class   => 'SDL2::SensorEvent',
-        members =>
-            [ type => 'uint32', timestamp => 'uint32', which => 'sint32', data => 'float[6]' ]
-    );
+    package SDL2::SensorEvent {
+        use SDL2::Utils;
+        has
+            type      => 'uint32',
+            timestamp => 'uint32',
+            which     => 'sint32',
+            data      => 'float[6]';
+    };
 
-    package SDL2::QuitEvent { };
-    FFI::C::StructDef->new(
-        $ffi,
-        name    => 'SDL_QuitEvent',
-        class   => 'SDL2::QuitEvent',
-        members => [ type => 'uint32', timestamp => 'uint32', ]
-    );
+    package SDL2::QuitEvent {
+        use SDL2::Utils;
+        has type => 'uint32', timestamp => 'uint32';
+    };
 
-    package SDL2::OSEvent { };
-    FFI::C::StructDef->new(
-        $ffi,
-        name    => 'SDL_OSEvent',
-        class   => 'SDL2::OSEvent',
-        members => [ type => 'uint32', timestamp => 'uint32', ]
-    );
+    package SDL2::OSEvent {
+        use SDL2::Utils;
+        has
+            type      => 'uint32',
+            timestamp => 'uint32';
+    };
 
-    package SDL2::UserEvent { };
-    FFI::C::StructDef->new(
-        $ffi,
-        name    => 'SDL_UserEvent',
-        class   => 'SDL2::UserEvent',
-        members => [
+    package SDL2::UserEvent {
+        use SDL2::Utils;
+        has
             type      => 'uint32',
             timestamp => 'uint32',
             windowID  => 'uint32',
             code      => 'sint32',
             data1     => 'opaque',    # void *
-            data2     => 'opaque',    # void *
-        ]
-    );
+            data2     => 'opaque'     # void *
+    };
 
-    package SDL2::SysWMmsg { };
-    FFI::C::StructDef->new(
-        $ffi,
-        name    => 'SDL_SysWMmsg',
-        class   => 'SDL2::SysWMmsg',
-        members => []
-    );
+    package SDL2::SysWMmsg {
+        use SDL2::Utils;
+        has();
+    };
 
-    package SDL2::SysWMEvent { };
-    FFI::C::StructDef->new(
-        $ffi,
-        name    => 'SDL_SysWMEvent',
-        class   => 'SDL2::SysWMEvent',
-        members => [
+    package SDL2::SysWMEvent {
+        use SDL2::Utils;
+        has
             type      => 'uint32',
             timestamp => 'uint32',
-            msg       => 'opaque',    # SDL_SysWMmsg
-        ]
-    );
+            msg       => 'opaque'    # SDL_SysWMmsg
+    };
     use FFI::C::UnionDef;
 
-    package SDL2::Event { };
-    FFI::C::UnionDef->new(
-        $ffi,
+    package SDL2::Event { use SDL2::Utils; };
+    FFI::C::UnionDef->new( ffi,
         name    => 'SDL_Event',
         class   => 'SDL2::Event',
         members => [
@@ -1857,18 +1619,16 @@ END
             padding  => 'uint8[56]'
         ]
     );
-    FFI::C->enum(
-        'SDL_eventaction',
-        [   qw[
-                SDL_ADDEVENT
-                SDL_PEEKEVENT
-                SDL_GETEVENT]
-        ]
-    );
-    $ffi->type( '(opaque, opaque)->int' => 'SDL_EventFilter' );
+    enum SDL_EventAction => [
+        qw[
+            SDL_ADDEVENT
+            SDL_PEEKEVENT
+            SDL_GETEVENT]
+    ];
+    ffi->type( '(opaque, opaque)->int' => 'SDL_EventFilter' );
     attach events => {
         SDL_PeepEvents =>
-            [ [ 'SDL_Event', 'int', 'SDL_eventaction', 'uint32', 'uint32' ] => 'int' ],
+            [ [ 'SDL_Event', 'int', 'SDL_EventAction', 'uint32', 'uint32' ] => 'int' ],
         SDL_HasEvent         => [ ['uint32']             => 'bool' ],
         SDL_HasEvents        => [ [ 'uint32', 'uint32' ] => 'bool' ],
         SDL_FlushEvent       => [ ['uint32'] ],
@@ -1889,65 +1649,57 @@ END
     sub SDL_DISABLE () {0}
     sub SDL_ENABLE ()  {1}
     #
-    $ffi->attach( SDL_EventState => [ 'uint32', 'int' ] => 'uint8' );
+    ffi->attach( SDL_EventState => [ 'uint32', 'int' ] => 'uint8' );
     sub SDL_GetEventState ($type) { SDL_EventState( $type, SDL_QUERY ) }
-    $ffi->attach( SDL_RegisterEvents => ['int'] => 'uint32' );
+    ffi->attach( SDL_RegisterEvents => ['int'] => 'uint32' );
 
     # From src/events/SDL_mouse_c.h
-    package SDL2::Cursor { };
-    FFI::C::StructDef->new(
-        $ffi,
-        name    => 'SDL_Cursor',
-        class   => 'SDL2::Cursor',
-        members => [
+    package SDL2::Cursor {
+        use SDL2::Utils;
+        has
             next       => 'opaque',    # SDL_Cursor
-            driverdata => 'opaque'     # void *
-        ]
-    );
+            driverdata => 'opaque'     # void
+    };
 
     # From SDL_mouse.h
-    FFI::C->enum(
-        'SDL_SystemCursor',
-        [   qw[
-                SDL_SYSTEM_CURSOR_ARROW
-                SDL_SYSTEM_CURSOR_IBEAM
-                SDL_SYSTEM_CURSOR_WAIT
-                SDL_SYSTEM_CURSOR_CROSSHAIR
-                SDL_SYSTEM_CURSOR_WAITARROW
-                SDL_SYSTEM_CURSOR_SIZENWSE
-                SDL_SYSTEM_CURSOR_SIZENESW
-                SDL_SYSTEM_CURSOR_SIZEWE
-                SDL_SYSTEM_CURSOR_SIZENS
-                SDL_SYSTEM_CURSOR_SIZEALL
-                SDL_SYSTEM_CURSOR_NO
-                SDL_SYSTEM_CURSOR_HAND
-                SDL_NUM_SYSTEM_CURSORS]
+    enum SDL_SystemCursor => [
+        qw[
+            SDL_SYSTEM_CURSOR_ARROW
+            SDL_SYSTEM_CURSOR_IBEAM
+            SDL_SYSTEM_CURSOR_WAIT
+            SDL_SYSTEM_CURSOR_CROSSHAIR
+            SDL_SYSTEM_CURSOR_WAITARROW
+            SDL_SYSTEM_CURSOR_SIZENWSE
+            SDL_SYSTEM_CURSOR_SIZENESW
+            SDL_SYSTEM_CURSOR_SIZEWE
+            SDL_SYSTEM_CURSOR_SIZENS
+            SDL_SYSTEM_CURSOR_SIZEALL
+            SDL_SYSTEM_CURSOR_NO
+            SDL_SYSTEM_CURSOR_HAND
+            SDL_NUM_SYSTEM_CURSORS]
+        ],
+        SDL_MouseWheelDirection => [
+        qw[
+            SDL_MOUSEWHEEL_NORMAL
+            SDL_MOUSEWHEEL_FLIPPED
         ]
-    );
-    FFI::C->enum(
-        'SDL_MouseWheelDirection',
-        [   qw[
-                SDL_MOUSEWHEEL_NORMAL
-                SDL_MOUSEWHEEL_FLIPPED
-            ]
-        ]
-    );
-    $ffi->attach( SDL_GetMouseFocus         => [] => 'SDL_Window' );
-    $ffi->attach( SDL_GetMouseState         => [ 'int',        'int' ] => 'uint32' );
-    $ffi->attach( SDL_GetGlobalMouseState   => [ 'int',        'int' ] => 'uint32' );
-    $ffi->attach( SDL_GetRelativeMouseState => [ 'int',        'int' ] => 'uint32' );
-    $ffi->attach( SDL_WarpMouseInWindow     => [ 'SDL_Window', 'int', 'int' ] );
-    $ffi->attach( SDL_SetRelativeMouseMode  => ['bool'] => 'int' );
-    $ffi->attach( SDL_CaptureMouse          => ['bool'] => 'int' );
-    $ffi->attach( SDL_GetRelativeMouseMode  => []       => 'bool' );
-    $ffi->attach(
+        ];
+    ffi->attach( SDL_GetMouseFocus         => [] => 'SDL_Window' );
+    ffi->attach( SDL_GetMouseState         => [ 'int',        'int' ] => 'uint32' );
+    ffi->attach( SDL_GetGlobalMouseState   => [ 'int',        'int' ] => 'uint32' );
+    ffi->attach( SDL_GetRelativeMouseState => [ 'int',        'int' ] => 'uint32' );
+    ffi->attach( SDL_WarpMouseInWindow     => [ 'SDL_Window', 'int', 'int' ] );
+    ffi->attach( SDL_SetRelativeMouseMode  => ['bool'] => 'int' );
+    ffi->attach( SDL_CaptureMouse          => ['bool'] => 'int' );
+    ffi->attach( SDL_GetRelativeMouseMode  => []       => 'bool' );
+    ffi->attach(
         SDL_CreateCursor => [ 'uint8', 'uint8', 'int', 'int', 'int', 'int' ] => 'SDL_Cursor' );
-    $ffi->attach( SDL_CreateSystemCursor => ['SDL_SystemCursor'] => 'SDL_Cursor' );
-    $ffi->attach( SDL_SetCursor          => ['SDL_Cursor'] );
-    $ffi->attach( SDL_GetCursor          => []      => 'SDL_Cursor' );
-    $ffi->attach( SDL_GetDefaultCursor   => []      => 'SDL_Cursor' );
-    $ffi->attach( SDL_FreeCursor         => []      => 'SDL_Cursor' );
-    $ffi->attach( SDL_ShowCursor         => ['int'] => 'int' );
+    ffi->attach( SDL_CreateSystemCursor => ['SDL_SystemCursor'] => 'SDL_Cursor' );
+    ffi->attach( SDL_SetCursor          => ['SDL_Cursor'] );
+    ffi->attach( SDL_GetCursor          => []      => 'SDL_Cursor' );
+    ffi->attach( SDL_GetDefaultCursor   => []      => 'SDL_Cursor' );
+    ffi->attach( SDL_FreeCursor         => []      => 'SDL_Cursor' );
+    ffi->attach( SDL_ShowCursor         => ['int'] => 'int' );
 
     # https://wiki.libsdl.org/CategoryPixels
     sub SDL_ALPHA_OPAQUE()      {255}
@@ -2313,32 +2065,44 @@ END
             SDL_SetMainReady => [ [] => 'void' ]
         }
     );
-    define(
-        SDL_Mouse => [
-            [ SDL_BUTTON        => sub ($x) { 1 << ( ($x) - 1 ) } ],
-            [ SDL_BUTTON_LEFT   => 1 ],
-            [ SDL_BUTTON_MIDDLE => 2 ],
-            [ SDL_BUTTON_RIGHT  => 3 ],
-            [ SDL_BUTTON_X1     => 4 ],
-            [ SDL_BUTTON_X2     => 5 ],
-            [ SDL_BUTTON_LMASK  => sub () { SDL_BUTTON( SDL_BUTTON_LEFT() ); } ],
-            [ SDL_BUTTON_MMASK  => sub () { SDL_BUTTON( SDL_BUTTON_MIDDLE() ); } ],
-            [ SDL_BUTTON_RMASK  => sub () { SDL_BUTTON( SDL_BUTTON_RIGHT() ); } ],
-            [ SDL_BUTTON_X1MASK => sub () { SDL_BUTTON( SDL_BUTTON_X1() ); } ],
-            [ SDL_BUTTON_X2MASK => sub () { SDL_BUTTON( SDL_BUTTON_X2() ); } ]
-        ]
-    );
+    define SDL_Mouse => [
+        [ SDL_BUTTON        => sub ($x) { 1 << ( ($x) - 1 ) } ],
+        [ SDL_BUTTON_LEFT   => 1 ],
+        [ SDL_BUTTON_MIDDLE => 2 ],
+        [ SDL_BUTTON_RIGHT  => 3 ],
+        [ SDL_BUTTON_X1     => 4 ],
+        [ SDL_BUTTON_X2     => 5 ],
+        [ SDL_BUTTON_LMASK  => sub () { SDL_BUTTON( SDL_BUTTON_LEFT() ); } ],
+        [ SDL_BUTTON_MMASK  => sub () { SDL_BUTTON( SDL_BUTTON_MIDDLE() ); } ],
+        [ SDL_BUTTON_RMASK  => sub () { SDL_BUTTON( SDL_BUTTON_RIGHT() ); } ],
+        [ SDL_BUTTON_X1MASK => sub () { SDL_BUTTON( SDL_BUTTON_X1() ); } ],
+        [ SDL_BUTTON_X2MASK => sub () { SDL_BUTTON( SDL_BUTTON_X2() ); } ]
+    ];
 
     # TODO
     package SDL2::assert_data { };
 
-    package SDL2::atomic_t { };
+    package SDL2::AssertData {
+        use SDL2::Utils;
+        has
+            always_ignore => 'int',
+            trigger_count => 'uint',
+            condition     => 'opaque',    # string
+            filename      => 'opaque',    # string
+            linenum       => 'int',
+            function      => 'opaque',    # string
+            next          => 'opaque'     # const struct SDL_AssertData *next
+    };
 
-    package SDL2::AudioCVT { };
+    package SDL2::atomic_t {
+        use SDL2::Utils;
+        has value => 'int';
+    };
+
+    package SDL2::AudioCVT {
+    };
 
     package SDL2::AudioDeviceEvent { };
-
-    package SDL2::AudioSpec { };
 
     package SDL2::AudioStream { };
 
@@ -2358,9 +2122,24 @@ END
 
     package SDL2::Event { };
 
-    package SDL2::Finger { };
+    package SDL2::Finger {
+        use SDL2::Utils;
+        has
+            id       => 'sint64',    # SDL_FingerID
+            x        => 'float',
+            y        => 'float',
+            pressure => 'float';
+    };
 
     package SDL2::GameControllerButtonBind { };
+
+    package SDL2::_GameController { };
+
+    package SDL2::GameCrontroller { };
+
+    package SDL2::_Haptic { };
+
+    package SDL2::Haptic { };
 
     package SDL2::HapticCondition { };
 
@@ -2388,17 +2167,62 @@ END
 
     package SDL2::JoyHatEvent { };
 
+    package SDL2::Joystick { };
+
+    package SDL2::JoystickGUID { };
+
+    package SDL2::JoystickID { };
+
+    package SDL2::_JoyStick { };
+
     package SDL2::KeyboardEvent { };
 
-    package SDL2::Keysym { };
+    package SDL2::Keysym {
+        use SDL2::Utils;
+        has
+            scancode => 'opaque',    # SDL_Scancode
+            sym      => 'opaque',    # SDL_Keycode
+            mod      => 'uint16',
+            unused   => 'uint32';
+    };
 
-    package SDL2::MessageBoxButtonData { };
+    package SDL2::MessageBoxButtonData {
+        use SDL2::Utils;
+        has
+            flags    => 'uint32',
+            buttonid => 'int',
+            text     => 'opaque'     # 'string'
+    };
 
-    package SDL2::MessageBoxColor { };
+    package SDL2::MessageBoxColor {
+        use SDL2::Utils;
+        has
+            r => 'uint8',
+            g => 'uint8',
+            b => 'uint8';
+    };
 
-    package SDL2::MessageBoxColorScheme { };
+    package SDL2::MessageBoxColorScheme {
+        use SDL2::Utils;
+        has colors => 'opaque'    # SDL_MessageBoxColor colors[SDL_MESSAGEBOX_COLOR_MAX];
+    };
+    attach messagebox => {
 
-    package SDL2::MessageBoxData { };
+#SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, ("R.E.L.I.V.E. " + BuildString()).c_str(), msg, nullptr);
+        SDL_ShowSimpleMessageBox => [ [ 'uint32', 'string', 'string', 'SDL_Window' ], 'int' ]
+    };
+
+    package SDL2::MessageBoxData {
+        use SDL2::Utils;
+        has
+            flags       => 'uint32',
+            window      => 'opaque',    # SDL_Window*
+            title       => 'opaque',    # string
+            message     => 'opaque',    # string
+            numbuttons  => 'int',
+            buttons     => 'opaque',    # SDL_MessageBoxButtonData*
+            colorScheme => 'opaque'     # SDL_MessageBoxColorScheme *
+    };
 
     package SDL2::MouseButtonEvent { };
 
@@ -2412,11 +2236,7 @@ END
 
     package SDL2::PixelFormat { };
 
-    package SDL2::Point { };
-
     package SDL2::QuitEvent { };
-
-    package SDL2::Rect { };
 
     package SDL2::Renderer { };
 
@@ -2426,25 +2246,25 @@ END
 
     package SDL2::SensorEvent { };
 
-    package SDL2::Surface { };
-
     package SDL2::SysWMEvent { };
 
     package SDL2::SysWMinfo { };
 
     package SDL2::SysWMmsg { };
 
+    package SDL2::Sensor { };
+
+    package SDL2::SensorID { };    # type
+
     package SDL2::TextEditingEvent { };
 
     package SDL2::TextInputEvent { };
 
-    package SDL2::Texture { };
-
     package SDL2::TouchFingerEvent { };
 
-    package SDL2::UserEvent { };
+    package SDL2::ControllerTouchpadEvent { };
 
-    package SDL2::version { };
+    package SDL2::UserEvent { };
 
     package SDL2::WindowEvent { };
 
@@ -2472,6 +2292,12 @@ END
 
     package SDL2::Image { };
 
+    package SDL2::iconv_t { };    # int ptr
+
+    package SDL2::WindowShapeMode { };
+
+    package SDL2::WindowShapeParams { };    # union
+
     package SDL2::TTF { };
 
     package SDL2::TTF::Image { };
@@ -2487,6 +2313,26 @@ END
     package SDL2::RTF::Context { };
 
     package SDL2::RTF::FontEngine { };
+
+    package SDL2::Mutex { };
+
+    package SDL2::Semaphore { };
+
+    package SDL2::Sem { };
+
+    package SDL2::Cond { };
+
+    package SDL2::Thread {
+        use SDL2::Utils;
+        has();
+    }
+
+    package SDL2::Locale {
+        use SDL2::Utils;
+        has
+            language => 'opaque',    # string
+            country  => 'opaque'     # string
+    };
 
     #warn SDL2::SDLK_UP();
     #warn SDL2::SDLK_DOWN();

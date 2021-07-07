@@ -1,3 +1,8 @@
+
+package SDL2::FPoint {
+    use SDL2::Utils;
+    has x => 'float', y => 'float';
+
 =encoding utf-8
 
 =head1 NAME
@@ -19,8 +24,9 @@ Sanko Robinson E<lt>sanko@cpan.orgE<gt>
 
 =begin stopwords
 
-
-
 =end stopwords
 
 =cut
+
+};
+1

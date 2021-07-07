@@ -1,3 +1,8 @@
+
+package SDL2::FRect {
+    use SDL2::Utils;
+    has x => 'float', y => 'float', w => 'float', h => 'float';
+
 =encoding utf-8
 
 =head1 NAME
@@ -25,3 +30,6 @@ Sanko Robinson E<lt>sanko@cpan.orgE<gt>
 =end stopwords
 
 =cut
+
+};
+1;

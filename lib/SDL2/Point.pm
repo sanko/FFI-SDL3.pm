@@ -1,3 +1,9 @@
+package SDL2::Point {
+    use SDL2::Utils;
+    has
+        x => 'int',
+        y => 'int';
+
 =encoding utf-8
 
 =head1 NAME
@@ -30,8 +36,9 @@ Sanko Robinson E<lt>sanko@cpan.orgE<gt>
 
 =begin stopwords
 
-
-
 =end stopwords
 
 =cut
+
+};
+1;
