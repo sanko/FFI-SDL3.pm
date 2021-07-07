@@ -1222,6 +1222,11 @@ END
 
     # Everything below this line will be rewritten!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     #
+    #https://github.com/libsdl-org/SDL/blob/main/include/SDL_surface.h#L327
+    push @{ $EXPORT_TAGS{'surface'} }, 'SDL_LoadBMP';
+    attach surface => { SDL_LoadBMP_RW => [ [ 'SDL_RWops', 'int' ], 'SDL_Surface' ], };
+    sub SDL_LoadBMP ($file) { SDL_LoadBMP_RW( SDL_RWFromFile( $file, "rb" ), 1 ) }
+    push @{ $EXPORT_TAGS{'surface'} }, 'SDL_FreeSurface';
     $ffi->attach( SDL_FreeSurface => ['SDL_Surface'] );
     $ffi->attach( SDL_SaveBMP_RW  => [ 'SDL_Surface', 'SDL_RWops', 'int' ], 'int' );
     attach future => {
@@ -2323,6 +2328,165 @@ END
             [ SDL_BUTTON_X2MASK => sub () { SDL_BUTTON( SDL_BUTTON_X2() ); } ]
         ]
     );
+
+    # TODO
+    package SDL2::assert_data { };
+
+    package SDL2::atomic_t { };
+
+    package SDL2::AudioCVT { };
+
+    package SDL2::AudioDeviceEvent { };
+
+    package SDL2::AudioSpec { };
+
+    package SDL2::AudioStream { };
+
+    package SDL2::Color { };
+
+    package SDL2::ControllerAxisEvent { };
+
+    package SDL2::ControllerButtonEvent { };
+
+    package SDL2::ControllerDeviceEvent { };
+
+    package SDL2::DisplayMode { };
+
+    package SDL2::DollarGestureEvent { };
+
+    package SDL2::DropEvent { };
+
+    package SDL2::Event { };
+
+    package SDL2::Finger { };
+
+    package SDL2::GameControllerButtonBind { };
+
+    package SDL2::HapticCondition { };
+
+    package SDL2::HapticConstant { };
+
+    package SDL2::HapticCustom { };
+
+    package SDL2::HapticDirection { };
+
+    package SDL2::HapticEffect { };
+
+    package SDL2::HapticLeftRight { };
+
+    package SDL2::HapticPeriodic { };
+
+    package SDL2::HapticRamp { };
+
+    package SDL2::JoyAxisEvent { };
+
+    package SDL2::JoyBallEvent { };
+
+    package SDL2::JoyButtonEvent { };
+
+    package SDL2::JoyDeviceEvent { };
+
+    package SDL2::JoyHatEvent { };
+
+    package SDL2::KeyboardEvent { };
+
+    package SDL2::Keysym { };
+
+    package SDL2::MessageBoxButtonData { };
+
+    package SDL2::MessageBoxColor { };
+
+    package SDL2::MessageBoxColorScheme { };
+
+    package SDL2::MessageBoxData { };
+
+    package SDL2::MouseButtonEvent { };
+
+    package SDL2::MouseMotionEvent { };
+
+    package SDL2::MouseWheelEvent { };
+
+    package SDL2::MultiGestureEvent { };
+
+    package SDL2::Palette { };
+
+    package SDL2::PixelFormat { };
+
+    package SDL2::Point { };
+
+    package SDL2::QuitEvent { };
+
+    package SDL2::Rect { };
+
+    package SDL2::Renderer { };
+
+    package SDL2::RendererInfo { };
+
+    package SDL2::RWops { };
+
+    package SDL2::SensorEvent { };
+
+    package SDL2::Surface { };
+
+    package SDL2::SysWMEvent { };
+
+    package SDL2::SysWMinfo { };
+
+    package SDL2::SysWMmsg { };
+
+    package SDL2::TextEditingEvent { };
+
+    package SDL2::TextInputEvent { };
+
+    package SDL2::Texture { };
+
+    package SDL2::TouchFingerEvent { };
+
+    package SDL2::UserEvent { };
+
+    package SDL2::version { };
+
+    package SDL2::WindowEvent { };
+
+    package SDL2::Mixer { };
+
+    package SDL2::Mixer::Mix::Chunk { };
+
+    package SDL2::Mixer::Mix::Fading { };
+
+    package SDL2::Mixer::Mix::MusicType { };
+
+    package SDL2::Mixer::Mix::Music { };
+
+    package SDL2::Mixer::Mix::Chunk { };
+
+    package SDL2::Mixer::Chunk { };
+
+    package SDL2::Mixer::Fading { };
+
+    package SDL2::Mixer::MusicType { };
+
+    package SDL2::Mixer::Music { };
+
+    package SDL2::Mixer::Chunk { };
+
+    package SDL2::Image { };
+
+    package SDL2::TTF { };
+
+    package SDL2::TTF::Image { };
+
+    package SDL2::TTF::Font { };
+
+    package SDL2::TTF::PosBuf { };
+
+    package SDL2::Net { };
+
+    package SDL2::RTF { };
+
+    package SDL2::RTF::Context { };
+
+    package SDL2::RTF::FontEngine { };
 
     #warn SDL2::SDLK_UP();
     #warn SDL2::SDLK_DOWN();
