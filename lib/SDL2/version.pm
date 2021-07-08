@@ -20,7 +20,7 @@ SDL2::version - Information About the Version of SDL in Use
 SDL2::version represents the library's version as three levels: major, minor,
 and patch level.
 
-=head1 Methods
+=head1 Fields
 
 =head2 C<major( )>
 

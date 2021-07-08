@@ -1,3 +1,18 @@
+package SDL2::AudioCVT {
+    use SDL2::Utils;
+    has
+        needed       => 'int',
+        src_format   => 'uint16',    # SDL_AudioFormat
+        dst_format   => 'uint16',    # SDL_AudioFormat
+        rate_incr    => 'double',
+        buf          => 'opaque',    # uint8 *
+        len          => 'int',
+        len_cvt      => 'int',
+        len_mult     => 'int',
+        len_ratio    => 'double',
+        filters      => 'opaque',    #SDL_AudioFilter[SDL_AUDIOCVT_MAX_FILTERS + 1];
+        filter_index => 'int';
+
 =encoding utf-8
 
 =head1 NAME
@@ -58,3 +73,6 @@ Sanko Robinson E<lt>sanko@cpan.orgE<gt>
 =end stopwords
 
 =cut
+
+};
+1;

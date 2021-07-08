@@ -1,3 +1,17 @@
+package SDL2::AudioSpec {
+    use SDL2::Utils;
+    has
+        freq     => 'int',
+        format   => 'uint16',
+        channels => 'uint8',
+        silence  => 'uint8',
+        samples  => 'uint16',
+        padding  => 'uint16',
+        size     => 'uint32',
+        callback => 'opaque',    # SDL_AudioCallback
+        userdata => 'opaque'     # void *
+        ;
+
 =encoding utf-8
 
 =head1 NAME
@@ -59,3 +73,6 @@ Sanko Robinson E<lt>sanko@cpan.orgE<gt>
 =end stopwords
 
 =cut
+
+};
+1;

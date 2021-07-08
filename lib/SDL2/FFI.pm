@@ -26,6 +26,8 @@ package SDL2::FFI 0.03 {
     my $platform = $^O;                            # https://perldoc.perl.org/perlport#PLATFORMS
     my $Windows  = !!( $platform eq 'MSWin32' );
     #
+    use SDL2::AudioCVT;
+    use SDL2::AudioSpec;
     use SDL2::Point;
     use SDL2::FPoint;
     use SDL2::FRect;
@@ -33,6 +35,9 @@ package SDL2::FFI 0.03 {
     use SDL2::DisplayMode;
     use SDL2::Surface;
     use SDL2::Window;
+    use SDL2::Texture;
+    use SDL2::Renderer;
+    use SDL2::RendererInfo;
     #
     enum
 
@@ -584,16 +589,6 @@ package SDL2::FFI 0.03 {
         [ SDL_RENDERER_PRESENTVSYNC  => 0x00000004 ],
         [ SDL_RENDERER_TARGETTEXTURE => 0x00000008 ]
     ];
-
-    package SDL2::RendererInfo {
-        use SDL2::Utils;
-        has name                => 'opaque',       # string
-            flags               => 'uint32',
-            num_texture_formats => 'uint32',
-            texture_formats     => 'uint32[16]',
-            max_texture_width   => 'int',
-            max_texture_height  => 'int';
-    };
     enum
         SDL_ScaleMode     => [qw[SDL_SCALEMODENEAREST SDL_SCALEMODELINEAR SDL_SCALEMODEBEST]],
         SDL_TextureAccess =>
@@ -635,10 +630,6 @@ package SDL2::FFI 0.03 {
         [ SDL_BLENDFACTOR_DST_ALPHA           => 0x9 ],
         [ SDL_BLENDFACTOR_ONE_MINUS_DST_ALPHA => 0xA ]
         ];
-
-    package SDL2::Renderer { use SDL2::Utils; has() };
-
-    package SDL2::Texture { use SDL2::Utils; has() };
     attach render => {
         SDL_GetNumRenderDrivers     => [ [],                            'int' ],
         SDL_GetRenderDriverInfo     => [ [ 'int', 'SDL_RendererInfo' ], 'int' ],
@@ -962,37 +953,7 @@ package SDL2::FFI 0.03 {
     ];
     ffi->type( '(opaque,string,int)->void' => 'SDL_AudioCallback' );
     ffi->type( 'int'                       => 'SDL_AudioFormat' );
-
-    package SDL2::AudioSpec {
-        use SDL2::Utils;
-        has
-            freq     => 'int',
-            format   => 'uint16',
-            channels => 'uint8',
-            silence  => 'uint8',
-            samples  => 'uint16',
-            padding  => 'uint16',
-            size     => 'uint32',
-            callback => 'opaque',    # SDL_AudioCallback
-            userdata => 'opaque'     # void *
-    };
-
-    package SDL2::AudioCVT {
-        use SDL2::Utils;
-        has
-            needed       => 'int',
-            src_format   => 'uint16',    # SDL_AudioFormat
-            dst_format   => 'uint16',    # SDL_AudioFormat
-            rate_incr    => 'double',
-            buf          => 'opaque',    # uint8 *
-            len          => 'int',
-            len_cvt      => 'int',
-            len_mult     => 'int',
-            len_ratio    => 'double',
-            filters      => 'opaque',    #SDL_AudioFilter[SDL_AUDIOCVT_MAX_FILTERS + 1];
-            filter_index => 'int';
-    };
-    ffi->type( '(opaque,uint16)->void' => 'SDL_AudioFilter' );
+    ffi->type( '(opaque,uint16)->void'     => 'SDL_AudioFilter' );
 
     package SDL2::AudioStream {
         use SDL2::Utils;
@@ -2097,9 +2058,6 @@ END
     package SDL2::atomic_t {
         use SDL2::Utils;
         has value => 'int';
-    };
-
-    package SDL2::AudioCVT {
     };
 
     package SDL2::AudioDeviceEvent { };

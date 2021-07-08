@@ -1,8 +1,12 @@
+    package SDL2::Texture {
+        use SDL2::Utils;
+        has();
+
 =encoding utf-8
 
 =head1 NAME
 
-SDL2::Renderer - A structure representing rendering state
+SDL2::Texture - An efficient driver-specific representation of pixel data
 
 =head1 SYNOPSIS
 
@@ -11,7 +15,7 @@ SDL2::Renderer - A structure representing rendering state
 
 =head1 DESCRIPTION
 
-SDL2::Renderer
+SDL2::Texture
 
 =head1 AUTHOR
 
@@ -24,3 +28,6 @@ Sanko Robinson E<lt>sanko@cpan.orgE<gt>
 =end stopwords
 
 =cut
+
+    };
+    1;

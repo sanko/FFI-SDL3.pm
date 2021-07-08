@@ -1,3 +1,12 @@
+package SDL2::RendererInfo {
+    use SDL2::Utils;
+    has name                => 'opaque',       # string
+        flags               => 'uint32',
+        num_texture_formats => 'uint32',
+        texture_formats     => 'uint32[16]',
+        max_texture_width   => 'int',
+        max_texture_height  => 'int';
+
 =encoding utf-8
 
 =head1 NAME
@@ -44,3 +53,6 @@ Sanko Robinson E<lt>sanko@cpan.orgE<gt>
 =end stopwords
 
 =cut
+
+};
+1;
