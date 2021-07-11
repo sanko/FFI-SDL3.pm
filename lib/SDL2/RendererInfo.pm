@@ -30,7 +30,7 @@ SDL2::RendererInfo
 
 =item C<name> - the name of the renderer
 
-=item C<flags> - supported L<< C<:rendererFlags>|/C<:rendererFlags> >>
+=item C<flags> - Supported L<< C<SDL_RendererFlags>|SDL2::FFI/C<:rendererFlags> >>
 
 =item C<num_texture_formats> - the number of available texture format
 

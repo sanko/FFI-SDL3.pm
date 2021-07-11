@@ -1,4 +1,4 @@
-package SDL2::FFI 0.05 {
+package SDL2::FFI 0.06 {
     use lib '../lib', 'lib';
 
     # ABSTRACT: FFI Wrapper for SDL (Simple DirectMedia Layer) Development Library
@@ -32,7 +32,6 @@ package SDL2::FFI 0.05 {
     use SDL2::WindowShaper;
     use SDL2::Texture;
     use SDL2::Renderer;
-    use SDL2::RendererInfo;
     use SDL2::GameControllerButtonBind;
     use SDL2::HapticDirection;
     use SDL2::HapticEffect;
@@ -48,6 +47,9 @@ package SDL2::FFI 0.05 {
     use SDL2::Color;
     use SDL2::Palette;
     use SDL2::PixelFormat;
+    use SDL2::RWops;
+    use SDL2::Sensor;
+    use SDL2::WindowShapeMode;
     #
     use Data::Dump;
 
@@ -615,12 +617,6 @@ package SDL2::FFI 0.05 {
         use SDL2::Utils;
         has();
     };
-
-    package SDL2::RWops {    # TODO: https://github.com/libsdl-org/SDL/blob/main/include/SDL_rwops.h
-        use SDL2::Utils;
-        has();
-    };
-    define audio => [ [ SDL_AUDIOCVT_MAX_FILTERS => 9 ], ];
     attach audio => {
         SDL_AudioInit            => [ ["string"], "int" ],
         SDL_AudioQuit            => [ [] ],
@@ -887,13 +883,6 @@ END
         SDL_ShowSimpleMessageBox => [ [ 'uint32', 'string', 'string', 'SDL_Window' ], 'int' ]
     };
 
-    package SDL2::Sensor {
-        use SDL2::Utils;
-        has;
-    };
-
-    package SDL2::SensorID { };    # type
-
     package SDL2::ControllerTouchpadEvent {
         use SDL2::Utils;
         has;
@@ -953,16 +942,6 @@ END
         use SDL2::Utils;
         has;
     };    # int ptr
-
-    package SDL2::WindowShapeMode {
-        use SDL2::Utils;
-        has;
-    };
-
-    package SDL2::WindowShapeParams {
-        use SDL2::Utils;
-        has;
-    };    # union
 
     package SDL2::TTF {
         use SDL2::Utils;
@@ -1068,8 +1047,6 @@ END
     #use Data::Dump;
     #ddx \%EXPORT_TAGS;
     #ddx \%SDL2::;
-    # plan for the future
-    package SDL3 { };
 };
 1;
 
