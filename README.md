@@ -3723,9 +3723,6 @@ means you can only have one device open at a time with this function.
     *          audio device or failure to set up the audio thread; call
     *          SDL_GetError() for more information.
 
-
-    
-
 # LICENSE
 
 Copyright (C) Sanko Robinson.

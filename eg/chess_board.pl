@@ -2,6 +2,7 @@ use strictures 2;
 use lib '../lib';
 use SDL2::FFI qw[:all];
 
+#warn SDLK_KP_LEFTPAREN();
 # Taken from example found here: https://wiki.libsdl.org/SDL_CreateSoftwareRenderer
 # Globals
 my ( $window, $renderer, $done );
@@ -67,12 +68,10 @@ while ( !$done ) {
             $done = 1;
             exit;
         }
-
-        #     SDLK_ESCAPE = '\x1B', but isn't in SDL2::Enum yet
-        #if (($e->type == SDL_KEYDOWN) && ($e->key->keysym->sym == SDLK_ESCAPE)) {
-        #    $done = 1;
-        #    return;
-        #}
+        elsif ( ( $e->type eq SDL_KEYDOWN ) && ( $e->key->keysym->sym == SDLK_ESCAPE ) ) {
+            $done = 1;
+            exit;
+        }
     }
     DrawChessBoard($renderer);
 

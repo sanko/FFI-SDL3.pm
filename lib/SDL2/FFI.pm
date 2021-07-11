@@ -1,4 +1,4 @@
-package SDL2::FFI 0.04 {
+package SDL2::FFI 0.05 {
     use lib '../lib', 'lib';
 
     # ABSTRACT: FFI Wrapper for SDL (Simple DirectMedia Layer) Development Library
@@ -21,25 +21,7 @@ package SDL2::FFI 0.04 {
     use SDL2::Enum;
     use SDL2::AudioCVT;
     use SDL2::AudioSpec;
-    use SDL2::CommonEvent;
-    use SDL2::DisplayEvent;
-    use SDL2::KeyboardEvent;
-    use SDL2::MouseButtonEvent;
-    use SDL2::MouseMotionEvent;
-    use SDL2::MouseWheelEvent;
-    use SDL2::JoyAxisEvent;
-    use SDL2::JoyBallEvent;
-    use SDL2::JoyHatEvent;
-    use SDL2::JoyButtonEvent;
-    use SDL2::JoyDeviceEvent;
-    use SDL2::ControllerAxisEvent;
-    use SDL2::ControllerButtonEvent;
-    use SDL2::ControllerDeviceEvent;
-    use SDL2::AudioDeviceEvent;
-    use SDL2::TouchFingerEvent;
-    use SDL2::TextEditingEvent;
-    use SDL2::TextInputEvent;
-    use SDL2::WindowEvent;
+    use SDL2::Event;                               # Includes all known events
     use SDL2::Point;
     use SDL2::FPoint;
     use SDL2::FRect;
@@ -51,6 +33,22 @@ package SDL2::FFI 0.04 {
     use SDL2::Texture;
     use SDL2::Renderer;
     use SDL2::RendererInfo;
+    use SDL2::GameControllerButtonBind;
+    use SDL2::HapticDirection;
+    use SDL2::HapticEffect;
+    use SDL2::Joystick;
+    use SDL2::JoystickGUID;
+    use SDL2::Keysym;
+    use SDL2::Locale;
+    use SDL2::MessageBoxData;
+    use SDL2::MetalView;
+    use SDL2::Mutex;
+    use SDL2::Semaphore;
+    use SDL2::Cond;
+    use SDL2::Color;
+    use SDL2::Palette;
+    use SDL2::PixelFormat;
+    #
     use Data::Dump;
 
     # https://github.com/libsdl-org/SDL/blob/main/include/SDL.h
@@ -756,43 +754,6 @@ END
                 sub ($X) { ( ( ($X) & 0xFFFF0000 ) == SDL_WINDOWPOS_CENTERED_MASK() ) }
         ],
     ];
-
-    # https://wiki.libsdl.org/CategoryPixels
-    package SDL2::Color {
-        use SDL2::Utils;
-        has r => 'uint8', g => 'uint8', b => 'uint8', a => 'uint8';
-    };
-
-    package SDL2::Palette {
-        use SDL2::Utils;
-        has
-            ncolors => 'int',
-            colors  => 'SDL_Color';
-    };
-
-    package SDL2::PixelFormat {
-        use SDL2::Utils;
-        has
-            format        => 'uint32',
-            palette       => 'SDL_Palette',
-            BitsPerPixel  => 'uint8',
-            BytesPerPixel => 'uint8',
-            padding       => 'uint32[2]',
-            Rmask         => 'uint32',
-            Gmask         => 'uint32',
-            Bmask         => 'uint32',
-            Amask         => 'uint32',
-            Rloss         => 'uint8',
-            Gloss         => 'uint8',
-            Bloss         => 'uint8',
-            Aloss         => 'uint8',
-            Rshift        => 'uint8',
-            Gshift        => 'uint8',
-            Bshift        => 'uint8',
-            Ashift        => 'uint8',
-            refcount      => 'int',
-            next          => 'opaque'         # SDL_PixelFormat *
-    };
     attach future => {
         SDL_FillRect => [ [ 'SDL_Surface', 'opaque', 'uint32' ], 'int' ],
         SDL_MapRGB   => [
@@ -803,124 +764,6 @@ END
             }
         ]
     };
-
-    package SDL2::MultiGestureEvent {
-        use SDL2::Utils;
-        has
-            type       => 'uint32',
-            timestamp  => 'uint32',
-            touchId    => 'opaque',    # SDL_TouchID
-            dTheta     => 'float',
-            dDist      => 'float',
-            x          => 'float',
-            y          => 'float',
-            numFingers => 'uint16',
-            padding    => 'uint16';
-    };
-
-    package SDL2::DollarGestureEvent {
-        use SDL2::Utils;
-        has
-            type       => 'uint32',
-            timestamp  => 'uint32',
-            touchId    => 'opaque',    # SDL_TouchID
-            gestureId  => 'opaque',    # SDL_GestureID
-            numFingers => 'uint32',
-            error      => 'float',
-            x          => 'float',
-            y          => 'float';
-    };
-
-    package SDL2::DropEvent {
-        use SDL2::Utils;
-        has
-            type      => 'uint32',
-            timestamp => 'uint32',
-            file      => 'char[256]',
-            windowID  => 'uint32';
-    };
-
-    package SDL2::SensorEvent {
-        use SDL2::Utils;
-        has
-            type      => 'uint32',
-            timestamp => 'uint32',
-            which     => 'sint32',
-            data      => 'float[6]';
-    };
-
-    package SDL2::QuitEvent {
-        use SDL2::Utils;
-        has type => 'uint32', timestamp => 'uint32';
-    };
-
-    package SDL2::OSEvent {
-        use SDL2::Utils;
-        has
-            type      => 'uint32',
-            timestamp => 'uint32';
-    };
-
-    package SDL2::UserEvent {
-        use SDL2::Utils;
-        has
-            type      => 'uint32',
-            timestamp => 'uint32',
-            windowID  => 'uint32',
-            code      => 'sint32',
-            data1     => 'opaque',    # void *
-            data2     => 'opaque'     # void *
-    };
-
-    package SDL2::SysWMmsg {
-        use SDL2::Utils;
-        has();
-    };
-
-    package SDL2::SysWMEvent {
-        use SDL2::Utils;
-        has
-            type      => 'uint32',
-            timestamp => 'uint32',
-            msg       => 'opaque'    # SDL_SysWMmsg
-    };
-    use FFI::C::UnionDef;
-
-    package SDL2::Event { use SDL2::Utils; };
-    FFI::C::UnionDef->new( ffi,
-        name    => 'SDL_Event',
-        class   => 'SDL2::Event',
-        members => [
-            type     => 'uint32',
-            common   => 'SDL_CommonEvent',
-            display  => 'SDL_DisplayEvent',
-            window   => 'SDL_WindowEvent',
-            key      => 'SDL_KeyboardEvent',
-            edit     => 'SDL_TextEditingEvent',
-            text     => 'SDL_TextInputEvent',
-            motion   => 'SDL_MouseMotionEvent',
-            button   => 'SDL_MouseButtonEvent',
-            wheel    => 'SDL_MouseWheelEvent',
-            jaxis    => 'SDL_JoyAxisEvent',
-            jball    => 'SDL_JoyBallEvent',
-            jhat     => 'SDL_JoyHatEvent',
-            jbutton  => 'SDL_JoyButtonEvent',
-            jdevice  => 'SDL_JoyDeviceEvent',
-            caxis    => 'SDL_ControllerAxisEvent',
-            cbutton  => 'SDL_ControllerButtonEvent',
-            cdevice  => 'SDL_ControllerDeviceEvent',
-            adevice  => 'SDL_AudioDeviceEvent',
-            sensor   => 'SDL_SensorEvent',
-            quit     => 'SDL_QuitEvent',
-            user     => 'SDL_UserEvent',
-            syswm    => 'SDL_SysWMEvent',
-            tfinger  => 'SDL_TouchFingerEvent',
-            mgesture => 'SDL_MultiGestureEvent',
-            dgesture => 'SDL_DollarGestureEvent',
-            drop     => 'SDL_DropEvent',
-            padding  => 'uint8[56]'
-        ]
-    );
     ffi->type( '(opaque, opaque)->int' => 'SDL_EventFilter' );
     attach events => {
         SDL_PeepEvents =>
@@ -940,10 +783,6 @@ END
         SDL_FilterEvents     => [ [ 'SDL_EventFilter', 'opaque' ] ]
     };
     #
-    sub SDL_QUERY ()   {-1}
-    sub SDL_IGNORE ()  {0}
-    sub SDL_DISABLE () {0}
-    sub SDL_ENABLE ()  {1}
     #
     ffi->attach( SDL_EventState => [ 'uint32', 'int' ] => 'uint8' );
     sub SDL_GetEventState ($type) { SDL_EventState( $type, SDL_QUERY ) }
@@ -974,279 +813,12 @@ END
     ffi->attach( SDL_GetDefaultCursor   => []      => 'SDL_Cursor' );
     ffi->attach( SDL_FreeCursor         => []      => 'SDL_Cursor' );
     ffi->attach( SDL_ShowCursor         => ['int'] => 'int' );
-
-    # https://wiki.libsdl.org/CategoryPixels
-    sub SDL_ALPHA_OPAQUE()                        {255}
-    sub SDL_ALPHA_TRANSPARENT()                   {0}
-    sub SDL_DEFINE_PIXELFOURCC ( $A, $B, $C, $D ) { SDL_FOURCC( $A, $B, $C, $D ) }
-
-    sub SDL_DEFINE_PIXELFORMAT ( $type, $order, $layout, $bits, $bytes ) {
-        ( ( 1 << 28 ) | ( ($type) << 24 ) | ( ($order) << 20 ) | ( ($layout) << 16 )
-                | ( ($bits) << 8 ) | ( ($bytes) << 0 ) )
+    #
+    # XXX - From SDL_stding.h
+    # Define a four character code as a Uint32
+    sub SDL_FOURCC ( $A, $B, $C, $D ) {
+        ( $A << 0 ) | ( $B << 8 ) | ( $C << 16 ) | ( $D << 24 );
     }
-    sub SDL_PIXELFLAG    ($X) { ( ( ($X) >> 28 ) & 0x0F ) }
-    sub SDL_PIXELTYPE    ($X) { ( ( ($X) >> 24 ) & 0x0F ) }
-    sub SDL_PIXELORDER   ($X) { ( ( ($X) >> 20 ) & 0x0F ) }
-    sub SDL_PIXELLAYOUT  ($X) { ( ( ($X) >> 16 ) & 0x0F ) }
-    sub SDL_BITSPERPIXEL ($X) { ( ( ($X) >> 8 ) & 0xFF ) }
-
-    sub SDL_BYTESPERPIXEL ($X) {
-        (
-            SDL_ISPIXELFORMAT_FOURCC($X) ? (
-                (
-                    ( ($X) == SDL_PIXELFORMAT_YUY2() )     ||
-                        ( ($X) == SDL_PIXELFORMAT_UYVY() ) ||
-                        ( ($X) == SDL_PIXELFORMAT_YVYU() )
-                ) ? 2 : 1
-                ) :
-                ( ( ($X) >> 0 ) & 0xFF )
-        )
-    }
-
-    sub SDL_ISPIXELFORMAT_INDEXED ($format) {
-        (
-            !SDL_ISPIXELFORMAT_FOURCC($format) &&
-                ( ( SDL_PIXELTYPE($format) == SDL_PIXELTYPE_INDEX1() ) ||
-                ( SDL_PIXELTYPE($format) == SDL_PIXELTYPE_INDEX4() ) ||
-                ( SDL_PIXELTYPE($format) == SDL_PIXELTYPE_INDEX8() ) )
-        )
-    }
-
-    sub SDL_ISPIXELFORMAT_PACKED ($format) {
-        (
-            !SDL_ISPIXELFORMAT_FOURCC($format) &&
-                ( ( SDL_PIXELTYPE($format) == SDL_PIXELTYPE_PACKED8() ) ||
-                ( SDL_PIXELTYPE($format) == SDL_PIXELTYPE_PACKED16() ) ||
-                ( SDL_PIXELTYPE($format) == SDL_PIXELTYPE_PACKED32() ) )
-        )
-    }
-
-    sub SDL_ISPIXELFORMAT_ARRAY ($format) {
-        (
-            !SDL_ISPIXELFORMAT_FOURCC($format) &&
-                ( ( SDL_PIXELTYPE($format) == SDL_PIXELTYPE_ARRAYU8() ) ||
-                ( SDL_PIXELTYPE($format) == SDL_PIXELTYPE_ARRAYU16() ) ||
-                ( SDL_PIXELTYPE($format) == SDL_PIXELTYPE_ARRAYU32() ) ||
-                ( SDL_PIXELTYPE($format) == SDL_PIXELTYPE_ARRAYF16() ) ||
-                ( SDL_PIXELTYPE($format) == SDL_PIXELTYPE_ARRAYF32() ) )
-        )
-    }
-
-    sub SDL_ISPIXELFORMAT_ALPHA ($format) {
-        (
-            (
-                SDL_ISPIXELFORMAT_PACKED($format) &&
-                    ( ( SDL_PIXELORDER($format) == SDL_PACKEDORDER_ARGB() ) ||
-                    ( SDL_PIXELORDER($format) == SDL_PACKEDORDER_RGBA() ) ||
-                    ( SDL_PIXELORDER($format) == SDL_PACKEDORDER_ABGR() ) ||
-                    ( SDL_PIXELORDER($format) == SDL_PACKEDORDER_BGRA() ) )
-            ) ||
-                (
-                SDL_ISPIXELFORMAT_ARRAY($format) &&
-                ( ( SDL_PIXELORDER($format) == SDL_ARRAYORDER_ARGB() ) ||
-                    ( SDL_PIXELORDER($format) == SDL_ARRAYORDER_RGBA() ) ||
-                    ( SDL_PIXELORDER($format) == SDL_ARRAYORDER_ABGR() ) ||
-                    ( SDL_PIXELORDER($format) == SDL_ARRAYORDER_BGRA() ) )
-                )
-        )
-    }
-
-    #/* The flag is set to 1 because 0x1? is not in the printable ASCII range */
-    sub SDL_ISPIXELFORMAT_FOURCC ($format) { ( ($format) && ( SDL_PIXELFLAG($format) != 1 ) ) }
-    sub SDL_PIXELFORMAT_UNKNOWN ()         {0}
-
-    sub SDL_PIXELFORMAT_INDEX1LSB () {
-        SDL_DEFINE_PIXELFORMAT( SDL_PIXELTYPE_INDEX1(), SDL_BITMAPORDER_4321(), 0, 1, 0 );
-    }
-
-    sub SDL_PIXELFORMAT_INDEX1MSB () {
-        SDL_DEFINE_PIXELFORMAT( SDL_PIXELTYPE_INDEX1(), SDL_BITMAPORDER_1234(), 0, 1, 0 );
-    }
-
-    sub SDL_PIXELFORMAT_INDEX4LSB () {
-        SDL_DEFINE_PIXELFORMAT( SDL_PIXELTYPE_INDEX4(), SDL_BITMAPORDER_4321(), 0, 4, 0 );
-    }
-
-    sub SDL_PIXELFORMAT_INDEX4MSB () {
-        SDL_DEFINE_PIXELFORMAT( SDL_PIXELTYPE_INDEX4(), SDL_BITMAPORDER_1234(), 0, 4, 0 );
-    }
-
-    sub SDL_PIXELFORMAT_INDEX8 () {
-        SDL_DEFINE_PIXELFORMAT( SDL_PIXELTYPE_INDEX8(), 0, 0, 8, 1 );
-    }
-
-    sub SDL_PIXELFORMAT_RGB332 () {
-        SDL_DEFINE_PIXELFORMAT( SDL_PIXELTYPE_PACKED8(), SDL_PACKEDORDER_XRGB(),
-            SDL_PACKEDLAYOUT_332(), 8, 1 );
-    }
-
-    sub SDL_PIXELFORMAT_RGB444 () {
-        SDL_DEFINE_PIXELFORMAT( SDL_PIXELTYPE_PACKED16(), SDL_PACKEDORDER_XRGB(),
-            SDL_PACKEDLAYOUT_4444(), 12, 2 );
-    }
-
-    sub SDL_PIXELFORMAT_RGB555 () {
-        SDL_DEFINE_PIXELFORMAT( SDL_PIXELTYPE_PACKED16(), SDL_PACKEDORDER_XRGB(),
-            SDL_PACKEDLAYOUT_1555(), 15, 2 );
-    }
-
-    sub SDL_PIXELFORMAT_BGR555 () {
-        SDL_DEFINE_PIXELFORMAT( SDL_PIXELTYPE_PACKED16(), SDL_PACKEDORDER_XBGR(),
-            SDL_PACKEDLAYOUT_1555(), 15, 2 );
-    }
-
-    sub SDL_PIXELFORMAT_ARGB4444 () {
-        SDL_DEFINE_PIXELFORMAT( SDL_PIXELTYPE_PACKED16(), SDL_PACKEDORDER_ARGB(),
-            SDL_PACKEDLAYOUT_4444(), 16, 2 );
-    }
-
-    sub SDL_PIXELFORMAT_RGBA4444 () {
-        SDL_DEFINE_PIXELFORMAT( SDL_PIXELTYPE_PACKED16(), SDL_PACKEDORDER_RGBA(),
-            SDL_PACKEDLAYOUT_4444(), 16, 2 );
-    }
-
-    sub SDL_PIXELFORMAT_ABGR4444 () {
-        SDL_DEFINE_PIXELFORMAT( SDL_PIXELTYPE_PACKED16(), SDL_PACKEDORDER_ABGR(),
-            SDL_PACKEDLAYOUT_4444(), 16, 2 );
-    }
-
-    sub SDL_PIXELFORMAT_BGRA4444 () {
-        SDL_DEFINE_PIXELFORMAT( SDL_PIXELTYPE_PACKED16(), SDL_PACKEDORDER_BGRA(),
-            SDL_PACKEDLAYOUT_4444(), 16, 2 );
-    }
-
-    sub SDL_PIXELFORMAT_ARGB1555 () {
-        SDL_DEFINE_PIXELFORMAT( SDL_PIXELTYPE_PACKED16(), SDL_PACKEDORDER_ARGB(),
-            SDL_PACKEDLAYOUT_1555(), 16, 2 );
-    }
-
-    sub SDL_PIXELFORMAT_RGBA5551 () {
-        SDL_DEFINE_PIXELFORMAT( SDL_PIXELTYPE_PACKED16(), SDL_PACKEDORDER_RGBA(),
-            SDL_PACKEDLAYOUT_5551(), 16, 2 );
-    }
-
-    sub SDL_PIXELFORMAT_ABGR1555 () {
-        SDL_DEFINE_PIXELFORMAT( SDL_PIXELTYPE_PACKED16(), SDL_PACKEDORDER_ABGR(),
-            SDL_PACKEDLAYOUT_1555(), 16, 2 );
-    }
-
-    sub SDL_PIXELFORMAT_BGRA5551 () {
-        SDL_DEFINE_PIXELFORMAT( SDL_PIXELTYPE_PACKED16(), SDL_PACKEDORDER_BGRA(),
-            SDL_PACKEDLAYOUT_5551(), 16, 2 );
-    }
-
-    sub SDL_PIXELFORMAT_RGB565 () {
-        SDL_DEFINE_PIXELFORMAT( SDL_PIXELTYPE_PACKED16(), SDL_PACKEDORDER_XRGB(),
-            SDL_PACKEDLAYOUT_565(), 16, 2 );
-    }
-
-    sub SDL_PIXELFORMAT_BGR565 () {
-        SDL_DEFINE_PIXELFORMAT( SDL_PIXELTYPE_PACKED16(), SDL_PACKEDORDER_XBGR(),
-            SDL_PACKEDLAYOUT_565(), 16, 2 );
-    }
-
-    sub SDL_PIXELFORMAT_RGB24 () {
-        SDL_DEFINE_PIXELFORMAT( SDL_PIXELTYPE_ARRAYU8(), SDL_ARRAYORDER_RGB(), 0, 24, 3 );
-    }
-
-    sub SDL_PIXELFORMAT_BGR24 () {
-        SDL_DEFINE_PIXELFORMAT( SDL_PIXELTYPE_ARRAYU8(), SDL_ARRAYORDER_BGR(), 0, 24, 3 );
-    }
-
-    sub SDL_PIXELFORMAT_RGB888 () {
-        SDL_DEFINE_PIXELFORMAT( SDL_PIXELTYPE_PACKED32(), SDL_PACKEDORDER_XRGB(),
-            SDL_PACKEDLAYOUT_8888(), 24, 4 );
-    }
-
-    sub SDL_PIXELFORMAT_RGBX8888 () {
-        SDL_DEFINE_PIXELFORMAT( SDL_PIXELTYPE_PACKED32(), SDL_PACKEDORDER_RGBX(),
-            SDL_PACKEDLAYOUT_8888(), 24, 4 );
-    }
-
-    sub SDL_PIXELFORMAT_BGR888 () {
-        SDL_DEFINE_PIXELFORMAT( SDL_PIXELTYPE_PACKED32(), SDL_PACKEDORDER_XBGR(),
-            SDL_PACKEDLAYOUT_8888(), 24, 4 );
-    }
-
-    sub SDL_PIXELFORMAT_BGRX8888 () {
-        SDL_DEFINE_PIXELFORMAT( SDL_PIXELTYPE_PACKED32(), SDL_PACKEDORDER_BGRX(),
-            SDL_PACKEDLAYOUT_8888(), 24, 4 );
-    }
-    define pixel_format => [
-        [   SDL_PIXELFORMAT_ARGB8888 => sub () {
-                SDL_DEFINE_PIXELFORMAT( SDL_PIXELTYPE_PACKED32(), SDL_PACKEDORDER_ARGB(),
-                    SDL_PACKEDLAYOUT_8888(), 32, 4 );
-            }
-        ]
-    ];
-
-    sub SDL_PIXELFORMAT_RGBA8888 () {
-        SDL_DEFINE_PIXELFORMAT( SDL_PIXELTYPE_PACKED32(), SDL_PACKEDORDER_RGBA(),
-            SDL_PACKEDLAYOUT_8888(), 32, 4 );
-    }
-
-    sub SDL_PIXELFORMAT_ABGR8888 () {
-        SDL_DEFINE_PIXELFORMAT( SDL_PIXELTYPE_PACKED32(), SDL_PACKEDORDER_ABGR(),
-            SDL_PACKEDLAYOUT_8888(), 32, 4 );
-    }
-
-    sub SDL_PIXELFORMAT_BGRA8888 () {
-        SDL_DEFINE_PIXELFORMAT( SDL_PIXELTYPE_PACKED32(), SDL_PACKEDORDER_BGRA(),
-            SDL_PACKEDLAYOUT_8888(), 32, 4 );
-    }
-
-    sub SDL_PIXELFORMAT_ARGB2101010 () {
-        SDL_DEFINE_PIXELFORMAT( SDL_PIXELTYPE_PACKED32(), SDL_PACKEDORDER_ARGB(),
-            SDL_PACKEDLAYOUT_2101010(),
-            32, 4 );
-    }
-
-    #    /* Aliases for RGBA byte arrays of color data, for the current platform */
-    #if SDL_BYTEORDER == SDL_BIG_ENDIAN
-    #    SDL_PIXELFORMAT_RGBA32 = SDL_PIXELFORMAT_RGBA8888,
-    #    SDL_PIXELFORMAT_ARGB32 = SDL_PIXELFORMAT_ARGB8888,
-    #    SDL_PIXELFORMAT_BGRA32 = SDL_PIXELFORMAT_BGRA8888,
-    #    SDL_PIXELFORMAT_ABGR32 = SDL_PIXELFORMAT_ABGR8888,
-    #else
-    #    SDL_PIXELFORMAT_RGBA32 = SDL_PIXELFORMAT_ABGR8888,
-    #    SDL_PIXELFORMAT_ARGB32 = SDL_PIXELFORMAT_BGRA8888,
-    #    SDL_PIXELFORMAT_BGRA32 = SDL_PIXELFORMAT_ARGB8888,
-    #    SDL_PIXELFORMAT_ABGR32 = SDL_PIXELFORMAT_RGBA8888,
-    #endif
-    sub SDL_PIXELFORMAT_YV12 () {
-        SDL_DEFINE_PIXELFOURCC( 'Y', 'V', '1', '2' );
-    }
-
-    sub SDL_PIXELFORMAT_IYUV () {
-        SDL_DEFINE_PIXELFOURCC( 'I', 'Y', 'U', 'V' );
-    }
-
-    sub SDL_PIXELFORMAT_YUY2 () {
-        SDL_DEFINE_PIXELFOURCC( 'Y', 'U', 'Y', '2' );
-    }
-
-    sub SDL_PIXELFORMAT_UYVY () {
-        SDL_DEFINE_PIXELFOURCC( 'U', 'Y', 'V', 'Y' );
-    }
-
-    sub SDL_PIXELFORMAT_YVYU () {
-        SDL_DEFINE_PIXELFOURCC( 'Y', 'V', 'Y', 'U' );
-    }
-
-    sub SDL_PIXELFORMAT_NV12 () {
-        SDL_DEFINE_PIXELFOURCC( 'N', 'V', '1', '2' );
-    }
-
-    sub SDL_PIXELFORMAT_NV21 () {
-        SDL_DEFINE_PIXELFOURCC( 'N', 'V', '2', '1' );
-    }
-
-    sub SDL_PIXELFORMAT_EXTERNAL_OES () {
-        SDL_DEFINE_PIXELFOURCC( 'O', 'E', 'S', ' ' );
-    }
-
-    # include/SDL_stdinc.h
-    sub SDL_FOURCC ( $A, $B, $C, $D ) { $A << 0 | $B << 8 | $C << 16 | $D << 24 }
 
 # Unsorted - https://github.com/libsdl-org/SDL/blob/c59d4dcd38c382a1e9b69b053756f1139a861574/include/SDL_keycode.h
 #    https://github.com/libsdl-org/SDL/blob/c59d4dcd38c382a1e9b69b053756f1139a861574/include/SDL_scancode.h#L151
@@ -1257,131 +829,57 @@ END
             SDL_SetMainReady => [ [] => 'void' ]
         }
     );
-    define SDL_Mouse => [
-        [ SDL_BUTTON        => sub ($x) { 1 << ( ($x) - 1 ) } ],
-        [ SDL_BUTTON_LEFT   => 1 ],
-        [ SDL_BUTTON_MIDDLE => 2 ],
-        [ SDL_BUTTON_RIGHT  => 3 ],
-        [ SDL_BUTTON_X1     => 4 ],
-        [ SDL_BUTTON_X2     => 5 ],
-        [ SDL_BUTTON_LMASK  => sub () { SDL_BUTTON( SDL_BUTTON_LEFT() ); } ],
-        [ SDL_BUTTON_MMASK  => sub () { SDL_BUTTON( SDL_BUTTON_MIDDLE() ); } ],
-        [ SDL_BUTTON_RMASK  => sub () { SDL_BUTTON( SDL_BUTTON_RIGHT() ); } ],
-        [ SDL_BUTTON_X1MASK => sub () { SDL_BUTTON( SDL_BUTTON_X1() ); } ],
-        [ SDL_BUTTON_X2MASK => sub () { SDL_BUTTON( SDL_BUTTON_X2() ); } ]
-    ];
 
     # TODO
-    package SDL2::assert_data { };
+    package SDL2::assert_data {
+        use SDL2::Utils;
+        has;
+    };
 
     package SDL2::atomic_t {
         use SDL2::Utils;
         has value => 'int';
     };
 
-    package SDL2::AudioDeviceEvent { };
-
-    package SDL2::AudioStream { };
-
-    package SDL2::Color { };
-
-    package SDL2::ControllerAxisEvent { };
-
-    package SDL2::ControllerButtonEvent { };
-
-    package SDL2::ControllerDeviceEvent { };
-
-    package SDL2::DisplayMode { };
-
-    package SDL2::DollarGestureEvent { };
-
-    package SDL2::DropEvent { };
-
-    package SDL2::Event { };
-
     package SDL2::Finger {
         use SDL2::Utils;
+        ffi->type( 'sint64' => 'SDL_TouchID' );
+        ffi->type( 'sint64' => 'SDL_FingerID' );
         has
-            id       => 'sint64',    # SDL_FingerID
+            id       => 'SDL_FingerID',
             x        => 'float',
             y        => 'float',
             pressure => 'float';
     };
 
-    package SDL2::GameControllerButtonBind { };
-
-    package SDL2::_GameController { };
-
-    package SDL2::GameCrontroller { };
-
-    package SDL2::_Haptic { };
-
-    package SDL2::Haptic { };
-
-    package SDL2::HapticCondition { };
-
-    package SDL2::HapticConstant { };
-
-    package SDL2::HapticCustom { };
-
-    package SDL2::HapticDirection { };
-
-    package SDL2::HapticEffect { };
-
-    package SDL2::HapticLeftRight { };
-
-    package SDL2::HapticPeriodic { };
-
-    package SDL2::HapticRamp { };
-
-    package SDL2::JoyAxisEvent { };
-
-    package SDL2::JoyBallEvent { };
-
-    package SDL2::JoyButtonEvent { };
-
-    package SDL2::JoyDeviceEvent { };
-
-    package SDL2::JoyHatEvent { };
-
-    package SDL2::Joystick { };
-
-    package SDL2::JoystickGUID { };
-
-    package SDL2::JoystickID { };
-
-    package SDL2::_JoyStick { };
-
-    package SDL2::KeyboardEvent { };
-
-    package SDL2::Keysym {
+    package SDL2::_GameController {
         use SDL2::Utils;
-        has
-            scancode => 'opaque',    # SDL_Scancode
-            sym      => 'opaque',    # SDL_Keycode
-            mod      => 'uint16',
-            unused   => 'uint32';
+        has;
     };
 
-    package SDL2::MessageBoxButtonData {
+    package SDL2::GameCrontroller {
         use SDL2::Utils;
-        has
-            flags    => 'uint32',
-            buttonid => 'int',
-            text     => 'opaque'     # 'string'
+        has;
     };
 
-    package SDL2::MessageBoxColor {
+    package SDL2::_Haptic {
         use SDL2::Utils;
-        has
-            r => 'uint8',
-            g => 'uint8',
-            b => 'uint8';
+        has;
     };
 
-    package SDL2::MessageBoxColorScheme {
+    package SDL2::Haptic {
         use SDL2::Utils;
-        has colors => 'opaque'    # SDL_MessageBoxColor colors[SDL_MESSAGEBOX_COLOR_MAX];
+        has;
+    };
+
+    package SDL2::JoystickID {
+        use SDL2::Utils;
+        has;
+    };
+
+    package SDL2::_JoyStick {
+        use SDL2::Utils;
+        has;
     };
     attach messagebox => {
 
@@ -1389,125 +887,127 @@ END
         SDL_ShowSimpleMessageBox => [ [ 'uint32', 'string', 'string', 'SDL_Window' ], 'int' ]
     };
 
-    package SDL2::MessageBoxData {
+    package SDL2::Sensor {
         use SDL2::Utils;
-        has
-            flags       => 'uint32',
-            window      => 'opaque',    # SDL_Window*
-            title       => 'opaque',    # string
-            message     => 'opaque',    # string
-            numbuttons  => 'int',
-            buttons     => 'opaque',    # SDL_MessageBoxButtonData*
-            colorScheme => 'opaque'     # SDL_MessageBoxColorScheme *
+        has;
     };
-
-    package SDL2::MouseButtonEvent { };
-
-    package SDL2::MouseMotionEvent { };
-
-    package SDL2::MouseWheelEvent { };
-
-    package SDL2::MultiGestureEvent { };
-
-    package SDL2::Palette { };
-
-    package SDL2::PixelFormat { };
-
-    package SDL2::QuitEvent { };
-
-    package SDL2::Renderer { };
-
-    package SDL2::RendererInfo { };
-
-    package SDL2::RWops { };
-
-    package SDL2::SensorEvent { };
-
-    package SDL2::SysWMEvent { };
-
-    package SDL2::SysWMinfo { };
-
-    package SDL2::Sensor { };
 
     package SDL2::SensorID { };    # type
 
-    package SDL2::TextEditingEvent { };
+    package SDL2::ControllerTouchpadEvent {
+        use SDL2::Utils;
+        has;
+    };
 
-    package SDL2::TextInputEvent { };
+    package SDL2::Mixer {
+        use SDL2::Utils;
+        has;
+    };
 
-    package SDL2::TouchFingerEvent { };
+    package SDL2::Mixer::Mix::Chunk {
+        use SDL2::Utils;
+        has;
+    };
 
-    package SDL2::ControllerTouchpadEvent { };
+    package SDL2::Mixer::Mix::Fading {
+        use SDL2::Utils;
+        has;
+    };
 
-    package SDL2::UserEvent { };
+    package SDL2::Mixer::Mix::MusicType {
+        use SDL2::Utils;
+        has;
+    };
 
-    package SDL2::WindowEvent { };
+    package SDL2::Mixer::Mix::Music {
+        use SDL2::Utils;
+        has;
+    };
 
-    package SDL2::Mixer { };
+    package SDL2::Mixer::Chunk {
+        use SDL2::Utils;
+        has;
+    };
 
-    package SDL2::Mixer::Mix::Chunk { };
+    package SDL2::Mixer::Fading {
+        use SDL2::Utils;
+        has;
+    };
 
-    package SDL2::Mixer::Mix::Fading { };
+    package SDL2::Mixer::MusicType {
+        use SDL2::Utils;
+        has;
+    };
 
-    package SDL2::Mixer::Mix::MusicType { };
+    package SDL2::Mixer::Music {
+        use SDL2::Utils;
+        has;
+    };
 
-    package SDL2::Mixer::Mix::Music { };
+    package SDL2::Image {
+        use SDL2::Utils;
+        has;
+    };
 
-    package SDL2::Mixer::Mix::Chunk { };
+    package SDL2::iconv_t {
+        use SDL2::Utils;
+        has;
+    };    # int ptr
 
-    package SDL2::Mixer::Chunk { };
+    package SDL2::WindowShapeMode {
+        use SDL2::Utils;
+        has;
+    };
 
-    package SDL2::Mixer::Fading { };
+    package SDL2::WindowShapeParams {
+        use SDL2::Utils;
+        has;
+    };    # union
 
-    package SDL2::Mixer::MusicType { };
+    package SDL2::TTF {
+        use SDL2::Utils;
+        has;
+    };
 
-    package SDL2::Mixer::Music { };
+    package SDL2::TTF::Image {
+        use SDL2::Utils;
+        has;
+    };
 
-    package SDL2::Mixer::Chunk { };
+    package SDL2::TTF::Font {
+        use SDL2::Utils;
+        has;
+    };
 
-    package SDL2::Image { };
+    package SDL2::TTF::PosBuf {
+        use SDL2::Utils;
+        has;
+    };
 
-    package SDL2::iconv_t { };    # int ptr
+    package SDL2::Net {
+        use SDL2::Utils;
+        has;
+    };
 
-    package SDL2::WindowShapeMode { };
+    package SDL2::RTF {
+        use SDL2::Utils;
+        has;
+    };
 
-    package SDL2::WindowShapeParams { };    # union
+    package SDL2::RTF::Context {
+        use SDL2::Utils;
+        has;
+    };
 
-    package SDL2::TTF { };
-
-    package SDL2::TTF::Image { };
-
-    package SDL2::TTF::Font { };
-
-    package SDL2::TTF::PosBuf { };
-
-    package SDL2::Net { };
-
-    package SDL2::RTF { };
-
-    package SDL2::RTF::Context { };
-
-    package SDL2::RTF::FontEngine { };
-
-    package SDL2::Mutex { };
-
-    package SDL2::Semaphore { };
-
-    package SDL2::Sem { };
-
-    package SDL2::Cond { };
+    package SDL2::RTF::FontEngine {
+        use SDL2::Utils;
+        has;
+    };
 
     package SDL2::Thread {
         use SDL2::Utils;
         has();
     }
-
-    package SDL2::Locale {
-        use SDL2::Utils;
-        has
-            language => 'opaque',    # string
-            country  => 'opaque'     # string
-    };
 
     package SDL2::ShapeDriver { };
 
@@ -1524,7 +1024,10 @@ END
             driverdata        => 'opaque';    # void *
     };
 
-    package SDL2::VideoDevice { };
+    package SDL2::VideoDevice {
+        use SDL2::Utils;
+        has;
+    };
 
     package SDL2::WindowUserData {
         use SDL2::Utils;
@@ -1533,15 +1036,25 @@ END
             next => 'opaque';                 # SDL_WindowUserData
     };
 
-    package SDL2::SysWMinfo { };
+    package SDL2::SysWMinfo {
+        use SDL2::Utils;
+        has;
+    };
 
-    package SDL2::VideoBootStrap { };
+    package SDL2::VideoBootStrap {
+        use SDL2::Utils;
+        has;
+    };
 
-    package SDL2::SpinLock { };
+    package SDL2::SpinLock {
+        use SDL2::Utils;
+        has;
+    };
 
-    package SDL2::AtomicLock { };
-
-    package SDL2::AudioFormat { };
+    package SDL2::AtomicLock {
+        use SDL2::Utils;
+        has;
+    };
 
     #warn SDL2::SDLK_UP();
     #warn SDL2::SDLK_DOWN();
@@ -6415,7 +5928,7 @@ means you can only have one device open at a time with this function.
  *          SDL_GetError() for more information.
 
 
- 
+
 =head1 LICENSE
 
 Copyright (C) Sanko Robinson.

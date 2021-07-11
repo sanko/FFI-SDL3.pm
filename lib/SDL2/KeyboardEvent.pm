@@ -1,5 +1,6 @@
 package SDL2::KeyboardEvent {
     use SDL2::Utils;
+    use SDL2::Keysym;
     has
         type      => 'uint32',
         timestamp => 'uint32',
@@ -8,8 +9,7 @@ package SDL2::KeyboardEvent {
         repeat    => 'uint8',
         padding2  => 'uint8',
         padding3  => 'uint8',
-        keysym    => 'opaque'    # SDL_Keysym
-        ;
+        keysym    => 'SDL_Keysym';
 
 =encoding utf-8
 

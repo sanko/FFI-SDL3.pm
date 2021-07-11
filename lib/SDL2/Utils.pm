@@ -37,7 +37,10 @@ package SDL2::Utils {
         $package = 'SDL2::FFI';
         for my $tag ( keys %args ) {
             FFI::C->enum( $tag => $args{$tag}, { package => $package } );
-            push @{ $SDL2::FFI::EXPORT_TAGS{ lc substr $tag, 4 } },
+            my $_tag = $tag;                                     # Simple rules:
+            $_tag =~ s[^SDL_][];                                 # No SDL_XXXXX
+            $_tag = lcfirst $_tag unless $_tag =~ m[^.[A-Z]];    # Save GLattr
+            push @{ $SDL2::FFI::EXPORT_TAGS{$_tag} },
                 sort map { ref $_ ? ref $_ eq 'CODE' ? $_->() : $_->[0] : $_ } @{ $args{$tag} };
         }
     }

@@ -16,9 +16,10 @@ package SDL2::Enum {
         [ SDL_INIT_SENSOR         => 0x00008000 ],
         [ SDL_INIT_NOPARACHUTE    => 0x00100000 ],
         [   SDL_INIT_EVERYTHING => sub {
-                SDL_INIT_TIMER() | SDL_INIT_AUDIO() | SDL_INIT_VIDEO() | SDL_INIT_EVENTS()
-                    | SDL_INIT_JOYSTICK() | SDL_INIT_HAPTIC() | SDL_INIT_GAMECONTROLLER()
-                    | SDL_INIT_SENSOR();
+                SDL2::FFI::SDL_INIT_TIMER() | SDL2::FFI::SDL_INIT_AUDIO()
+                    | SDL2::FFI::SDL_INIT_VIDEO() | SDL2::FFI::SDL_INIT_EVENTS()
+                    | SDL2::FFI::SDL_INIT_JOYSTICK() | SDL2::FFI::SDL_INIT_HAPTIC()
+                    | SDL2::FFI::SDL_INIT_GAMECONTROLLER() | SDL2::FFI::SDL_INIT_SENSOR();
             }
         ]
     ];
@@ -194,13 +195,84 @@ package SDL2::Enum {
         # This last event is only  for bounding internal arrays
         [ SDL_LASTEVENT => 0xFFFF ]
     ];
+    define SDL_EventState =>
+        [ [ SDL_QUERY => -1 ], [ SDL_IGNORE => 0 ], [ SDL_DISABLE => 0 ], [ SDL_ENABLE => 1 ] ];
+    enum SDL_GameControllerType => [
+        [ SDL_CONTROLLER_TYPE_UNKNOWN => 0 ], qw[
+            SDL_CONTROLLER_TYPE_XBOX360
+            SDL_CONTROLLER_TYPE_XBOXONE
+            SDL_CONTROLLER_TYPE_PS3
+            SDL_CONTROLLER_TYPE_PS4
+            SDL_CONTROLLER_TYPE_NINTENDO_SWITCH_PRO
+            SDL_CONTROLLER_TYPE_VIRTUAL
+            SDL_CONTROLLER_TYPE_PS5
+        ]
+        ],
+        SDL_GameControllerBindType => [
+        [ SDL_CONTROLLER_BINDTYPE_NONE => 0 ], qw[ SDL_CONTROLLER_BINDTYPE_BUTTON
+            SDL_CONTROLLER_BINDTYPE_AXIS
+            SDL_CONTROLLER_BINDTYPE_HAT]
+        ],
+        SDL_GameControllerAxis => [
+        [ SDL_CONTROLLER_AXIS_INVALID => -1 ], qw[SDL_CONTROLLER_AXIS_LEFTX
+            SDL_CONTROLLER_AXIS_LEFTY
+            SDL_CONTROLLER_AXIS_RIGHTX
+            SDL_CONTROLLER_AXIS_RIGHTY
+            SDL_CONTROLLER_AXIS_TRIGGERLEFT
+            SDL_CONTROLLER_AXIS_TRIGGERRIGHT
+            SDL_CONTROLLER_AXIS_MAX]
+        ],
+        SDL_GameControllerButton => [
+        [ SDL_CONTROLLER_BUTTON_INVALID => -1 ], qw[SDL_CONTROLLER_BUTTON_A
+            SDL_CONTROLLER_BUTTON_B
+            SDL_CONTROLLER_BUTTON_X
+            SDL_CONTROLLER_BUTTON_Y
+            SDL_CONTROLLER_BUTTON_BACK
+            SDL_CONTROLLER_BUTTON_GUIDE
+            SDL_CONTROLLER_BUTTON_START
+            SDL_CONTROLLER_BUTTON_LEFTSTICK
+            SDL_CONTROLLER_BUTTON_RIGHTSTICK
+            SDL_CONTROLLER_BUTTON_LEFTSHOULDER
+            SDL_CONTROLLER_BUTTON_RIGHTSHOULDER
+            SDL_CONTROLLER_BUTTON_DPAD_UP
+            SDL_CONTROLLER_BUTTON_DPAD_DOWN
+            SDL_CONTROLLER_BUTTON_DPAD_LEFT
+            SDL_CONTROLLER_BUTTON_DPAD_RIGHT
+            SDL_CONTROLLER_BUTTON_MISC1
+            SDL_CONTROLLER_BUTTON_PADDLE1
+            SDL_CONTROLLER_BUTTON_PADDLE2
+            SDL_CONTROLLER_BUTTON_PADDLE3
+            SDL_CONTROLLER_BUTTON_PADDLE4
+            SDL_CONTROLLER_BUTTON_TOUCHPAD
+            SDL_CONTROLLER_BUTTON_MAX]
+        ];
+    define SDL_Haptic => [
+        [ SDL_HAPTIC_CONSTANT      => ( 1 << 0 ) ],
+        [ SDL_HAPTIC_SINE          => ( 1 << 1 ) ],
+        [ SDL_HAPTIC_LEFTRIGHT     => ( 1 << 2 ) ],
+        [ SDL_HAPTIC_TRIANGLE      => ( 1 << 3 ) ],
+        [ SDL_HAPTIC_SAWTOOTHUP    => ( 1 << 4 ) ],
+        [ SDL_HAPTIC_SAWTOOTHDOWN  => ( 1 << 5 ) ],
+        [ SDL_HAPTIC_RAMP          => ( 1 << 6 ) ],
+        [ SDL_HAPTIC_SPRING        => ( 1 << 7 ) ],
+        [ SDL_HAPTIC_DAMPER        => ( 1 << 8 ) ],
+        [ SDL_HAPTIC_INERTIA       => ( 1 << 9 ) ],
+        [ SDL_HAPTIC_FRICTION      => ( 1 << 10 ) ],
+        [ SDL_HAPTIC_CUSTOM        => ( 1 << 11 ) ],
+        [ SDL_HAPTIC_GAIN          => ( 1 << 12 ) ],
+        [ SDL_HAPTIC_AUTOCENTER    => ( 1 << 13 ) ],
+        [ SDL_HAPTIC_STATUS        => ( 1 << 14 ) ],
+        [ SDL_HAPTIC_PAUSE         => ( 1 << 15 ) ],
+        [ SDL_HAPTIC_POLAR         => 0 ],
+        [ SDL_HAPTIC_CARTESIAN     => 1 ],
+        [ SDL_HAPTIC_SPHERICAL     => 2 ],
+        [ SDL_HAPTIC_STEERING_AXIS => 3 ],
+        [ SDL_HAPTIC_INFINITY      => 4294967295 ]
+    ];
 
-    # START HERE
+    # https://github.com/libsdl-org/SDL/blob/main/include/SDL_hints.h
     enum SDL_HintPriority => [qw[SDL_HINT_DEFAULT SDL_HINT_NORMAL SDL_HINT_OVERRIDE]];
-    define
-
-        # https://github.com/libsdl-org/SDL/blob/main/include/SDL_hints.h
-        SDL_Hint => [
+    define SDL_Hint       => [
         [ SDL_HINT_ACCELEROMETER_AS_JOYSTICK   => 'SDL_ACCELEROMETER_AS_JOYSTICK' ],
         [ SDL_HINT_ALLOW_ALT_TAB_WHILE_GRABBED => 'SDL_ALLOW_ALT_TAB_WHILE_GRABBED' ],
         [ SDL_HINT_ALLOW_TOPMOST               => 'SDL_ALLOW_TOPMOST' ],
@@ -332,7 +404,356 @@ package SDL2::Enum {
         [ SDL_HINT_WINRT_PRIVACY_POLICY_URL        => 'SDL_WINRT_PRIVACY_POLICY_URL' ],
         [ SDL_HINT_XINPUT_ENABLED                  => 'SDL_XINPUT_ENABLED' ],
         [ SDL_HINT_XINPUT_USE_OLD_JOYSTICK_MAPPING => 'SDL_XINPUT_USE_OLD_JOYSTICK_MAPPING' ]
+    ];
+    enum SDL_JoystickType => [
+        qw[
+            SDL_JOYSTICK_TYPE_UNKNOWN
+            SDL_JOYSTICK_TYPE_GAMECONTROLLER
+            SDL_JOYSTICK_TYPE_WHEEL
+            SDL_JOYSTICK_TYPE_ARCADE_STICK
+            SDL_JOYSTICK_TYPE_FLIGHT_STICK
+            SDL_JOYSTICK_TYPE_DANCE_PAD
+            SDL_JOYSTICK_TYPE_GUITAR
+            SDL_JOYSTICK_TYPE_DRUM_KIT
+            SDL_JOYSTICK_TYPE_ARCADE_PAD
+            SDL_JOYSTICK_TYPE_THROTTLE
+        ]
+        ],
+        SDL_JoystickPowerLevel => [
+        [ SDL_JOYSTICK_POWER_UNKNOWN => -1 ], qw[SDL_JOYSTICK_POWER_EMPTY
+            SDL_JOYSTICK_POWER_LOW
+            SDL_JOYSTICK_POWER_MEDIUM
+            SDL_JOYSTICK_POWER_FULL
+            SDL_JOYSTICK_POWER_WIRED
+            SDL_JOYSTICK_POWER_MAX]
         ];
+    define hatPositoin => [
+        [ SDL_HAT_CENTERED  => 0x00 ],
+        [ SDL_HAT_UP        => 0x01 ],
+        [ SDL_HAT_RIGHT     => 0x02 ],
+        [ SDL_HAT_DOWN      => 0x04 ],
+        [ SDL_HAT_LEFT      => 0x08 ],
+        [ SDL_HAT_RIGHTUP   => sub () { ( SDL_HAT_RIGHT() | SDL_HAT_UP() ) } ],
+        [ SDL_HAT_RIGHTDOWN => sub () { ( SDL_HAT_RIGHT() | SDL_HAT_DOWN() ) } ],
+        [ SDL_HAT_LEFTUP    => sub () { ( SDL_HAT_LEFT() | SDL_HAT_UP() ) } ],
+        [ SDL_HAT_LEFTDOWN  => sub () { ( SDL_HAT_LEFT() | SDL_HAT_DOWN() ) } ]
+    ];
+    define SDL_KeyCode => [
+        [ SDLK_SCANCODE_MASK      => ( 1 << 30 ) ],
+        [ SDL_SCANCODE_TO_KEYCODE => sub ($X) { ( $X | SDLK_SCANCODE_MASK() ) } ],
+        [ SDLK_UNKNOWN   => 0 ],        [ SDLK_RETURN  => ord "\r" ], [ SDLK_ESCAPE => ord "\x1B" ],
+        [ SDLK_BACKSPACE => ord "\b" ], [ SDLK_TAB     => ord "\t" ], [ SDLK_SPACE  => ord ' ' ],
+        [ SDLK_EXCLAIM  => ord '!' ], [ SDLK_QUOTEDBL  => ord '"' ], [ SDLK_HASH       => ord '#' ],
+        [ SDLK_PERCENT  => ord '%' ], [ SDLK_DOLLAR    => ord '$' ], [ SDLK_AMPERSAND  => ord '&' ],
+        [ SDLK_QUOTE    => ord "'" ], [ SDLK_LEFTPAREN => ord '(' ], [ SDLK_RIGHTPAREN => ord ')' ],
+        [ SDLK_ASTERISK => ord '*' ], [ SDLK_PLUS      => ord '+' ], [ SDLK_COMMA      => ord ',' ],
+        [ SDLK_MINUS    => ord '-' ], [ SDLK_PERIOD    => ord '.' ], [ SDLK_SLASH      => ord '/' ],
+        [ SDLK_0 => ord '0' ], [ SDLK_1 => ord '1' ], [ SDLK_2 => ord '2' ], [ SDLK_3 => ord '3' ],
+        [ SDLK_4 => ord '4' ], [ SDLK_5 => ord '5' ], [ SDLK_6 => ord '6' ], [ SDLK_7 => ord '7' ],
+        [ SDLK_8         => ord '8' ], [ SDLK_9        => ord '9' ], [ SDLK_COLON  => ord ':' ],
+        [ SDLK_SEMICOLON => ord ';' ], [ SDLK_LESS     => ord '<' ], [ SDLK_EQUALS => ord '=' ],
+        [ SDLK_GREATER   => ord '>' ], [ SDLK_QUESTION => ord '?' ], [ SDLK_AT     => ord '@' ],
+
+        # Skip uppercase letters
+        [ SDLK_LEFTBRACKET  => ord '[' ],
+        [ SDLK_BACKSLASH    => ord "\\" ],
+        [ SDLK_RIGHTBRACKET => ord ']' ],
+        [ SDLK_CARET        => ord '^' ],
+        [ SDLK_UNDERSCORE   => ord '_' ],
+        [ SDLK_BACKQUOTE    => ord '`' ],
+        [ SDLK_a            => ord 'a' ],
+        [ SDLK_b            => ord 'b' ],
+        [ SDLK_c            => ord 'c' ],
+        [ SDLK_d            => ord 'd' ],
+        [ SDLK_e            => ord 'e' ],
+        [ SDLK_f            => ord 'f' ],
+        [ SDLK_g            => ord 'g' ],
+        [ SDLK_h            => ord 'h' ],
+        [ SDLK_i            => ord 'i' ],
+        [ SDLK_j            => ord 'j' ],
+        [ SDLK_k            => ord 'k' ],
+        [ SDLK_l            => ord 'l' ],
+        [ SDLK_m            => ord 'm' ],
+        [ SDLK_n            => ord 'n' ],
+        [ SDLK_o            => ord 'o' ],
+        [ SDLK_p            => ord 'p' ],
+        [ SDLK_q            => ord 'q' ],
+        [ SDLK_r            => ord 'r' ],
+        [ SDLK_s            => ord 's' ],
+        [ SDLK_t            => ord 't' ],
+        [ SDLK_u            => ord 'u' ],
+        [ SDLK_v            => ord 'v' ],
+        [ SDLK_w            => ord 'w' ],
+        [ SDLK_x            => ord 'x' ],
+        [ SDLK_y            => ord 'y' ],
+        [ SDLK_z            => ord 'z' ],
+        [ SDLK_CAPSLOCK     => sub () { ord SDL_SCANCODE_TO_KEYCODE( SDL_SCANCODE_CAPSLOCK() ) } ],
+        [ SDLK_F1           => sub () { ord SDL_SCANCODE_TO_KEYCODE( SDL_SCANCODE_F1() ) } ],
+        [ SDLK_F2           => sub () { ord SDL_SCANCODE_TO_KEYCODE( SDL_SCANCODE_F2() ) } ],
+        [ SDLK_F3           => sub () { ord SDL_SCANCODE_TO_KEYCODE( SDL_SCANCODE_F3() ) } ],
+        [ SDLK_F4           => sub () { ord SDL_SCANCODE_TO_KEYCODE( SDL_SCANCODE_F4() ) } ],
+        [ SDLK_F5           => sub () { ord SDL_SCANCODE_TO_KEYCODE( SDL_SCANCODE_F5() ) } ],
+        [ SDLK_F6           => sub () { ord SDL_SCANCODE_TO_KEYCODE( SDL_SCANCODE_F6() ) } ],
+        [ SDLK_F7           => sub () { ord SDL_SCANCODE_TO_KEYCODE( SDL_SCANCODE_F7() ) } ],
+        [ SDLK_F8           => sub () { ord SDL_SCANCODE_TO_KEYCODE( SDL_SCANCODE_F8() ) } ],
+        [ SDLK_F9           => sub () { ord SDL_SCANCODE_TO_KEYCODE( SDL_SCANCODE_F9() ) } ],
+        [ SDLK_F10          => sub () { ord SDL_SCANCODE_TO_KEYCODE( SDL_SCANCODE_F10() ) } ],
+        [ SDLK_F11          => sub () { ord SDL_SCANCODE_TO_KEYCODE( SDL_SCANCODE_F11() ) } ],
+        [ SDLK_F12          => sub () { ord SDL_SCANCODE_TO_KEYCODE( SDL_SCANCODE_F12() ) } ],
+        [   SDLK_PRINTSCREEN => sub () { ord SDL_SCANCODE_TO_KEYCODE( SDL_SCANCODE_PRINTSCREEN() ) }
+        ],
+        [ SDLK_SCROLLLOCK => sub () { ord SDL_SCANCODE_TO_KEYCODE( SDL_SCANCODE_SCROLLLOCK() ) } ],
+        [ SDLK_PAUSE      => sub () { ord SDL_SCANCODE_TO_KEYCODE( SDL_SCANCODE_PAUSE() ) } ],
+        [ SDLK_INSERT     => sub () { ord SDL_SCANCODE_TO_KEYCODE( SDL_SCANCODE_INSERT() ) } ],
+        [ SDLK_HOME       => sub () { ord SDL_SCANCODE_TO_KEYCODE( SDL_SCANCODE_HOME() ) } ],
+        [ SDLK_PAGEUP     => sub () { ord SDL_SCANCODE_TO_KEYCODE( SDL_SCANCODE_PAGEUP() ) } ],
+        [ SDLK_DELETE     => ord "\x7F" ],
+        [ SDLK_END        => sub () { ord SDL_SCANCODE_TO_KEYCODE( SDL_SCANCODE_END() ) } ],
+        [ SDLK_PAGEDOWN   => sub () { ord SDL_SCANCODE_TO_KEYCODE( SDL_SCANCODE_PAGEDOWN() ) } ],
+        [ SDLK_RIGHT      => sub () { ord SDL_SCANCODE_TO_KEYCODE( SDL_SCANCODE_RIGHT() ) } ],
+        [ SDLK_LEFT       => sub () { ord SDL_SCANCODE_TO_KEYCODE( SDL_SCANCODE_LEFT() ) } ],
+        [ SDLK_DOWN       => sub () { ord SDL_SCANCODE_TO_KEYCODE( SDL_SCANCODE_DOWN() ) } ],
+        [ SDLK_UP         => sub () { ord SDL_SCANCODE_TO_KEYCODE( SDL_SCANCODE_UP() ) } ],
+        [   SDLK_NUMLOCKCLEAR =>
+                sub () { ord SDL_SCANCODE_TO_KEYCODE( SDL_SCANCODE_NUMLOCKCLEAR() ) }
+        ],
+        [ SDLK_KP_DIVIDE => sub () { ord SDL_SCANCODE_TO_KEYCODE( SDL_SCANCODE_KP_DIVIDE() ) } ],
+        [   SDLK_KP_MULTIPLY => sub () { ord SDL_SCANCODE_TO_KEYCODE( SDL_SCANCODE_KP_MULTIPLY() ) }
+        ],
+        [ SDLK_KP_MINUS  => sub () { ord SDL_SCANCODE_TO_KEYCODE( SDL_SCANCODE_KP_MINUS() ) } ],
+        [ SDLK_KP_PLUS   => sub () { ord SDL_SCANCODE_TO_KEYCODE( SDL_SCANCODE_KP_PLUS() ) } ],
+        [ SDLK_KP_ENTER  => sub () { ord SDL_SCANCODE_TO_KEYCODE( SDL_SCANCODE_KP_ENTER() ) } ],
+        [ SDLK_KP_1      => sub () { ord SDL_SCANCODE_TO_KEYCODE( SDL_SCANCODE_KP_1() ) } ],
+        [ SDLK_KP_2      => sub () { ord SDL_SCANCODE_TO_KEYCODE( SDL_SCANCODE_KP_2() ) } ],
+        [ SDLK_KP_3      => sub () { ord SDL_SCANCODE_TO_KEYCODE( SDL_SCANCODE_KP_3() ) } ],
+        [ SDLK_KP_4      => sub () { ord SDL_SCANCODE_TO_KEYCODE( SDL_SCANCODE_KP_4() ) } ],
+        [ SDLK_KP_5      => sub () { ord SDL_SCANCODE_TO_KEYCODE( SDL_SCANCODE_KP_5() ) } ],
+        [ SDLK_KP_6      => sub () { ord SDL_SCANCODE_TO_KEYCODE( SDL_SCANCODE_KP_6() ) } ],
+        [ SDLK_KP_7      => sub () { ord SDL_SCANCODE_TO_KEYCODE( SDL_SCANCODE_KP_7() ) } ],
+        [ SDLK_KP_8      => sub () { ord SDL_SCANCODE_TO_KEYCODE( SDL_SCANCODE_KP_8() ) } ],
+        [ SDLK_KP_9      => sub () { ord SDL_SCANCODE_TO_KEYCODE( SDL_SCANCODE_KP_9() ) } ],
+        [ SDLK_KP_0      => sub () { ord SDL_SCANCODE_TO_KEYCODE( SDL_SCANCODE_KP_0() ) } ],
+        [ SDLK_KP_PERIOD => sub () { ord SDL_SCANCODE_TO_KEYCODE( SDL_SCANCODE_KP_PERIOD() ) } ],
+        [   SDLK_APPLICATION => sub () { ord SDL_SCANCODE_TO_KEYCODE( SDL_SCANCODE_APPLICATION() ) }
+        ],
+        [ SDLK_POWER      => sub () { ord SDL_SCANCODE_TO_KEYCODE( SDL_SCANCODE_POWER() ) } ],
+        [ SDLK_KP_EQUALS  => sub () { ord SDL_SCANCODE_TO_KEYCODE( SDL_SCANCODE_KP_EQUALS() ) } ],
+        [ SDLK_F13        => sub () { ord SDL_SCANCODE_TO_KEYCODE( SDL_SCANCODE_F13() ) } ],
+        [ SDLK_F14        => sub () { ord SDL_SCANCODE_TO_KEYCODE( SDL_SCANCODE_F14() ) } ],
+        [ SDLK_F15        => sub () { ord SDL_SCANCODE_TO_KEYCODE( SDL_SCANCODE_F15() ) } ],
+        [ SDLK_F16        => sub () { ord SDL_SCANCODE_TO_KEYCODE( SDL_SCANCODE_F16() ) } ],
+        [ SDLK_F17        => sub () { ord SDL_SCANCODE_TO_KEYCODE( SDL_SCANCODE_F17() ) } ],
+        [ SDLK_F18        => sub () { ord SDL_SCANCODE_TO_KEYCODE( SDL_SCANCODE_F18() ) } ],
+        [ SDLK_F19        => sub () { ord SDL_SCANCODE_TO_KEYCODE( SDL_SCANCODE_F19() ) } ],
+        [ SDLK_F20        => sub () { ord SDL_SCANCODE_TO_KEYCODE( SDL_SCANCODE_F20() ) } ],
+        [ SDLK_F21        => sub () { ord SDL_SCANCODE_TO_KEYCODE( SDL_SCANCODE_F21() ) } ],
+        [ SDLK_F22        => sub () { ord SDL_SCANCODE_TO_KEYCODE( SDL_SCANCODE_F22() ) } ],
+        [ SDLK_F23        => sub () { ord SDL_SCANCODE_TO_KEYCODE( SDL_SCANCODE_F23() ) } ],
+        [ SDLK_F24        => sub () { ord SDL_SCANCODE_TO_KEYCODE( SDL_SCANCODE_F24() ) } ],
+        [ SDLK_EXECUTE    => sub () { ord SDL_SCANCODE_TO_KEYCODE( SDL_SCANCODE_EXECUTE() ) } ],
+        [ SDLK_HELP       => sub () { ord SDL_SCANCODE_TO_KEYCODE( SDL_SCANCODE_HELP() ) } ],
+        [ SDLK_MENU       => sub () { ord SDL_SCANCODE_TO_KEYCODE( SDL_SCANCODE_MENU() ) } ],
+        [ SDLK_SELECT     => sub () { ord SDL_SCANCODE_TO_KEYCODE( SDL_SCANCODE_SELECT() ) } ],
+        [ SDLK_STOP       => sub () { ord SDL_SCANCODE_TO_KEYCODE( SDL_SCANCODE_STOP() ) } ],
+        [ SDLK_AGAIN      => sub () { ord SDL_SCANCODE_TO_KEYCODE( SDL_SCANCODE_AGAIN() ) } ],
+        [ SDLK_UNDO       => sub () { ord SDL_SCANCODE_TO_KEYCODE( SDL_SCANCODE_UNDO() ) } ],
+        [ SDLK_CUT        => sub () { ord SDL_SCANCODE_TO_KEYCODE( SDL_SCANCODE_CUT() ) } ],
+        [ SDLK_COPY       => sub () { ord SDL_SCANCODE_TO_KEYCODE( SDL_SCANCODE_COPY() ) } ],
+        [ SDLK_PASTE      => sub () { ord SDL_SCANCODE_TO_KEYCODE( SDL_SCANCODE_PASTE() ) } ],
+        [ SDLK_FIND       => sub () { ord SDL_SCANCODE_TO_KEYCODE( SDL_SCANCODE_FIND() ) } ],
+        [ SDLK_MUTE       => sub () { ord SDL_SCANCODE_TO_KEYCODE( SDL_SCANCODE_MUTE() ) } ],
+        [ SDLK_VOLUMEUP   => sub () { ord SDL_SCANCODE_TO_KEYCODE( SDL_SCANCODE_VOLUMEUP() ) } ],
+        [ SDLK_VOLUMEDOWN => sub () { ord SDL_SCANCODE_TO_KEYCODE( SDL_SCANCODE_VOLUMEDOWN() ) } ],
+        [ SDLK_KP_COMMA   => sub () { ord SDL_SCANCODE_TO_KEYCODE( SDL_SCANCODE_KP_COMMA() ) } ],
+        [   SDLK_KP_EQUALSAS400 => sub () {
+                ord SDL_SCANCODE_TO_KEYCODE( SDL_SCANCODE_KP_EQUALSAS400() );
+            }
+        ],
+        [ SDLK_ALTERASE   => sub () { ord SDL_SCANCODE_TO_KEYCODE( SDL_SCANCODE_ALTERASE() ) } ],
+        [ SDLK_SYSREQ     => sub () { ord SDL_SCANCODE_TO_KEYCODE( SDL_SCANCODE_SYSREQ() ) } ],
+        [ SDLK_CANCEL     => sub () { ord SDL_SCANCODE_TO_KEYCODE( SDL_SCANCODE_CANCEL() ) } ],
+        [ SDLK_CLEAR      => sub () { ord SDL_SCANCODE_TO_KEYCODE( SDL_SCANCODE_CLEAR() ) } ],
+        [ SDLK_PRIOR      => sub () { ord SDL_SCANCODE_TO_KEYCODE( SDL_SCANCODE_PRIOR() ) } ],
+        [ SDLK_RETURN2    => sub () { ord SDL_SCANCODE_TO_KEYCODE( SDL_SCANCODE_RETURN2() ) } ],
+        [ SDLK_SEPARATOR  => sub () { ord SDL_SCANCODE_TO_KEYCODE( SDL_SCANCODE_SEPARATOR() ) } ],
+        [ SDLK_OUT        => sub () { ord SDL_SCANCODE_TO_KEYCODE( SDL_SCANCODE_OUT() ) } ],
+        [ SDLK_OPER       => sub () { ord SDL_SCANCODE_TO_KEYCODE( SDL_SCANCODE_OPER() ) } ],
+        [ SDLK_CLEARAGAIN => sub () { ord SDL_SCANCODE_TO_KEYCODE( SDL_SCANCODE_CLEARAGAIN() ) } ],
+        [ SDLK_CRSEL      => sub () { ord SDL_SCANCODE_TO_KEYCODE( SDL_SCANCODE_CRSEL() ) } ],
+        [ SDLK_EXSEL      => sub () { ord SDL_SCANCODE_TO_KEYCODE( SDL_SCANCODE_EXSEL() ) } ],
+        [ SDLK_KP_00      => sub () { ord SDL_SCANCODE_TO_KEYCODE( SDL_SCANCODE_KP_00() ) } ],
+        [ SDLK_KP_000     => sub () { ord SDL_SCANCODE_TO_KEYCODE( SDL_SCANCODE_KP_000() ) } ],
+        [   SDLK_THOUSANDSSEPARATOR => sub () {
+                ord SDL_SCANCODE_TO_KEYCODE( SDL_SCANCODE_THOUSANDSSEPARATOR() );
+            }
+        ],
+        [   SDLK_DECIMALSEPARATOR => sub () {
+                ord SDL_SCANCODE_TO_KEYCODE( SDL_SCANCODE_DECIMALSEPARATOR() );
+            }
+        ],
+        [   SDLK_CURRENCYUNIT =>
+                sub () { ord SDL_SCANCODE_TO_KEYCODE( SDL_SCANCODE_CURRENCYUNIT() ) }
+        ],
+        [   SDLK_CURRENCYSUBUNIT => sub () {
+                ord SDL_SCANCODE_TO_KEYCODE( SDL_SCANCODE_CURRENCYSUBUNIT() );
+            }
+        ],
+        [   SDLK_KP_LEFTPAREN =>
+                sub () { ord SDL_SCANCODE_TO_KEYCODE( SDL_SCANCODE_KP_LEFTPAREN() ) }
+        ],
+        [   SDLK_KP_RIGHTPAREN =>
+                sub () { ord SDL_SCANCODE_TO_KEYCODE( SDL_SCANCODE_KP_RIGHTPAREN() ) }
+        ],
+        [   SDLK_KP_LEFTBRACE =>
+                sub () { ord SDL_SCANCODE_TO_KEYCODE( SDL_SCANCODE_KP_LEFTBRACE() ) }
+        ],
+        [   SDLK_KP_RIGHTBRACE =>
+                sub () { ord SDL_SCANCODE_TO_KEYCODE( SDL_SCANCODE_KP_RIGHTBRACE() ) }
+        ],
+        [ SDLK_KP_TAB => sub () { ord SDL_SCANCODE_TO_KEYCODE( SDL_SCANCODE_KP_TAB() ) } ],
+        [   SDLK_KP_BACKSPACE =>
+                sub () { ord SDL_SCANCODE_TO_KEYCODE( SDL_SCANCODE_KP_BACKSPACE() ) }
+        ],
+        [ SDLK_KP_A       => sub () { ord SDL_SCANCODE_TO_KEYCODE( SDL_SCANCODE_KP_A() ) } ],
+        [ SDLK_KP_B       => sub () { ord SDL_SCANCODE_TO_KEYCODE( SDL_SCANCODE_KP_B() ) } ],
+        [ SDLK_KP_C       => sub () { ord SDL_SCANCODE_TO_KEYCODE( SDL_SCANCODE_KP_C() ) } ],
+        [ SDLK_KP_D       => sub () { ord SDL_SCANCODE_TO_KEYCODE( SDL_SCANCODE_KP_D() ) } ],
+        [ SDLK_KP_E       => sub () { ord SDL_SCANCODE_TO_KEYCODE( SDL_SCANCODE_KP_E() ) } ],
+        [ SDLK_KP_F       => sub () { ord SDL_SCANCODE_TO_KEYCODE( SDL_SCANCODE_KP_F() ) } ],
+        [ SDLK_KP_XOR     => sub () { ord SDL_SCANCODE_TO_KEYCODE( SDL_SCANCODE_KP_XOR() ) } ],
+        [ SDLK_KP_POWER   => sub () { ord SDL_SCANCODE_TO_KEYCODE( SDL_SCANCODE_KP_POWER() ) } ],
+        [ SDLK_KP_PERCENT => sub () { ord SDL_SCANCODE_TO_KEYCODE( SDL_SCANCODE_KP_PERCENT() ) } ],
+        [ SDLK_KP_LESS    => sub () { ord SDL_SCANCODE_TO_KEYCODE( SDL_SCANCODE_KP_LESS() ) } ],
+        [ SDLK_KP_GREATER => sub () { ord SDL_SCANCODE_TO_KEYCODE( SDL_SCANCODE_KP_GREATER() ) } ],
+        [   SDLK_KP_AMPERSAND =>
+                sub () { ord SDL_SCANCODE_TO_KEYCODE( SDL_SCANCODE_KP_AMPERSAND() ) }
+        ],
+        [   SDLK_KP_DBLAMPERSAND => sub () {
+                ord SDL_SCANCODE_TO_KEYCODE( SDL_SCANCODE_KP_DBLAMPERSAND() );
+            }
+        ],
+        [   SDLK_KP_VERTICALBAR => sub () {
+                ord SDL_SCANCODE_TO_KEYCODE( SDL_SCANCODE_KP_VERTICALBAR() );
+            }
+        ],
+        [   SDLK_KP_DBLVERTICALBAR => sub () {
+                ord SDL_SCANCODE_TO_KEYCODE( SDL_SCANCODE_KP_DBLVERTICALBAR() );
+            }
+        ],
+        [ SDLK_KP_COLON  => sub () { ord SDL_SCANCODE_TO_KEYCODE( SDL_SCANCODE_KP_COLON() ) } ],
+        [ SDLK_KP_HASH   => sub () { ord SDL_SCANCODE_TO_KEYCODE( SDL_SCANCODE_KP_HASH() ) } ],
+        [ SDLK_KP_SPACE  => sub () { ord SDL_SCANCODE_TO_KEYCODE( SDL_SCANCODE_KP_SPACE() ) } ],
+        [ SDLK_KP_AT     => sub () { ord SDL_SCANCODE_TO_KEYCODE( SDL_SCANCODE_KP_AT() ) } ],
+        [ SDLK_KP_EXCLAM => sub () { ord SDL_SCANCODE_TO_KEYCODE( SDL_SCANCODE_KP_EXCLAM() ) } ],
+        [   SDLK_KP_MEMSTORE => sub () { ord SDL_SCANCODE_TO_KEYCODE( SDL_SCANCODE_KP_MEMSTORE() ) }
+        ],
+        [   SDLK_KP_MEMRECALL =>
+                sub () { ord SDL_SCANCODE_TO_KEYCODE( SDL_SCANCODE_KP_MEMRECALL() ) }
+        ],
+        [   SDLK_KP_MEMCLEAR => sub () { ord SDL_SCANCODE_TO_KEYCODE( SDL_SCANCODE_KP_MEMCLEAR() ) }
+        ],
+        [ SDLK_KP_MEMADD => sub () { ord SDL_SCANCODE_TO_KEYCODE( SDL_SCANCODE_KP_MEMADD() ) } ],
+        [   SDLK_KP_MEMSUBTRACT => sub () {
+                ord SDL_SCANCODE_TO_KEYCODE( SDL_SCANCODE_KP_MEMSUBTRACT() );
+            }
+        ],
+        [   SDLK_KP_MEMMULTIPLY => sub () {
+                ord SDL_SCANCODE_TO_KEYCODE( SDL_SCANCODE_KP_MEMMULTIPLY() );
+            }
+        ],
+        [   SDLK_KP_MEMDIVIDE =>
+                sub () { ord SDL_SCANCODE_TO_KEYCODE( SDL_SCANCODE_KP_MEMDIVIDE() ) }
+        ],
+        [   SDLK_KP_PLUSMINUS =>
+                sub () { ord SDL_SCANCODE_TO_KEYCODE( SDL_SCANCODE_KP_PLUSMINUS() ) }
+        ],
+        [ SDLK_KP_CLEAR => sub () { ord SDL_SCANCODE_TO_KEYCODE( SDL_SCANCODE_KP_CLEAR() ) } ],
+        [   SDLK_KP_CLEARENTRY =>
+                sub () { ord SDL_SCANCODE_TO_KEYCODE( SDL_SCANCODE_KP_CLEARENTRY() ) }
+        ],
+        [ SDLK_KP_BINARY  => sub () { ord SDL_SCANCODE_TO_KEYCODE( SDL_SCANCODE_KP_BINARY() ) } ],
+        [ SDLK_KP_OCTAL   => sub () { ord SDL_SCANCODE_TO_KEYCODE( SDL_SCANCODE_KP_OCTAL() ) } ],
+        [ SDLK_KP_DECIMAL => sub () { ord SDL_SCANCODE_TO_KEYCODE( SDL_SCANCODE_KP_DECIMAL() ) } ],
+        [   SDLK_KP_HEXADECIMAL => sub () {
+                ord SDL_SCANCODE_TO_KEYCODE( SDL_SCANCODE_KP_HEXADECIMAL() );
+            }
+        ],
+        [ SDLK_LCTRL     => sub () { ord SDL_SCANCODE_TO_KEYCODE( SDL_SCANCODE_LCTRL() ) } ],
+        [ SDLK_LSHIFT    => sub () { ord SDL_SCANCODE_TO_KEYCODE( SDL_SCANCODE_LSHIFT() ) } ],
+        [ SDLK_LALT      => sub () { ord SDL_SCANCODE_TO_KEYCODE( SDL_SCANCODE_LALT() ) } ],
+        [ SDLK_LGUI      => sub () { ord SDL_SCANCODE_TO_KEYCODE( SDL_SCANCODE_LGUI() ) } ],
+        [ SDLK_RCTRL     => sub () { ord SDL_SCANCODE_TO_KEYCODE( SDL_SCANCODE_RCTRL() ) } ],
+        [ SDLK_RSHIFT    => sub () { ord SDL_SCANCODE_TO_KEYCODE( SDL_SCANCODE_RSHIFT() ) } ],
+        [ SDLK_RALT      => sub () { ord SDL_SCANCODE_TO_KEYCODE( SDL_SCANCODE_RALT() ) } ],
+        [ SDLK_RGUI      => sub () { ord SDL_SCANCODE_TO_KEYCODE( SDL_SCANCODE_RGUI() ) } ],
+        [ SDLK_MODE      => sub () { ord SDL_SCANCODE_TO_KEYCODE( SDL_SCANCODE_MODE() ) } ],
+        [ SDLK_AUDIONEXT => sub () { ord SDL_SCANCODE_TO_KEYCODE( SDL_SCANCODE_AUDIONEXT() ) } ],
+        [ SDLK_AUDIOPREV => sub () { ord SDL_SCANCODE_TO_KEYCODE( SDL_SCANCODE_AUDIOPREV() ) } ],
+        [ SDLK_AUDIOSTOP => sub () { ord SDL_SCANCODE_TO_KEYCODE( SDL_SCANCODE_AUDIOSTOP() ) } ],
+        [ SDLK_AUDIOPLAY => sub () { ord SDL_SCANCODE_TO_KEYCODE( SDL_SCANCODE_AUDIOPLAY() ) } ],
+        [ SDLK_AUDIOMUTE => sub () { ord SDL_SCANCODE_TO_KEYCODE( SDL_SCANCODE_AUDIOMUTE() ) } ],
+        [   SDLK_MEDIASELECT => sub () { ord SDL_SCANCODE_TO_KEYCODE( SDL_SCANCODE_MEDIASELECT() ) }
+        ],
+        [ SDLK_WWW        => sub () { ord SDL_SCANCODE_TO_KEYCODE( SDL_SCANCODE_WWW() ) } ],
+        [ SDLK_MAIL       => sub () { ord SDL_SCANCODE_TO_KEYCODE( SDL_SCANCODE_MAIL() ) } ],
+        [ SDLK_CALCULATOR => sub () { ord SDL_SCANCODE_TO_KEYCODE( SDL_SCANCODE_CALCULATOR() ) } ],
+        [ SDLK_COMPUTER   => sub () { ord SDL_SCANCODE_TO_KEYCODE( SDL_SCANCODE_COMPUTER() ) } ],
+        [ SDLK_AC_SEARCH  => sub () { ord SDL_SCANCODE_TO_KEYCODE( SDL_SCANCODE_AC_SEARCH() ) } ],
+        [ SDLK_AC_HOME    => sub () { ord SDL_SCANCODE_TO_KEYCODE( SDL_SCANCODE_AC_HOME() ) } ],
+        [ SDLK_AC_BACK    => sub () { ord SDL_SCANCODE_TO_KEYCODE( SDL_SCANCODE_AC_BACK() ) } ],
+        [ SDLK_AC_FORWARD => sub () { ord SDL_SCANCODE_TO_KEYCODE( SDL_SCANCODE_AC_FORWARD() ) } ],
+        [ SDLK_AC_STOP    => sub () { ord SDL_SCANCODE_TO_KEYCODE( SDL_SCANCODE_AC_STOP() ) } ],
+        [ SDLK_AC_REFRESH => sub () { ord SDL_SCANCODE_TO_KEYCODE( SDL_SCANCODE_AC_REFRESH() ) } ],
+        [   SDLK_AC_BOOKMARKS =>
+                sub () { ord SDL_SCANCODE_TO_KEYCODE( SDL_SCANCODE_AC_BOOKMARKS() ) }
+        ],
+        [   SDLK_BRIGHTNESSDOWN => sub () {
+                ord SDL_SCANCODE_TO_KEYCODE( SDL_SCANCODE_BRIGHTNESSDOWN() );
+            }
+        ],
+        [   SDLK_BRIGHTNESSUP =>
+                sub () { ord SDL_SCANCODE_TO_KEYCODE( SDL_SCANCODE_BRIGHTNESSUP() ) }
+        ],
+        [   SDLK_DISPLAYSWITCH =>
+                sub () { ord SDL_SCANCODE_TO_KEYCODE( SDL_SCANCODE_DISPLAYSWITCH() ) }
+        ],
+        [   SDLK_KBDILLUMTOGGLE => sub () {
+                ord SDL_SCANCODE_TO_KEYCODE( SDL_SCANCODE_KBDILLUMTOGGLE() );
+            }
+        ],
+        [   SDLK_KBDILLUMDOWN =>
+                sub () { ord SDL_SCANCODE_TO_KEYCODE( SDL_SCANCODE_KBDILLUMDOWN() ) }
+        ],
+        [ SDLK_KBDILLUMUP => sub () { ord SDL_SCANCODE_TO_KEYCODE( SDL_SCANCODE_KBDILLUMUP() ) } ],
+        [ SDLK_EJECT      => sub () { ord SDL_SCANCODE_TO_KEYCODE( SDL_SCANCODE_EJECT() ) } ],
+        [ SDLK_SLEEP      => sub () { ord SDL_SCANCODE_TO_KEYCODE( SDL_SCANCODE_SLEEP() ) } ],
+        [ SDLK_APP1       => sub () { ord SDL_SCANCODE_TO_KEYCODE( SDL_SCANCODE_APP1() ) } ],
+        [ SDLK_APP2       => sub () { ord SDL_SCANCODE_TO_KEYCODE( SDL_SCANCODE_APP2() ) } ],
+        [   SDLK_AUDIOREWIND => sub () { ord SDL_SCANCODE_TO_KEYCODE( SDL_SCANCODE_AUDIOREWIND() ) }
+        ],
+        [   SDLK_AUDIOFASTFORWARD =>
+                sub () { ord SDL_SCANCODE_TO_KEYCODE( SDL_SCANCODE_AUDIOFASTFORWARD() ) }
+        ]
+    ];
+    enum SDL_Keymod => [
+        [ KMOD_NONE     => 0x0000 ],
+        [ KMOD_LSHIFT   => 0x0001 ],
+        [ KMOD_RSHIFT   => 0x0002 ],
+        [ KMOD_LCTRL    => 0x0040 ],
+        [ KMOD_RCTRL    => 0x0080 ],
+        [ KMOD_LALT     => 0x0100 ],
+        [ KMOD_RALT     => 0x0200 ],
+        [ KMOD_LGUI     => 0x0400 ],
+        [ KMOD_RGUI     => 0x0800 ],
+        [ KMOD_NUM      => 0x1000 ],
+        [ KMOD_CAPS     => 0x2000 ],
+        [ KMOD_MODE     => 0x4000 ],
+        [ KMOD_RESERVED => 0x8000 ],
+        [ KMOD_CTRL     => sub () { KMOD_LCTRL() | KMOD_RCTRL() } ],
+        [ KMOD_SHIFT    => sub () { KMOD_LSHIFT() | KMOD_RSHIFT() } ],
+        [ KMOD_ALT      => sub () { KMOD_LALT() | KMOD_RALT() } ],
+        [ KMOD_GUI      => sub () { KMOD_LGUI() | KMOD_RGUI() } ]
+    ];
     enum SDL_LogCategory => [
         qw[
             SDL_LOG_CATEGORY_APPLICATION SDL_LOG_CATEGORY_ERROR SDL_LOG_CATEGORY_ASSERT
@@ -350,35 +771,402 @@ package SDL2::Enum {
         [ SDL_LOG_PRIORITY_VERBOSE => 1 ], qw[SDL_LOG_PRIORITY_DEBUG SDL_LOG_PRIORITY_INFO
             SDL_LOG_PRIORITY_WARN SDL_LOG_PRIORITY_ERROR SDL_LOG_PRIORITY_CRITICAL
             SDL_NUM_LOG_PRIORITIES]
+        ];
+    enum
+        SDL_MessageBoxFlags => [
+        [ SDL_MESSAGEBOX_ERROR                 => 0x00000010 ],
+        [ SDL_MESSAGEBOX_WARNING               => 0x00000020 ],
+        [ SDL_MESSAGEBOX_INFORMATION           => 0x00000040 ],
+        [ SDL_MESSAGEBOX_BUTTONS_LEFT_TO_RIGHT => 0x00000080 ],
+        [ SDL_MESSAGEBOX_BUTTONS_RIGHT_TO_LEFT => 0x00000100 ]
         ],
-        SDL_WindowFlags => [
-        [ SDL_WINDOW_FULLSCREEN         => 0x00000001 ],
-        [ SDL_WINDOW_OPENGL             => 0x00000002 ],
-        [ SDL_WINDOW_SHOWN              => 0x00000004 ],
-        [ SDL_WINDOW_HIDDEN             => 0x00000008 ],
-        [ SDL_WINDOW_BORDERLESS         => 0x00000010 ],
-        [ SDL_WINDOW_RESIZABLE          => 0x00000020 ],
-        [ SDL_WINDOW_MINIMIZED          => 0x00000040 ],
-        [ SDL_WINDOW_MAXIMIZED          => 0x00000080 ],
-        [ SDL_WINDOW_MOUSE_GRABBED      => 0x00000100 ],
-        [ SDL_WINDOW_INPUT_FOCUS        => 0x00000200 ],
+        SDL_MessageBoxButtonFlags => [
+        [ SDL_MESSAGEBOX_BUTTON_RETURNKEY_DEFAULT => 0x00000001 ],
+        [ SDL_MESSAGEBOX_BUTTON_ESCAPEKEY_DEFAULT => 0x00000002 ]
+        ],
+        SDL_MessageBoxColorType => [
+        qw[SDL_MESSAGEBOX_COLOR_BACKGROUND
+            SDL_MESSAGEBOX_COLOR_TEXT
+            SDL_MESSAGEBOX_COLOR_BUTTON_BORDER
+            SDL_MESSAGEBOX_COLOR_BUTTON_BACKGROUND
+            SDL_MESSAGEBOX_COLOR_BUTTON_SELECTED
+            SDL_MESSAGEBOX_COLOR_MAX]
+        ],
+        SDL_SystemCursor => [
+        qw[SDL_SYSTEM_CURSOR_ARROW
+            SDL_SYSTEM_CURSOR_IBEAM
+            SDL_SYSTEM_CURSOR_WAIT
+            SDL_SYSTEM_CURSOR_CROSSHAIR
+            SDL_SYSTEM_CURSOR_WAITARROW
+            SDL_SYSTEM_CURSOR_SIZENWSE
+            SDL_SYSTEM_CURSOR_SIZENESW
+            SDL_SYSTEM_CURSOR_SIZEWE
+            SDL_SYSTEM_CURSOR_SIZENS
+            SDL_SYSTEM_CURSOR_SIZEALL
+            SDL_SYSTEM_CURSOR_NO
+            SDL_SYSTEM_CURSOR_HAND
+            SDL_NUM_SYSTEM_CURSORS]
+        ],
+        SDL_MouseWheelDirection => [
+        qw[
+            SDL_MOUSEWHEEL_NORMAL
+            SDL_MOUSEWHEEL_FLIPPED
+        ]
+        ];
+    define mouseButton => [
+        [ SDL_BUTTON        => sub ($x) { 1 << ( ($x) - 1 ) } ],
+        [ SDL_BUTTON_LEFT   => 1 ],
+        [ SDL_BUTTON_MIDDLE => 2 ],
+        [ SDL_BUTTON_RIGHT  => 3 ],
+        [ SDL_BUTTON_X1     => 4 ],
+        [ SDL_BUTTON_X2     => 5 ],
+        [ SDL_BUTTON_LMASK  => sub () { SDL_BUTTON( SDL_BUTTON_LEFT() ); } ],
+        [ SDL_BUTTON_MMASK  => sub () { SDL_BUTTON( SDL_BUTTON_MIDDLE() ); } ],
+        [ SDL_BUTTON_RMASK  => sub () { SDL_BUTTON( SDL_BUTTON_RIGHT() ); } ],
+        [ SDL_BUTTON_X1MASK => sub () { SDL_BUTTON( SDL_BUTTON_X1() ); } ],
+        [ SDL_BUTTON_X2MASK => sub () { SDL_BUTTON( SDL_BUTTON_X2() ); } ]
+    ];
+    define alpha       => [ [ SDL_ALPHA_OPAQUE => 255 ], [ SDL_ALPHA_TRANSPARENT => 0 ] ];
+    enum SDL_PixelType => [
+        qw[SDL_PIXELTYPE_UNKNOWN
+            SDL_PIXELTYPE_INDEX1
+            SDL_PIXELTYPE_INDEX4
+            SDL_PIXELTYPE_INDEX8
+            SDL_PIXELTYPE_PACKED8
+            SDL_PIXELTYPE_PACKED16
+            SDL_PIXELTYPE_PACKED32
+            SDL_PIXELTYPE_ARRAYU8
+            SDL_PIXELTYPE_ARRAYU16
+            SDL_PIXELTYPE_ARRAYU32
+            SDL_PIXELTYPE_ARRAYF16
+            SDL_PIXELTYPE_ARRAYF32]
+        ],
+        SDL_BitmapOrder => [
+        qw[
+            SDL_BITMAPORDER_NONE
+            SDL_BITMAPORDER_4321
+            SDL_BITMAPORDER_1234]
+        ],
+        SDL_PackedOrder => [
+        qw[
+            SDL_PACKEDORDER_NONE
+            SDL_PACKEDORDER_XRGB
+            SDL_PACKEDORDER_RGBX
+            SDL_PACKEDORDER_ARGB
+            SDL_PACKEDORDER_RGBA
+            SDL_PACKEDORDER_XBGR
+            SDL_PACKEDORDER_BGRX
+            SDL_PACKEDORDER_ABGR
+            SDL_PACKEDORDER_BGRA
+        ]
+        ],
+        SDL_ArrayOrder => [
+        qw[SDL_ARRAYORDER_NONE
+            SDL_ARRAYORDER_RGB
+            SDL_ARRAYORDER_RGBA
+            SDL_ARRAYORDER_ARGB
+            SDL_ARRAYORDER_BGR
+            SDL_ARRAYORDER_BGRA
+            SDL_ARRAYORDER_ABGR]
+        ],
+        SDL_PackedLayout => [
+        qw[SDL_PACKEDLAYOUT_NONE
+            SDL_PACKEDLAYOUT_332
+            SDL_PACKEDLAYOUT_4444
+            SDL_PACKEDLAYOUT_1555
+            SDL_PACKEDLAYOUT_5551
+            SDL_PACKEDLAYOUT_565
+            SDL_PACKEDLAYOUT_8888
+            SDL_PACKEDLAYOUT_2101010
+            SDL_PACKEDLAYOUT_1010102]
+        ];
+    define pixels => [
+        [ SDL_DEFINE_PIXELFOURCC => sub ( $A, $B, $C, $D ) { SDL_FOURCC( $A, $B, $C, $D ) } ],
+        [   SDL_DEFINE_PIXELFORMAT => sub ( $type, $order, $layout, $bits, $bytes ) {
+                ( ( 1 << 28 ) | ( ($type) << 24 ) | ( ($order) << 20 ) | ( ($layout) << 16 )
+                        | ( ($bits) << 8 ) | ( ($bytes) << 0 ) )
+            }
+        ],
+        [ SDL_PIXELFLAG    => sub ($X) { ( ( ($X) >> 28 ) & 0x0F ) } ],
+        [ SDL_PIXELTYPE    => sub ($X) { ( ( ($X) >> 24 ) & 0x0F ) } ],
+        [ SDL_PIXELORDER   => sub ($X) { ( ( ($X) >> 20 ) & 0x0F ) } ],
+        [ SDL_PIXELLAYOUT  => sub ($X) { ( ( ($X) >> 16 ) & 0x0F ) } ],
+        [ SDL_BITSPERPIXEL => sub ($X) { ( ( ($X) >> 8 ) & 0xFF ) } ],
+        [   SDL_BYTESPERPIXEL => sub ($X) {
+                (
+                    SDL_ISPIXELFORMAT_FOURCC($X) ? (
+                        (
+                            ( ($X) == SDL_PIXELFORMAT_YUY2() )     ||
+                                ( ($X) == SDL_PIXELFORMAT_UYVY() ) ||
+                                ( ($X) == SDL_PIXELFORMAT_YVYU() )
+                        ) ? 2 : 1
+                        ) :
+                        ( ( ($X) >> 0 ) & 0xFF )
+                )
+            }
+        ],
+        [   SDL_ISPIXELFORMAT_INDEXED => sub ($format) {
+                (
+                    !SDL_ISPIXELFORMAT_FOURCC($format) &&
+                        ( ( SDL_PIXELTYPE($format) == SDL_PIXELTYPE_INDEX1() ) ||
+                        ( SDL_PIXELTYPE($format) == SDL_PIXELTYPE_INDEX4() ) ||
+                        ( SDL_PIXELTYPE($format) == SDL_PIXELTYPE_INDEX8() ) )
+                )
+            }
+        ],
+        [   SDL_ISPIXELFORMAT_PACKED => sub ($format) {
+                (
+                    !SDL_ISPIXELFORMAT_FOURCC($format) &&
+                        ( ( SDL_PIXELTYPE($format) == SDL_PIXELTYPE_PACKED8() ) ||
+                        ( SDL_PIXELTYPE($format) == SDL_PIXELTYPE_PACKED16() ) ||
+                        ( SDL_PIXELTYPE($format) == SDL_PIXELTYPE_PACKED32() ) )
+                )
+            }
+        ],
+        [   SDL_ISPIXELFORMAT_ARRAY => sub ($format) {
+                (
+                    !SDL_ISPIXELFORMAT_FOURCC($format) &&
+                        ( ( SDL_PIXELTYPE($format) == SDL_PIXELTYPE_ARRAYU8() ) ||
+                        ( SDL_PIXELTYPE($format) == SDL_PIXELTYPE_ARRAYU16() ) ||
+                        ( SDL_PIXELTYPE($format) == SDL_PIXELTYPE_ARRAYU32() ) ||
+                        ( SDL_PIXELTYPE($format) == SDL_PIXELTYPE_ARRAYF16() ) ||
+                        ( SDL_PIXELTYPE($format) == SDL_PIXELTYPE_ARRAYF32() ) )
+                )
+            }
+        ],
+        [   SDL_ISPIXELFORMAT_ALPHA => sub ($format) {
+                (
+                    (
+                        SDL_ISPIXELFORMAT_PACKED($format) &&
+                            ( ( SDL_PIXELORDER($format) == SDL_PACKEDORDER_ARGB() ) ||
+                            ( SDL_PIXELORDER($format) == SDL_PACKEDORDER_RGBA() ) ||
+                            ( SDL_PIXELORDER($format) == SDL_PACKEDORDER_ABGR() ) ||
+                            ( SDL_PIXELORDER($format) == SDL_PACKEDORDER_BGRA() ) )
+                    ) ||
+                        (
+                        SDL_ISPIXELFORMAT_ARRAY($format) &&
+                        ( ( SDL_PIXELORDER($format) == SDL_ARRAYORDER_ARGB() ) ||
+                            ( SDL_PIXELORDER($format) == SDL_ARRAYORDER_RGBA() ) ||
+                            ( SDL_PIXELORDER($format) == SDL_ARRAYORDER_ABGR() ) ||
+                            ( SDL_PIXELORDER($format) == SDL_ARRAYORDER_BGRA() ) )
+                        )
+                )
+            }
+        ],
+
+        # The flag is set to 1 because 0x1? is not in the printable ASCII range
+        [   SDL_ISPIXELFORMAT_FOURCC =>
+                sub ($format) { ( ($format) && ( SDL_PIXELFLAG($format) != 1 ) ) }
+        ]
+    ];
+    enum SDL_PixelFormatEnum => [
+        'SDL_PIXELFORMAT_UNKNOWN',
+        [   SDL_PIXELFORMAT_INDEX1LSB => sub () {
+                SDL_DEFINE_PIXELFORMAT( SDL_PIXELTYPE_INDEX1(), SDL_BITMAPORDER_4321(), 0, 1, 0 );
+            }
+        ],
+        [   SDL_PIXELFORMAT_INDEX1MSB => sub () {
+                SDL_DEFINE_PIXELFORMAT( SDL_PIXELTYPE_INDEX1(), SDL_BITMAPORDER_1234(), 0, 1, 0 );
+            }
+        ],
+        [   SDL_PIXELFORMAT_INDEX4LSB => sub () {
+                SDL_DEFINE_PIXELFORMAT( SDL_PIXELTYPE_INDEX4(), SDL_BITMAPORDER_4321(), 0, 4, 0 );
+            }
+        ],
+        [   SDL_PIXELFORMAT_INDEX4MSB => sub () {
+                SDL_DEFINE_PIXELFORMAT( SDL_PIXELTYPE_INDEX4(), SDL_BITMAPORDER_1234(), 0, 4, 0 );
+            }
+        ],
+        [   SDL_PIXELFORMAT_INDEX8 =>
+                sub () { SDL_DEFINE_PIXELFORMAT( SDL_PIXELTYPE_INDEX8(), 0, 0, 8, 1 ) }
+        ],
+        [   SDL_PIXELFORMAT_RGB332 => sub () {
+                SDL_DEFINE_PIXELFORMAT( SDL_PIXELTYPE_PACKED8(), SDL_PACKEDORDER_XRGB(),
+                    SDL_PACKEDLAYOUT_332(), 8, 1 );
+            }
+        ],
+        [   SDL_PIXELFORMAT_XRGB4444 => sub () {
+                SDL_DEFINE_PIXELFORMAT( SDL_PIXELTYPE_PACKED16(), SDL_PACKEDORDER_XRGB(),
+                    SDL_PACKEDLAYOUT_4444(), 12, 2 );
+            }
+        ],
+        [ SDL_PIXELFORMAT_RGB444 => sub () { SDL_PIXELFORMAT_XRGB4444() } ],
+        [   SDL_PIXELFORMAT_XBGR4444 => sub () {
+                SDL_DEFINE_PIXELFORMAT( SDL_PIXELTYPE_PACKED16(), SDL_PACKEDORDER_XBGR(),
+                    SDL_PACKEDLAYOUT_4444(), 12, 2 );
+            }
+        ],
+        [ SDL_PIXELFORMAT_BGR444 => sub () { SDL_PIXELFORMAT_XBGR4444() } ],
+        [   SDL_PIXELFORMAT_XRGB1555 => sub () {
+                SDL_DEFINE_PIXELFORMAT( SDL_PIXELTYPE_PACKED16(), SDL_PACKEDORDER_XRGB(),
+                    SDL_PACKEDLAYOUT_1555(), 15, 2 );
+            }
+        ],
+        [ SDL_PIXELFORMAT_RGB555 => sub () { SDL_PIXELFORMAT_XRGB1555() } ],
+        [   SDL_PIXELFORMAT_XBGR1555 => sub () {
+                SDL_DEFINE_PIXELFORMAT( SDL_PIXELTYPE_PACKED16(), SDL_PACKEDORDER_XBGR(),
+                    SDL_PACKEDLAYOUT_1555(), 15, 2 );
+            }
+        ],
+        [ SDL_PIXELFORMAT_BGR555 => sub () { SDL_PIXELFORMAT_XBGR1555() } ],
+        [   SDL_PIXELFORMAT_ARGB4444 => sub () {
+                SDL_DEFINE_PIXELFORMAT( SDL_PIXELTYPE_PACKED16(), SDL_PACKEDORDER_ARGB(),
+                    SDL_PACKEDLAYOUT_4444(), 16, 2 );
+            }
+        ],
+        [   SDL_PIXELFORMAT_RGBA4444 => sub () {
+                SDL_DEFINE_PIXELFORMAT( SDL_PIXELTYPE_PACKED16(), SDL_PACKEDORDER_RGBA(),
+                    SDL_PACKEDLAYOUT_4444(), 16, 2 );
+            }
+        ],
+        [   SDL_PIXELFORMAT_ABGR4444 => sub () {
+                SDL_DEFINE_PIXELFORMAT( SDL_PIXELTYPE_PACKED16(), SDL_PACKEDORDER_ABGR(),
+                    SDL_PACKEDLAYOUT_4444(), 16, 2 );
+            }
+        ],
+        [   SDL_PIXELFORMAT_BGRA4444 => sub () {
+                SDL_DEFINE_PIXELFORMAT( SDL_PIXELTYPE_PACKED16(), SDL_PACKEDORDER_BGRA(),
+                    SDL_PACKEDLAYOUT_4444(), 16, 2 );
+            }
+        ],
+        [   SDL_PIXELFORMAT_ARGB1555 => sub () {
+                SDL_DEFINE_PIXELFORMAT( SDL_PIXELTYPE_PACKED16(), SDL_PACKEDORDER_ARGB(),
+                    SDL_PACKEDLAYOUT_1555(), 16, 2 );
+            }
+        ],
+        [   SDL_PIXELFORMAT_RGBA5551 => sub () {
+                SDL_DEFINE_PIXELFORMAT( SDL_PIXELTYPE_PACKED16(), SDL_PACKEDORDER_RGBA(),
+                    SDL_PACKEDLAYOUT_5551(), 16, 2 );
+            }
+        ],
+        [   SDL_PIXELFORMAT_ABGR1555 => sub () {
+                SDL_DEFINE_PIXELFORMAT( SDL_PIXELTYPE_PACKED16(), SDL_PACKEDORDER_ABGR(),
+                    SDL_PACKEDLAYOUT_1555(), 16, 2 );
+            }
+        ],
+        [   SDL_PIXELFORMAT_BGRA5551 => sub () {
+                SDL_DEFINE_PIXELFORMAT( SDL_PIXELTYPE_PACKED16(), SDL_PACKEDORDER_BGRA(),
+                    SDL_PACKEDLAYOUT_5551(), 16, 2 );
+            }
+        ],
+        [   SDL_PIXELFORMAT_RGB565 => sub () {
+                SDL_DEFINE_PIXELFORMAT( SDL_PIXELTYPE_PACKED16(), SDL_PACKEDORDER_XRGB(),
+                    SDL_PACKEDLAYOUT_565(), 16, 2 );
+            }
+        ],
+        [   SDL_PIXELFORMAT_BGR565 => sub () {
+                SDL_DEFINE_PIXELFORMAT( SDL_PIXELTYPE_PACKED16(), SDL_PACKEDORDER_XBGR(),
+                    SDL_PACKEDLAYOUT_565(), 16, 2 );
+            }
+        ],
+        [   SDL_PIXELFORMAT_RGB24 => sub () {
+                SDL_DEFINE_PIXELFORMAT( SDL_PIXELTYPE_ARRAYU8(), SDL_ARRAYORDER_RGB(), 0, 24, 3 );
+            }
+        ],
+        [   SDL_PIXELFORMAT_BGR24 => sub () {
+                SDL_DEFINE_PIXELFORMAT( SDL_PIXELTYPE_ARRAYU8(), SDL_ARRAYORDER_BGR(), 0, 24, 3 );
+            }
+        ],
+        [   SDL_PIXELFORMAT_XRGB8888 => sub () {
+                SDL_DEFINE_PIXELFORMAT( SDL_PIXELTYPE_PACKED32(), SDL_PACKEDORDER_XRGB(),
+                    SDL_PACKEDLAYOUT_8888(), 24, 4 );
+            }
+        ],
+        [ SDL_PIXELFORMAT_RGB888 => sub () { SDL_PIXELFORMAT_XRGB8888() } ],
+        [   SDL_PIXELFORMAT_RGBX8888 => sub () {
+                SDL_DEFINE_PIXELFORMAT( SDL_PIXELTYPE_PACKED32(), SDL_PACKEDORDER_RGBX(),
+                    SDL_PACKEDLAYOUT_8888(), 24, 4 );
+            }
+        ],
+        [   SDL_PIXELFORMAT_XBGR8888 => sub () {
+                SDL_DEFINE_PIXELFORMAT( SDL_PIXELTYPE_PACKED32(), SDL_PACKEDORDER_XBGR(),
+                    SDL_PACKEDLAYOUT_8888(), 24, 4 );
+            }
+        ],
+        [ SDL_PIXELFORMAT_BGR888 => sub () { SDL_PIXELFORMAT_XBGR8888() } ],
+        [   SDL_PIXELFORMAT_BGRX8888 => sub () {
+                SDL_DEFINE_PIXELFORMAT( SDL_PIXELTYPE_PACKED32(), SDL_PACKEDORDER_BGRX(),
+                    SDL_PACKEDLAYOUT_8888(), 24, 4 );
+            }
+        ],
+        [   SDL_PIXELFORMAT_ARGB8888 => sub () {
+                SDL_DEFINE_PIXELFORMAT( SDL_PIXELTYPE_PACKED32(), SDL_PACKEDORDER_ARGB(),
+                    SDL_PACKEDLAYOUT_8888(), 32, 4 );
+            }
+        ],
+        [   SDL_PIXELFORMAT_RGBA8888 => sub () {
+                SDL_DEFINE_PIXELFORMAT( SDL_PIXELTYPE_PACKED32(), SDL_PACKEDORDER_RGBA(),
+                    SDL_PACKEDLAYOUT_8888(), 32, 4 );
+            }
+        ],
+        [   SDL_PIXELFORMAT_ABGR8888 => sub () {
+                SDL_DEFINE_PIXELFORMAT( SDL_PIXELTYPE_PACKED32(), SDL_PACKEDORDER_ABGR(),
+                    SDL_PACKEDLAYOUT_8888(), 32, 4 );
+            }
+        ],
+        [   SDL_PIXELFORMAT_BGRA8888 => sub () {
+                SDL_DEFINE_PIXELFORMAT( SDL_PIXELTYPE_PACKED32(), SDL_PACKEDORDER_BGRA(),
+                    SDL_PACKEDLAYOUT_8888(), 32, 4 );
+            }
+        ],
+        [   SDL_PIXELFORMAT_ARGB2101010 => sub () {
+                SDL_DEFINE_PIXELFORMAT( SDL_PIXELTYPE_PACKED32(), SDL_PACKEDORDER_ARGB(),
+                    SDL_PACKEDLAYOUT_2101010(),
+                    32, 4 );
+            }
+        ], (    # Aliases for RGBA byte arrays of color data, for the current platform
+            SDL2::FFI::bigendian() ? (
+                [ SDL_PIXELFORMAT_RGBA32 => sub() { SDL_PIXELFORMAT_RGBA8888() } ],
+                [ SDL_PIXELFORMAT_ARGB32 => sub() { SDL_PIXELFORMAT_ARGB8888() } ],
+                [ SDL_PIXELFORMAT_BGRA32 => sub() { SDL_PIXELFORMAT_BGRA8888() } ],
+                [ SDL_PIXELFORMAT_ABGR32 => sub() { SDL_PIXELFORMAT_ABGR8888() } ]
+                ) : (
+                [ SDL_PIXELFORMAT_RGBA32 => sub() { SDL_PIXELFORMAT_ABGR8888() } ],
+                [ SDL_PIXELFORMAT_ARGB32 => sub() { SDL_PIXELFORMAT_BGRA8888() } ],
+                [ SDL_PIXELFORMAT_BGRA32 => sub() { SDL_PIXELFORMAT_ARGB8888() } ],
+                [ SDL_PIXELFORMAT_ABGR32 => sub() { SDL_PIXELFORMAT_RGBA8888() } ],
+                )
+        ),
+        [ SDL_PIXELFORMAT_YV12         => sub () { SDL_DEFINE_PIXELFOURCC( 'Y', 'V', '1', '2' ) } ],
+        [ SDL_PIXELFORMAT_IYUV         => sub () { SDL_DEFINE_PIXELFOURCC( 'I', 'Y', 'U', 'V' ) } ],
+        [ SDL_PIXELFORMAT_YUY2         => sub () { SDL_DEFINE_PIXELFOURCC( 'Y', 'U', 'Y', '2' ) } ],
+        [ SDL_PIXELFORMAT_UYVY         => sub () { SDL_DEFINE_PIXELFOURCC( 'U', 'Y', 'V', 'Y' ) } ],
+        [ SDL_PIXELFORMAT_YVYU         => sub () { SDL_DEFINE_PIXELFOURCC( 'Y', 'V', 'Y', 'U' ) } ],
+        [ SDL_PIXELFORMAT_NV12         => sub () { SDL_DEFINE_PIXELFOURCC( 'N', 'V', '1', '2' ) } ],
+        [ SDL_PIXELFORMAT_NV21         => sub () { SDL_DEFINE_PIXELFOURCC( 'N', 'V', '2', '1' ) } ],
+        [ SDL_PIXELFORMAT_EXTERNAL_OES => sub () { SDL_DEFINE_PIXELFOURCC( 'O', 'E', 'S', ' ' ) } ]
+    ];
+    enum SDL_PowerState => [
+        qw[
+            SDL_POWERSTATE_UNKNOWN
+            SDL_POWERSTATE_ON_BATTERY SDL_POWERSTATE_NO_BATTERY
+            SDL_POWERSTATE_CHARGING   SDL_POWERSTATE_CHARGED]
+    ];
+
+    # START HERE!!!!!!!!!!!!!
+    enum SDL_AssertState => [
+        qw[ SDL_ASSERTION_RETRY
+            SDL_ASSERTION_BREAK
+            SDL_ASSERTION_ABORT
+            SDL_ASSERTION_IGNORE
+            SDL_ASSERTION_ALWAYS_IGNORE
+        ]
+    ];
+    enum SDL_WindowFlags => [
+        [ SDL_WINDOW_FULLSCREEN         => 0x00000001 ], [ SDL_WINDOW_OPENGL      => 0x00000002 ],
+        [ SDL_WINDOW_SHOWN              => 0x00000004 ], [ SDL_WINDOW_HIDDEN      => 0x00000008 ],
+        [ SDL_WINDOW_BORDERLESS         => 0x00000010 ], [ SDL_WINDOW_RESIZABLE   => 0x00000020 ],
+        [ SDL_WINDOW_MINIMIZED          => 0x00000040 ], [ SDL_WINDOW_MAXIMIZED   => 0x00000080 ],
+        [ SDL_WINDOW_MOUSE_GRABBED      => 0x00000100 ], [ SDL_WINDOW_INPUT_FOCUS => 0x00000200 ],
         [ SDL_WINDOW_MOUSE_FOCUS        => 0x00000400 ],
         [ SDL_WINDOW_FULLSCREEN_DESKTOP => sub { ( SDL_WINDOW_FULLSCREEN() | 0x00001000 ) } ],
-        [ SDL_WINDOW_FOREIGN            => 0x00000800 ],
-        [ SDL_WINDOW_ALLOW_HIGHDPI      => 0x00002000 ],
-        [ SDL_WINDOW_MOUSE_CAPTURE      => 0x00004000 ],
-        [ SDL_WINDOW_ALWAYS_ON_TOP      => 0x00008000 ],
-        [ SDL_WINDOW_SKIP_TASKBAR       => 0x00010000 ],
-        [ SDL_WINDOW_UTILITY            => 0x00020000 ],
-        [ SDL_WINDOW_TOOLTIP            => 0x00040000 ],
-        [ SDL_WINDOW_POPUP_MENU         => 0x00080000 ],
-        [ SDL_WINDOW_KEYBOARD_GRABBED   => 0x00100000 ],
-        [ SDL_WINDOW_VULKAN             => 0x10000000 ],
+        [ SDL_WINDOW_FOREIGN            => 0x00000800 ], [ SDL_WINDOW_ALLOW_HIGHDPI => 0x00002000 ],
+        [ SDL_WINDOW_MOUSE_CAPTURE      => 0x00004000 ], [ SDL_WINDOW_ALWAYS_ON_TOP => 0x00008000 ],
+        [ SDL_WINDOW_SKIP_TASKBAR       => 0x00010000 ], [ SDL_WINDOW_UTILITY       => 0x00020000 ],
+        [ SDL_WINDOW_TOOLTIP            => 0x00040000 ], [ SDL_WINDOW_POPUP_MENU    => 0x00080000 ],
+        [ SDL_WINDOW_KEYBOARD_GRABBED   => 0x00100000 ], [ SDL_WINDOW_VULKAN        => 0x10000000 ],
         [ SDL_WINDOW_METAL              => 0x20000000 ],
-        [ SDL_WINDOW_INPUT_GRABBED      => sub { SDL_WINDOW_MOUSE_GRABBED() } ],
-        ],
-        SDL_WindowFlags => [
-        qw[
+        [ SDL_WINDOW_INPUT_GRABBED      => sub { SDL_WINDOW_MOUSE_GRABBED() } ],, qw[
             SDL_WINDOWEVENT_NONE
             SDL_WINDOWEVENT_SHOWN
             SDL_WINDOWEVENT_HIDDEN
@@ -478,39 +1266,11 @@ package SDL2::Enum {
         [ SDL_FLIP_HORIZONTAL => 0x00000001 ],
         [ SDL_FLIP_VERTICAL   => 0x00000002 ]
         ],
-        SDL_PowerState => [
-        qw[
-            SDL_POWERSTATE_UNKNOWN
-            SDL_POWERSTATE_ON_BATTERY SDL_POWERSTATE_NO_BATTERY
-            SDL_POWERSTATE_CHARGING   SDL_POWERSTATE_CHARGED]
-        ],
         SDL_EventAction => [
         qw[
             SDL_ADDEVENT
             SDL_PEEKEVENT
             SDL_GETEVENT]
-        ],
-        SDL_SystemCursor => [
-        qw[
-            SDL_SYSTEM_CURSOR_ARROW
-            SDL_SYSTEM_CURSOR_IBEAM
-            SDL_SYSTEM_CURSOR_WAIT
-            SDL_SYSTEM_CURSOR_CROSSHAIR
-            SDL_SYSTEM_CURSOR_WAITARROW
-            SDL_SYSTEM_CURSOR_SIZENWSE
-            SDL_SYSTEM_CURSOR_SIZENESW
-            SDL_SYSTEM_CURSOR_SIZEWE
-            SDL_SYSTEM_CURSOR_SIZENS
-            SDL_SYSTEM_CURSOR_SIZEALL
-            SDL_SYSTEM_CURSOR_NO
-            SDL_SYSTEM_CURSOR_HAND
-            SDL_NUM_SYSTEM_CURSORS]
-        ],
-        SDL_MouseWheelDirection => [
-        qw[
-            SDL_MOUSEWHEEL_NORMAL
-            SDL_MOUSEWHEEL_FLIPPED
-        ]
         ],
         pixel_type => [
         qw[
@@ -572,18 +1332,379 @@ package SDL2::Enum {
             SDL_PACKEDLAYOUT_1010102
         ]
         ],
-        SDL_Keycode => [
-        [ SDLK_UP => SDL_SCANCODE_TO_KEYCODE(82) ],    # 82 comes from include/SDL_scancode.h
-
-        # The following are incorrect!!!!!!!!!!!!!!!!!!!
-        qw[SDLK_DOWN
-            SDLK_LEFT
-            SDLK_RIGHT]
-        ];
+        ;
 
     # Keyboard codes
     sub SDLK_SCANCODE_MASK           { 1 << 30 }
     sub SDL_SCANCODE_TO_KEYCODE ($X) { $X | SDLK_SCANCODE_MASK }
+    enum SDL_Scancode =>
+        [ [ SDL_SCANCODE_UNKNOWN => 0 ], [ SDL_SCANCODE_A => 4 ], [ SDL_SCANCODE_ESCAPE => 41 ] ];
+
+=pod
+
+    /**
+     *  \name Usage page 0x07
+     *
+     *  These values are from usage page 0x07 (USB keyboard page).
+     */
+    /* @{ */
+
+    SDL_SCANCODE_A = 4,
+    SDL_SCANCODE_B = 5,
+    SDL_SCANCODE_C = 6,
+    SDL_SCANCODE_D = 7,
+    SDL_SCANCODE_E = 8,
+    SDL_SCANCODE_F = 9,
+    SDL_SCANCODE_G = 10,
+    SDL_SCANCODE_H = 11,
+    SDL_SCANCODE_I = 12,
+    SDL_SCANCODE_J = 13,
+    SDL_SCANCODE_K = 14,
+    SDL_SCANCODE_L = 15,
+    SDL_SCANCODE_M = 16,
+    SDL_SCANCODE_N = 17,
+    SDL_SCANCODE_O = 18,
+    SDL_SCANCODE_P = 19,
+    SDL_SCANCODE_Q = 20,
+    SDL_SCANCODE_R = 21,
+    SDL_SCANCODE_S = 22,
+    SDL_SCANCODE_T = 23,
+    SDL_SCANCODE_U = 24,
+    SDL_SCANCODE_V = 25,
+    SDL_SCANCODE_W = 26,
+    SDL_SCANCODE_X = 27,
+    SDL_SCANCODE_Y = 28,
+    SDL_SCANCODE_Z = 29,
+
+    SDL_SCANCODE_1 = 30,
+    SDL_SCANCODE_2 = 31,
+    SDL_SCANCODE_3 = 32,
+    SDL_SCANCODE_4 = 33,
+    SDL_SCANCODE_5 = 34,
+    SDL_SCANCODE_6 = 35,
+    SDL_SCANCODE_7 = 36,
+    SDL_SCANCODE_8 = 37,
+    SDL_SCANCODE_9 = 38,
+    SDL_SCANCODE_0 = 39,
+
+    SDL_SCANCODE_RETURN = 40,
+    SDL_SCANCODE_ESCAPE = 41,
+    SDL_SCANCODE_BACKSPACE = 42,
+    SDL_SCANCODE_TAB = 43,
+    SDL_SCANCODE_SPACE = 44,
+
+    SDL_SCANCODE_MINUS = 45,
+    SDL_SCANCODE_EQUALS = 46,
+    SDL_SCANCODE_LEFTBRACKET = 47,
+    SDL_SCANCODE_RIGHTBRACKET = 48,
+    SDL_SCANCODE_BACKSLASH = 49, /**< Located at the lower left of the return
+                                  *   key on ISO keyboards and at the right end
+                                  *   of the QWERTY row on ANSI keyboards.
+                                  *   Produces REVERSE SOLIDUS (backslash) and
+                                  *   VERTICAL LINE in a US layout, REVERSE
+                                  *   SOLIDUS and VERTICAL LINE in a UK Mac
+                                  *   layout, NUMBER SIGN and TILDE in a UK
+                                  *   Windows layout, DOLLAR SIGN and POUND SIGN
+                                  *   in a Swiss German layout, NUMBER SIGN and
+                                  *   APOSTROPHE in a German layout, GRAVE
+                                  *   ACCENT and POUND SIGN in a French Mac
+                                  *   layout, and ASTERISK and MICRO SIGN in a
+                                  *   French Windows layout.
+                                  */
+    SDL_SCANCODE_NONUSHASH = 50, /**< ISO USB keyboards actually use this code
+                                  *   instead of 49 for the same key, but all
+                                  *   OSes I've seen treat the two codes
+                                  *   identically. So, as an implementor, unless
+                                  *   your keyboard generates both of those
+                                  *   codes and your OS treats them differently,
+                                  *   you should generate SDL_SCANCODE_BACKSLASH
+                                  *   instead of this code. As a user, you
+                                  *   should not rely on this code because SDL
+                                  *   will never generate it with most (all?)
+                                  *   keyboards.
+                                  */
+    SDL_SCANCODE_SEMICOLON = 51,
+    SDL_SCANCODE_APOSTROPHE = 52,
+    SDL_SCANCODE_GRAVE = 53, /**< Located in the top left corner (on both ANSI
+                              *   and ISO keyboards). Produces GRAVE ACCENT and
+                              *   TILDE in a US Windows layout and in US and UK
+                              *   Mac layouts on ANSI keyboards, GRAVE ACCENT
+                              *   and NOT SIGN in a UK Windows layout, SECTION
+                              *   SIGN and PLUS-MINUS SIGN in US and UK Mac
+                              *   layouts on ISO keyboards, SECTION SIGN and
+                              *   DEGREE SIGN in a Swiss German layout (Mac:
+                              *   only on ISO keyboards), CIRCUMFLEX ACCENT and
+                              *   DEGREE SIGN in a German layout (Mac: only on
+                              *   ISO keyboards), SUPERSCRIPT TWO and TILDE in a
+                              *   French Windows layout, COMMERCIAL AT and
+                              *   NUMBER SIGN in a French Mac layout on ISO
+                              *   keyboards, and LESS-THAN SIGN and GREATER-THAN
+                              *   SIGN in a Swiss German, German, or French Mac
+                              *   layout on ANSI keyboards.
+                              */
+    SDL_SCANCODE_COMMA = 54,
+    SDL_SCANCODE_PERIOD = 55,
+    SDL_SCANCODE_SLASH = 56,
+
+    SDL_SCANCODE_CAPSLOCK = 57,
+
+    SDL_SCANCODE_F1 = 58,
+    SDL_SCANCODE_F2 = 59,
+    SDL_SCANCODE_F3 = 60,
+    SDL_SCANCODE_F4 = 61,
+    SDL_SCANCODE_F5 = 62,
+    SDL_SCANCODE_F6 = 63,
+    SDL_SCANCODE_F7 = 64,
+    SDL_SCANCODE_F8 = 65,
+    SDL_SCANCODE_F9 = 66,
+    SDL_SCANCODE_F10 = 67,
+    SDL_SCANCODE_F11 = 68,
+    SDL_SCANCODE_F12 = 69,
+
+    SDL_SCANCODE_PRINTSCREEN = 70,
+    SDL_SCANCODE_SCROLLLOCK = 71,
+    SDL_SCANCODE_PAUSE = 72,
+    SDL_SCANCODE_INSERT = 73, /**< insert on PC, help on some Mac keyboards (but
+                                   does send code 73, not 117) */
+    SDL_SCANCODE_HOME = 74,
+    SDL_SCANCODE_PAGEUP = 75,
+    SDL_SCANCODE_DELETE = 76,
+    SDL_SCANCODE_END = 77,
+    SDL_SCANCODE_PAGEDOWN = 78,
+    SDL_SCANCODE_RIGHT = 79,
+    SDL_SCANCODE_LEFT = 80,
+    SDL_SCANCODE_DOWN = 81,
+    SDL_SCANCODE_UP = 82,
+
+    SDL_SCANCODE_NUMLOCKCLEAR = 83, /**< num lock on PC, clear on Mac keyboards
+                                     */
+    SDL_SCANCODE_KP_DIVIDE = 84,
+    SDL_SCANCODE_KP_MULTIPLY = 85,
+    SDL_SCANCODE_KP_MINUS = 86,
+    SDL_SCANCODE_KP_PLUS = 87,
+    SDL_SCANCODE_KP_ENTER = 88,
+    SDL_SCANCODE_KP_1 = 89,
+    SDL_SCANCODE_KP_2 = 90,
+    SDL_SCANCODE_KP_3 = 91,
+    SDL_SCANCODE_KP_4 = 92,
+    SDL_SCANCODE_KP_5 = 93,
+    SDL_SCANCODE_KP_6 = 94,
+    SDL_SCANCODE_KP_7 = 95,
+    SDL_SCANCODE_KP_8 = 96,
+    SDL_SCANCODE_KP_9 = 97,
+    SDL_SCANCODE_KP_0 = 98,
+    SDL_SCANCODE_KP_PERIOD = 99,
+
+    SDL_SCANCODE_NONUSBACKSLASH = 100, /**< This is the additional key that ISO
+                                        *   keyboards have over ANSI ones,
+                                        *   located between left shift and Y.
+                                        *   Produces GRAVE ACCENT and TILDE in a
+                                        *   US or UK Mac layout, REVERSE SOLIDUS
+                                        *   (backslash) and VERTICAL LINE in a
+                                        *   US or UK Windows layout, and
+                                        *   LESS-THAN SIGN and GREATER-THAN SIGN
+                                        *   in a Swiss German, German, or French
+                                        *   layout. */
+    SDL_SCANCODE_APPLICATION = 101, /**< windows contextual menu, compose */
+    SDL_SCANCODE_POWER = 102, /**< The USB document says this is a status flag,
+                               *   not a physical key - but some Mac keyboards
+                               *   do have a power key. */
+    SDL_SCANCODE_KP_EQUALS = 103,
+    SDL_SCANCODE_F13 = 104,
+    SDL_SCANCODE_F14 = 105,
+    SDL_SCANCODE_F15 = 106,
+    SDL_SCANCODE_F16 = 107,
+    SDL_SCANCODE_F17 = 108,
+    SDL_SCANCODE_F18 = 109,
+    SDL_SCANCODE_F19 = 110,
+    SDL_SCANCODE_F20 = 111,
+    SDL_SCANCODE_F21 = 112,
+    SDL_SCANCODE_F22 = 113,
+    SDL_SCANCODE_F23 = 114,
+    SDL_SCANCODE_F24 = 115,
+    SDL_SCANCODE_EXECUTE = 116,
+    SDL_SCANCODE_HELP = 117,
+    SDL_SCANCODE_MENU = 118,
+    SDL_SCANCODE_SELECT = 119,
+    SDL_SCANCODE_STOP = 120,
+    SDL_SCANCODE_AGAIN = 121,   /**< redo */
+    SDL_SCANCODE_UNDO = 122,
+    SDL_SCANCODE_CUT = 123,
+    SDL_SCANCODE_COPY = 124,
+    SDL_SCANCODE_PASTE = 125,
+    SDL_SCANCODE_FIND = 126,
+    SDL_SCANCODE_MUTE = 127,
+    SDL_SCANCODE_VOLUMEUP = 128,
+    SDL_SCANCODE_VOLUMEDOWN = 129,
+/* not sure whether there's a reason to enable these */
+/*     SDL_SCANCODE_LOCKINGCAPSLOCK = 130,  */
+/*     SDL_SCANCODE_LOCKINGNUMLOCK = 131, */
+/*     SDL_SCANCODE_LOCKINGSCROLLLOCK = 132, */
+    SDL_SCANCODE_KP_COMMA = 133,
+    SDL_SCANCODE_KP_EQUALSAS400 = 134,
+
+    SDL_SCANCODE_INTERNATIONAL1 = 135, /**< used on Asian keyboards, see
+                                            footnotes in USB doc */
+    SDL_SCANCODE_INTERNATIONAL2 = 136,
+    SDL_SCANCODE_INTERNATIONAL3 = 137, /**< Yen */
+    SDL_SCANCODE_INTERNATIONAL4 = 138,
+    SDL_SCANCODE_INTERNATIONAL5 = 139,
+    SDL_SCANCODE_INTERNATIONAL6 = 140,
+    SDL_SCANCODE_INTERNATIONAL7 = 141,
+    SDL_SCANCODE_INTERNATIONAL8 = 142,
+    SDL_SCANCODE_INTERNATIONAL9 = 143,
+    SDL_SCANCODE_LANG1 = 144, /**< Hangul/English toggle */
+    SDL_SCANCODE_LANG2 = 145, /**< Hanja conversion */
+    SDL_SCANCODE_LANG3 = 146, /**< Katakana */
+    SDL_SCANCODE_LANG4 = 147, /**< Hiragana */
+    SDL_SCANCODE_LANG5 = 148, /**< Zenkaku/Hankaku */
+    SDL_SCANCODE_LANG6 = 149, /**< reserved */
+    SDL_SCANCODE_LANG7 = 150, /**< reserved */
+    SDL_SCANCODE_LANG8 = 151, /**< reserved */
+    SDL_SCANCODE_LANG9 = 152, /**< reserved */
+
+    SDL_SCANCODE_ALTERASE = 153, /**< Erase-Eaze */
+    SDL_SCANCODE_SYSREQ = 154,
+    SDL_SCANCODE_CANCEL = 155,
+    SDL_SCANCODE_CLEAR = 156,
+    SDL_SCANCODE_PRIOR = 157,
+    SDL_SCANCODE_RETURN2 = 158,
+    SDL_SCANCODE_SEPARATOR = 159,
+    SDL_SCANCODE_OUT = 160,
+    SDL_SCANCODE_OPER = 161,
+    SDL_SCANCODE_CLEARAGAIN = 162,
+    SDL_SCANCODE_CRSEL = 163,
+    SDL_SCANCODE_EXSEL = 164,
+
+    SDL_SCANCODE_KP_00 = 176,
+    SDL_SCANCODE_KP_000 = 177,
+    SDL_SCANCODE_THOUSANDSSEPARATOR = 178,
+    SDL_SCANCODE_DECIMALSEPARATOR = 179,
+    SDL_SCANCODE_CURRENCYUNIT = 180,
+    SDL_SCANCODE_CURRENCYSUBUNIT = 181,
+    SDL_SCANCODE_KP_LEFTPAREN = 182,
+    SDL_SCANCODE_KP_RIGHTPAREN = 183,
+    SDL_SCANCODE_KP_LEFTBRACE = 184,
+    SDL_SCANCODE_KP_RIGHTBRACE = 185,
+    SDL_SCANCODE_KP_TAB = 186,
+    SDL_SCANCODE_KP_BACKSPACE = 187,
+    SDL_SCANCODE_KP_A = 188,
+    SDL_SCANCODE_KP_B = 189,
+    SDL_SCANCODE_KP_C = 190,
+    SDL_SCANCODE_KP_D = 191,
+    SDL_SCANCODE_KP_E = 192,
+    SDL_SCANCODE_KP_F = 193,
+    SDL_SCANCODE_KP_XOR = 194,
+    SDL_SCANCODE_KP_POWER = 195,
+    SDL_SCANCODE_KP_PERCENT = 196,
+    SDL_SCANCODE_KP_LESS = 197,
+    SDL_SCANCODE_KP_GREATER = 198,
+    SDL_SCANCODE_KP_AMPERSAND = 199,
+    SDL_SCANCODE_KP_DBLAMPERSAND = 200,
+    SDL_SCANCODE_KP_VERTICALBAR = 201,
+    SDL_SCANCODE_KP_DBLVERTICALBAR = 202,
+    SDL_SCANCODE_KP_COLON = 203,
+    SDL_SCANCODE_KP_HASH = 204,
+    SDL_SCANCODE_KP_SPACE = 205,
+    SDL_SCANCODE_KP_AT = 206,
+    SDL_SCANCODE_KP_EXCLAM = 207,
+    SDL_SCANCODE_KP_MEMSTORE = 208,
+    SDL_SCANCODE_KP_MEMRECALL = 209,
+    SDL_SCANCODE_KP_MEMCLEAR = 210,
+    SDL_SCANCODE_KP_MEMADD = 211,
+    SDL_SCANCODE_KP_MEMSUBTRACT = 212,
+    SDL_SCANCODE_KP_MEMMULTIPLY = 213,
+    SDL_SCANCODE_KP_MEMDIVIDE = 214,
+    SDL_SCANCODE_KP_PLUSMINUS = 215,
+    SDL_SCANCODE_KP_CLEAR = 216,
+    SDL_SCANCODE_KP_CLEARENTRY = 217,
+    SDL_SCANCODE_KP_BINARY = 218,
+    SDL_SCANCODE_KP_OCTAL = 219,
+    SDL_SCANCODE_KP_DECIMAL = 220,
+    SDL_SCANCODE_KP_HEXADECIMAL = 221,
+
+    SDL_SCANCODE_LCTRL = 224,
+    SDL_SCANCODE_LSHIFT = 225,
+    SDL_SCANCODE_LALT = 226, /**< alt, option */
+    SDL_SCANCODE_LGUI = 227, /**< windows, command (apple), meta */
+    SDL_SCANCODE_RCTRL = 228,
+    SDL_SCANCODE_RSHIFT = 229,
+    SDL_SCANCODE_RALT = 230, /**< alt gr, option */
+    SDL_SCANCODE_RGUI = 231, /**< windows, command (apple), meta */
+
+    SDL_SCANCODE_MODE = 257,    /**< I'm not sure if this is really not covered
+                                 *   by any of the above, but since there's a
+                                 *   special KMOD_MODE for it I'm adding it here
+                                 */
+
+    /* @} *//* Usage page 0x07 */
+
+    /**
+     *  \name Usage page 0x0C
+     *
+     *  These values are mapped from usage page 0x0C (USB consumer page).
+     */
+    /* @{ */
+
+    SDL_SCANCODE_AUDIONEXT = 258,
+    SDL_SCANCODE_AUDIOPREV = 259,
+    SDL_SCANCODE_AUDIOSTOP = 260,
+    SDL_SCANCODE_AUDIOPLAY = 261,
+    SDL_SCANCODE_AUDIOMUTE = 262,
+    SDL_SCANCODE_MEDIASELECT = 263,
+    SDL_SCANCODE_WWW = 264,
+    SDL_SCANCODE_MAIL = 265,
+    SDL_SCANCODE_CALCULATOR = 266,
+    SDL_SCANCODE_COMPUTER = 267,
+    SDL_SCANCODE_AC_SEARCH = 268,
+    SDL_SCANCODE_AC_HOME = 269,
+    SDL_SCANCODE_AC_BACK = 270,
+    SDL_SCANCODE_AC_FORWARD = 271,
+    SDL_SCANCODE_AC_STOP = 272,
+    SDL_SCANCODE_AC_REFRESH = 273,
+    SDL_SCANCODE_AC_BOOKMARKS = 274,
+
+    /* @} *//* Usage page 0x0C */
+
+    /**
+     *  \name Walther keys
+     *
+     *  These are values that Christian Walther added (for mac keyboard?).
+     */
+    /* @{ */
+
+    SDL_SCANCODE_BRIGHTNESSDOWN = 275,
+    SDL_SCANCODE_BRIGHTNESSUP = 276,
+    SDL_SCANCODE_DISPLAYSWITCH = 277, /**< display mirroring/dual display
+                                           switch, video mode switch */
+    SDL_SCANCODE_KBDILLUMTOGGLE = 278,
+    SDL_SCANCODE_KBDILLUMDOWN = 279,
+    SDL_SCANCODE_KBDILLUMUP = 280,
+    SDL_SCANCODE_EJECT = 281,
+    SDL_SCANCODE_SLEEP = 282,
+
+    SDL_SCANCODE_APP1 = 283,
+    SDL_SCANCODE_APP2 = 284,
+
+    /* @} *//* Walther keys */
+
+    /**
+     *  \name Usage page 0x0C (additional media keys)
+     *
+     *  These values are mapped from usage page 0x0C (USB consumer page).
+     */
+    /* @{ */
+
+    SDL_SCANCODE_AUDIOREWIND = 285,
+    SDL_SCANCODE_AUDIOFASTFORWARD = 286,
+
+    /* @} *//* Usage page 0x0C (additional media keys) */
+
+    /* Add any other keys here. */
+
+    SDL_NUM_SCANCODES = 512 /**< not a key, just marks the number of scancodes
+                                 for array bounds */
+=cut
 
 =encoding utf-8
 
@@ -721,7 +1842,7 @@ float 32 support.
 
 Native audio byte ordering.
 
-=over 
+=over
 
 =item C<AUDIO_U16SYS>
 
@@ -785,7 +1906,7 @@ The blend mode used in L<< C<SDL_RenderCopy( ... )>|SDL::FFI/C<SDL_RenderCopy(
     dstRGBA = srcRGBA
 
 =item C<SDL_BLENDMODE_BLEND> - alpha blending
-                                        
+
     dstRGB = (srcRGB * srcA) + (dstRGB * (1-srcA))
     dstA = srcA + (dstA * (1-srcA))
 
@@ -1003,7 +2124,7 @@ Called on Android in C<onResume()>
 
 =item C<SDL_CONTROLLERTOUCHPADUP> - Game controller touchpad finger was lifted
 
-=item C<SDL_CONTROLLERSENSORUPDATE> - Game controller sensor was updated 
+=item C<SDL_CONTROLLERSENSORUPDATE> - Game controller sensor was updated
 
 =item C<SDL_FINGERDOWN>
 
@@ -1013,9 +2134,9 @@ Called on Android in C<onResume()>
 
 =item C<SDL_DOLLARGESTURE>
 
-=item C<SDL_DOLLARRECORD> 
+=item C<SDL_DOLLARRECORD>
 
-=item C<SDL_MULTIGESTURE> 
+=item C<SDL_MULTIGESTURE>
 
 =item C<SDL_CLIPBOARDUPDATE> - The clipboard changed
 
@@ -1047,16 +2168,212 @@ Events C<SDL_USEREVENT> through C<SDL_LASTEVENT> are for your use and should be
 allocated with  L<< C<SDL_RegisterEvents( ...
 )>|SDL2::FFI/C<SDL_RegisterEvents( ... )> >>.
 
+=head1 C<:eventState>
 
+=over
 
+=item C<SDL_QUERY>
 
+=item C<SDL_IGNORE>
 
+=item C<SDL_DISABLE>
 
+=item C<SDL_ENABLE>
 
+=back
 
+=head1 C<:gameControllerType>
 
+=over
+
+=item C<SDL_CONTROLLER_TYPE_UNKNOWN>
+
+=item C<SDL_CONTROLLER_TYPE_XBOX360>
+
+=item C<SDL_CONTROLLER_TYPE_XBOXONE>
+
+=item C<SDL_CONTROLLER_TYPE_PS3>
+
+=item C<SDL_CONTROLLER_TYPE_PS4>
+
+=item C<SDL_CONTROLLER_TYPE_NINTENDO_SWITCH_PRO>
+
+=item C<SDL_CONTROLLER_TYPE_VIRTUAL>
+
+=item C<SDL_CONTROLLER_TYPE_PS5>
+
+=back
+
+=head1 C<:gameControllerBindType>
+
+=over
+
+=item C<SDL_CONTROLLER_BINDTYPE_NONE>
+
+=item C<SDL_CONTROLLER_BINDTYPE_BUTTON>
+
+=item C<SDL_CONTROLLER_BINDTYPE_AXIS>
+
+=item C<SDL_CONTROLLER_BINDTYPE_HAT>
+
+=back
+
+=head2 C<:gameControllerAxis>
+
+The list of axes available from a controller
+
+Thumbstick axis values range from C<SDL_JOYSTICK_AXIS_MIN> to
+C<SDL_JOYSTICK_AXIS_MAX>, and are centered within ~8000 of zero, though
+advanced UI will allow users to set or autodetect the dead zone, which varies
+between controllers.
+
+Trigger axis values range from C<0> to C<SDL_JOYSTICK_AXIS_MAX>.
+
+=over
+
+=item C<SDL_CONTROLLER_AXIS_INVALID>
+
+=item C<SDL_CONTROLLER_AXIS_LEFTX>
+
+=item C<SDL_CONTROLLER_AXIS_LEFTY>
+
+=item C<SDL_CONTROLLER_AXIS_RIGHTX>
+
+=item C<SDL_CONTROLLER_AXIS_RIGHTY>
+
+=item C<SDL_CONTROLLER_AXIS_TRIGGERLEFT>
+
+=item C<SDL_CONTROLLER_AXIS_TRIGGERRIGHT>
+
+=item C<SDL_CONTROLLER_AXIS_MAX>
+
+=back
+
+=head1 C<:gameControllerButton>
+
+The list of buttons available from a controller
+
+=over
+
+=item C<SDL_CONTROLLER_BUTTON_INVALID>
+
+=item C<SDL_CONTROLLER_BUTTON_A>
+
+=item C<SDL_CONTROLLER_BUTTON_B>
+
+=item C<SDL_CONTROLLER_BUTTON_X>
+
+=item C<SDL_CONTROLLER_BUTTON_Y>
+
+=item C<SDL_CONTROLLER_BUTTON_BACK>
+
+=item C<SDL_CONTROLLER_BUTTON_GUIDE>
+
+=item C<SDL_CONTROLLER_BUTTON_START>
+
+=item C<SDL_CONTROLLER_BUTTON_LEFTSTICK>
+
+=item C<SDL_CONTROLLER_BUTTON_RIGHTSTICK>
+
+=item C<SDL_CONTROLLER_BUTTON_LEFTSHOULDER>
+
+=item C<SDL_CONTROLLER_BUTTON_RIGHTSHOULDER>
+
+=item C<SDL_CONTROLLER_BUTTON_DPAD_UP>
+
+=item C<SDL_CONTROLLER_BUTTON_DPAD_DOWN>
+
+=item C<SDL_CONTROLLER_BUTTON_DPAD_LEFT>
+
+=item C<SDL_CONTROLLER_BUTTON_DPAD_RIGHT>
+
+=item C<SDL_CONTROLLER_BUTTON_MISC1> - Xbox Series X share button, PS5 microphone button, Nintendo Switch Pro capture button, Amazon Luna microphone button
+
+=item C<SDL_CONTROLLER_BUTTON_PADDLE1> - Xbox Elite paddle P1
+
+=item C<SDL_CONTROLLER_BUTTON_PADDLE2> - Xbox Elite paddle P3
+
+=item C<SDL_CONTROLLER_BUTTON_PADDLE3> - Xbox Elite paddle P2
+
+=item C<SDL_CONTROLLER_BUTTON_PADDLE4> - Xbox Elite paddle P4
+
+=item C<SDL_CONTROLLER_BUTTON_TOUCHPAD> - PS4/PS5 touchpad button
+
+=item C<SDL_CONTROLLER_BUTTON_MAX>
+
+=back
+
+=head1 C<:haptic>
+
+Different haptic features a device can have.
+
+=over
+
+=item C<SDL_HAPTIC_CONSTANT> - Constant haptic effect
+
+=item C<SDL_HAPTIC_SINE> - Periodic haptic effect that simulates sine waves
+
+=item C<SDL_HAPTIC_LEFTRIGHT> - Haptic effect for direct control over high/low frequency motors
+
+=item C<SDL_HAPTIC_TRIANGLE> - Periodic haptic effect that simulates triangular waves
+
+=item C<SDL_HAPTIC_SAWTOOTHUP> - Periodic haptic effect that simulates saw tooth up waves
+
+=item C<SDL_HAPTIC_SAWTOOTHDOWN> - Periodic haptic effect that simulates saw tooth down waves
+
+=item C<SDL_HAPTIC_RAMP> - Ramp haptic effect
+
+=item C<SDL_HAPTIC_SPRING> - Condition haptic effect that simulates a spring.  Effect is based on the axes position
+
+=item C<SDL_HAPTIC_DAMPER> - Condition haptic effect that simulates dampening.  Effect is based on the axes velocity
+
+=item C<SDL_HAPTIC_INERTIA> - Condition haptic effect that simulates inertia.  Effect is based on the axes acceleration
+
+=item C<SDL_HAPTIC_FRICTION> - Condition haptic effect that simulates friction.  Effect is based on the axes movement
+
+=item C<SDL_HAPTIC_CUSTOM> - User defined custom haptic effect
+
+=back
+
+These last few are features the device has, not effects.
+
+=over
+
+=item C<SDL_HAPTIC_GAIN> - Device supports setting the global gain.
+
+=item C<SDL_HAPTIC_AUTOCENTER> - Device supports setting autocenter
+
+=item C<SDL_HAPTIC_STATUS> - Device supports querying effect status
+
+=item C<SDL_HAPTIC_PAUSE> - Devices supports being paused
+
+=back
+
+Direction encodings
+
+=over
+
+=item C<SDL_HAPTIC_POLAR> - Uses polar coordinates for the direction
+
+=item C<SDL_HAPTIC_CARTESIAN> - Uses cartesian coordinates for the direction
+
+=item C<SDL_HAPTIC_SPHERICAL> - Uses spherical coordinates for the direction
+
+=item C<SDL_HAPTIC_STEERING_AXIS> - Use this value to play an effect on the steering wheel axis. This provides better compatibility across platforms and devices as SDL will guess the correct axis
+
+=back
+
+Misc defines.
+
+=over
+
+=item C<SDL_HAPTIC_INFINITY> - Used to play a device an infinite number of times
+
+=back
 
 =head1 C<:hints>
+
+An enumeration of hint priorities as C<SDL_HintPriority>.
 
 =over
 
@@ -1068,10 +2385,8 @@ allocated with  L<< C<SDL_RegisterEvents( ...
 
 =back
 
-=head2 SDL_Hint
-
-These enum values can be passed to L<Configuration Variable|SDL2/Configuration
-Variables> related functions.
+The following enum values can be passed to L<Configuration
+Variable|SDL2::FFI/Configuration Variables> related functions.
 
 =over
 
@@ -3043,34 +4358,615 @@ optional: "en". So you might have a list like this: "en_GB,jp,es_PT"
 
 =back
 
-=head2 C<:assertState>
-
-
+=head1 C<:joystickType>
 
 =over
 
-=item C<SDL_ASSERTION_RETRY> - Retry the assert immediately
+=item C<SDL_JOYSTICK_TYPE_UNKNOWN>
 
-=item C<SDL_ASSERTION_BREAK> - Make the debugger trigger a breakpoint
+=item C<SDL_JOYSTICK_TYPE_GAMECONTROLLER>
 
-=item C<SDL_ASSERTION_ABORT> - Terminate the program
+=item C<SDL_JOYSTICK_TYPE_WHEEL>
 
-=item C<SDL_ASSERTION_IGNORE> - Ignore the assert
+=item C<SDL_JOYSTICK_TYPE_ARCADE_STICK>
 
-=item C<SDL_ASSERTION_ALWAYS_IGNORE> - Ignore the assert from now on
+=item C<SDL_JOYSTICK_TYPE_FLIGHT_STICK>
+
+=item C<SDL_JOYSTICK_TYPE_DANCE_PAD>
+
+=item C<SDL_JOYSTICK_TYPE_GUITAR>
+
+=item C<SDL_JOYSTICK_TYPE_DRUM_KIT>
+
+=item C<SDL_JOYSTICK_TYPE_ARCADE_PAD>
+
+=item C<SDL_JOYSTICK_TYPE_THROTTLE>
 
 =back
 
-=cut
+=head1 C<:joystickPowerLevel>
 
-    enum SDL_AssertState => [
-        qw[ SDL_ASSERTION_RETRY
-            SDL_ASSERTION_BREAK
-            SDL_ASSERTION_ABORT
-            SDL_ASSERTION_IGNORE
-            SDL_ASSERTION_ALWAYS_IGNORE
-        ]
-    ];
+=over
+
+=item C<SDL_JOYSTICK_POWER_UNKNOWN>
+
+=item C<SDL_JOYSTICK_POWER_EMPTY> - C<< <= 5% >>
+
+=item C<SDL_JOYSTICK_POWER_LOW> - C<< <= 20% >>
+
+=item C<SDL_JOYSTICK_POWER_MEDIUM> - C<< <= 70% >>
+
+=item C<SDL_JOYSTICK_POWER_FULL> - C<< <= 100% >>
+
+=item C<SDL_JOYSTICK_POWER_WIRED>
+
+=item C<SDL_JOYSTICK_POWER_MAX>
+
+=back
+
+=head1 C<:hatPosition>
+
+Hat positions.
+
+=over
+
+=item C<SDL_HAT_CENTERED>
+
+=item C<SDL_HAT_UP>
+
+=item C<SDL_HAT_RIGHT>
+
+=item C<SDL_HAT_DOWN>
+
+=item C<SDL_HAT_LEFT>
+
+=item C<SDL_HAT_RIGHTUP>
+
+=item C<SDL_HAT_RIGHTDOWN>
+
+=item C<SDL_HAT_LEFTUP>
+
+=item C<SDL_HAT_LEFTDOWN>
+
+=back
+
+=head1 C<:keyCode>
+
+The SDL virtual key representation.
+
+Values of this type are used to represent keyboard keys using the current
+layout of the keyboard. These values include Unicode values representing the
+unmodified character that would be generated by pressing the key, or an
+C<SDLK_*> constant for those keys that do not generate characters.
+
+A special exception is the number keys at the top of the keyboard which always
+map to C<SDLK_0...SDLK_9>, regardless of layout.
+
+=over
+
+=item C<SDLK_UNKNOWN>
+
+=item C<SDLK_RETURN>
+
+=item C<SDLK_ESCAPE>
+
+=item C<SDLK_BACKSPACE>
+
+=item C<SDLK_TAB>
+
+=item C<SDLK_SPACE>
+
+=item C<SDLK_EXCLAIM>
+
+=item C<SDLK_QUOTEDBL>
+
+=item C<SDLK_HASH>
+
+=item C<SDLK_PERCENT>
+
+=item C<SDLK_DOLLAR>
+
+=item C<SDLK_AMPERSAND>
+
+=item C<SDLK_QUOTE>
+
+=item C<SDLK_LEFTPAREN>
+
+=item C<SDLK_RIGHTPAREN>
+
+=item C<SDLK_ASTERISK>
+
+=item C<SDLK_PLUS>
+
+=item C<SDLK_COMMA>
+
+=item C<SDLK_MINUS>
+
+=item C<SDLK_PERIOD>
+
+=item C<SDLK_SLASH>
+
+=item C<SDLK_0>
+
+=item C<SDLK_1>
+
+=item C<SDLK_2>
+
+=item C<SDLK_3>
+
+=item C<SDLK_4>
+
+=item C<SDLK_5>
+
+=item C<SDLK_6>
+
+=item C<SDLK_7>
+
+=item C<SDLK_8>
+
+=item C<SDLK_9>
+
+=item C<SDLK_COLON>
+
+=item C<SDLK_SEMICOLON>
+
+=item C<SDLK_LESS>
+
+=item C<SDLK_EQUALS>
+
+=item C<SDLK_GREATER>
+
+=item C<SDLK_QUESTION>
+
+=item C<SDLK_AT>
+
+=item C<SDLK_LEFTBRACKET>
+
+=item C<SDLK_BACKSLASH>
+
+=item C<SDLK_RIGHTBRACKET>
+
+=item C<SDLK_CARET>
+
+=item C<SDLK_UNDERSCORE>
+
+=item C<SDLK_BACKQUOTE>
+
+=item C<SDLK_a>
+
+=item C<SDLK_b>
+
+=item C<SDLK_c>
+
+=item C<SDLK_d>
+
+=item C<SDLK_e>
+
+=item C<SDLK_f>
+
+=item C<SDLK_g>
+
+=item C<SDLK_h>
+
+=item C<SDLK_i>
+
+=item C<SDLK_j>
+
+=item C<SDLK_k>
+
+=item C<SDLK_l>
+
+=item C<SDLK_m>
+
+=item C<SDLK_n>
+
+=item C<SDLK_o>
+
+=item C<SDLK_p>
+
+=item C<SDLK_q>
+
+=item C<SDLK_r>
+
+=item C<SDLK_s>
+
+=item C<SDLK_t>
+
+=item C<SDLK_u>
+
+=item C<SDLK_v>
+
+=item C<SDLK_w>
+
+=item C<SDLK_x>
+
+=item C<SDLK_y>
+
+=item C<SDLK_z>
+
+=item C<SDLK_CAPSLOCK>
+
+=item C<SDLK_F1>
+
+=item C<SDLK_F2>
+
+=item C<SDLK_F3>
+
+=item C<SDLK_F4>
+
+=item C<SDLK_F5>
+
+=item C<SDLK_F6>
+
+=item C<SDLK_F7>
+
+=item C<SDLK_F8>
+
+=item C<SDLK_F9>
+
+=item C<SDLK_F10>
+
+=item C<SDLK_F11>
+
+=item C<SDLK_F12>
+
+=item C<SDLK_PRINTSCREEN>
+
+=item C<SDLK_SCROLLLOCK>
+
+=item C<SDLK_PAUSE>
+
+=item C<SDLK_INSERT>
+
+=item C<SDLK_HOME>
+
+=item C<SDLK_PAGEUP>
+
+=item C<SDLK_DELETE>
+
+=item C<SDLK_END>
+
+=item C<SDLK_PAGEDOWN>
+
+=item C<SDLK_RIGHT>
+
+=item C<SDLK_LEFT>
+
+=item C<SDLK_DOWN>
+
+=item C<SDLK_UP>
+
+=item C<SDLK_NUMLOCKCLEAR>
+
+=item C<SDLK_KP_DIVIDE>
+
+=item C<SDLK_KP_MULTIPLY>
+
+=item C<SDLK_KP_MINUS>
+
+=item C<SDLK_KP_PLUS>
+
+=item C<SDLK_KP_ENTER>
+
+=item C<SDLK_KP_1>
+
+=item C<SDLK_KP_2>
+
+=item C<SDLK_KP_3>
+
+=item C<SDLK_KP_4>
+
+=item C<SDLK_KP_5>
+
+=item C<SDLK_KP_6>
+
+=item C<SDLK_KP_7>
+
+=item C<SDLK_KP_8>
+
+=item C<SDLK_KP_9>
+
+=item C<SDLK_KP_0>
+
+=item C<SDLK_KP_PERIOD>
+
+=item C<SDLK_APPLICATION>
+
+=item C<SDLK_POWER>
+
+=item C<SDLK_KP_EQUALS>
+
+=item C<SDLK_F13>
+
+=item C<SDLK_F14>
+
+=item C<SDLK_F15>
+
+=item C<SDLK_F16>
+
+=item C<SDLK_F17>
+
+=item C<SDLK_F18>
+
+=item C<SDLK_F19>
+
+=item C<SDLK_F20>
+
+=item C<SDLK_F21>
+
+=item C<SDLK_F22>
+
+=item C<SDLK_F23>
+
+=item C<SDLK_F24>
+
+=item C<SDLK_EXECUTE>
+
+=item C<SDLK_HELP>
+
+=item C<SDLK_MENU>
+
+=item C<SDLK_SELECT>
+
+=item C<SDLK_STOP>
+
+=item C<SDLK_AGAIN>
+
+=item C<SDLK_UNDO>
+
+=item C<SDLK_CUT>
+
+=item C<SDLK_COPY>
+
+=item C<SDLK_PASTE>
+
+=item C<SDLK_FIND>
+
+=item C<SDLK_MUTE>
+
+=item C<SDLK_VOLUMEUP>
+
+=item C<SDLK_VOLUMEDOWN>
+
+=item C<SDLK_KP_COMMA>
+
+=item C<SDLK_KP_EQUALSAS400>
+
+=item C<SDLK_ALTERASE>
+
+=item C<SDLK_SYSREQ>
+
+=item C<SDLK_CANCEL>
+
+=item C<SDLK_CLEAR>
+
+=item C<SDLK_PRIOR>
+
+=item C<SDLK_RETURN2>
+
+=item C<SDLK_SEPARATOR>
+
+=item C<SDLK_OUT>
+
+=item C<SDLK_OPER>
+
+=item C<SDLK_CLEARAGAIN>
+
+=item C<SDLK_CRSEL>
+
+=item C<SDLK_EXSEL>
+
+=item C<SDLK_KP_00>
+
+=item C<SDLK_KP_000>
+
+=item C<SDLK_THOUSANDSSEPARATOR>
+
+=item C<SDLK_DECIMALSEPARATOR>
+
+=item C<SDLK_CURRENCYUNIT>
+
+=item C<SDLK_CURRENCYSUBUNIT>
+
+=item C<SDLK_KP_LEFTPAREN>
+
+=item C<SDLK_KP_RIGHTPAREN>
+
+=item C<SDLK_KP_LEFTBRACE>
+
+=item C<SDLK_KP_RIGHTBRACE>
+
+=item C<SDLK_KP_TAB>
+
+=item C<SDLK_KP_BACKSPACE>
+
+=item C<SDLK_KP_A>
+
+=item C<SDLK_KP_B>
+
+=item C<SDLK_KP_C>
+
+=item C<SDLK_KP_D>
+
+=item C<SDLK_KP_E>
+
+=item C<SDLK_KP_F>
+
+=item C<SDLK_KP_XOR>
+
+=item C<SDLK_KP_POWER>
+
+=item C<SDLK_KP_PERCENT>
+
+=item C<SDLK_KP_LESS>
+
+=item C<SDLK_KP_GREATER>
+
+=item C<SDLK_KP_AMPERSAND>
+
+=item C<SDLK_KP_DBLAMPERSAND>
+
+=item C<SDLK_KP_VERTICALBAR>
+
+=item C<SDLK_KP_DBLVERTICALBAR>
+
+=item C<SDLK_KP_COLON>
+
+=item C<SDLK_KP_HASH>
+
+=item C<SDLK_KP_SPACE>
+
+=item C<SDLK_KP_AT>
+
+=item C<SDLK_KP_EXCLAM>
+
+=item C<SDLK_KP_MEMSTORE>
+
+=item C<SDLK_KP_MEMRECALL>
+
+=item C<SDLK_KP_MEMCLEAR>
+
+=item C<SDLK_KP_MEMADD>
+
+=item C<SDLK_KP_MEMSUBTRACT>
+
+=item C<SDLK_KP_MEMMULTIPLY>
+
+=item C<SDLK_KP_MEMDIVIDE>
+
+=item C<SDLK_KP_PLUSMINUS>
+
+=item C<SDLK_KP_CLEAR>
+
+=item C<SDLK_KP_CLEARENTRY>
+
+=item C<SDLK_KP_BINARY>
+
+=item C<SDLK_KP_OCTAL>
+
+=item C<SDLK_KP_DECIMAL>
+
+=item C<SDLK_KP_HEXADECIMAL>
+
+=item C<SDLK_LCTRL>
+
+=item C<SDLK_LSHIFT>
+
+=item C<SDLK_LALT>
+
+=item C<SDLK_LGUI>
+
+=item C<SDLK_RCTRL>
+
+=item C<SDLK_RSHIFT>
+
+=item C<SDLK_RALT>
+
+=item C<SDLK_RGUI>
+
+=item C<SDLK_MODE>
+
+=item C<SDLK_AUDIONEXT>
+
+=item C<SDLK_AUDIOPREV>
+
+=item C<SDLK_AUDIOSTOP>
+
+=item C<SDLK_AUDIOPLAY>
+
+=item C<SDLK_AUDIOMUTE>
+
+=item C<SDLK_MEDIASELECT>
+
+=item C<SDLK_WWW>
+
+=item C<SDLK_MAIL>
+
+=item C<SDLK_CALCULATOR>
+
+=item C<SDLK_COMPUTER>
+
+=item C<SDLK_AC_SEARCH>
+
+=item C<SDLK_AC_HOME>
+
+=item C<SDLK_AC_BACK>
+
+=item C<SDLK_AC_FORWARD>
+
+=item C<SDLK_AC_STOP>
+
+=item C<SDLK_AC_REFRESH>
+
+=item C<SDLK_AC_BOOKMARKS>
+
+=item C<SDLK_BRIGHTNESSDOWN>
+
+=item C<SDLK_BRIGHTNESSUP>
+
+=item C<SDLK_DISPLAYSWITCH>
+
+=item C<SDLK_KBDILLUMTOGGLE>
+
+=item C<SDLK_KBDILLUMDOWN>
+
+=item C<SDLK_KBDILLUMUP>
+
+=item C<SDLK_EJECT>
+
+=item C<SDLK_SLEEP>
+
+=item C<SDLK_APP1>
+
+=item C<SDLK_APP2>
+
+=item C<SDLK_AUDIOREWIND>
+
+=item C<SDLK_AUDIOFASTFORWARD>
+
+=back
+
+=head1 C<:keymod>
+
+Enumeration of valid key mods (possibly OR'd together)
+
+=over
+
+=item C<KMOD_NONE>
+
+=item C<KMOD_LSHIFT>
+
+=item C<KMOD_RSHIFT>
+
+=item C<KMOD_LCTRL>
+
+=item C<KMOD_RCTRL>
+
+=item C<KMOD_LALT>
+
+=item C<KMOD_RALT>
+
+=item C<KMOD_LGUI>
+
+=item C<KMOD_RGUI>
+
+=item C<KMOD_NUM>
+
+=item C<KMOD_CAPS>
+
+=item C<KMOD_MODE>
+
+=item C<KMOD_RESERVED>
+
+=item C<KMOD_CTRL>
+
+=item C<KMOD_SHIFT>
+
+=item C<KMOD_ALT>
+
+=item C<KMOD_GUI>
+
+=back
 
 =head2 C<:logcategory>
 
@@ -3143,6 +5039,453 @@ The predefined log priorities.
 =item C<SDL_LOG_PRIORITY_CRITICAL>
 
 =item C<SDL_NUM_LOG_PRIORITIES>
+
+=back
+
+=head1 C<:messageBoxFlags>
+
+If supported, display warning icon, etc.
+
+=over
+
+=item C<SDL_MESSAGEBOX_ERROR> - error dialog
+
+=item C<SDL_MESSAGEBOX_WARNING> - warning dialog
+
+=item C<SDL_MESSAGEBOX_INFORMATION> - informational dialog
+
+=item C<SDL_MESSAGEBOX_BUTTONS_LEFT_TO_RIGHT> - buttons placed left to right
+
+=item C<SDL_MESSAGEBOX_BUTTONS_RIGHT_TO_LEFT> - buttons placed right to left
+
+=back
+
+=head1 C<:messageBoxButtonData>
+
+=over
+
+=item C<SDL_MESSAGEBOX_BUTTON_RETURNKEY_DEFAULT> - Marks the default button when return is hit
+
+=item C<SDL_MESSAGEBOX_BUTTON_ESCAPEKEY_DEFAULT> - Marks the default button when escape is hit
+
+=back
+
+=head1 C<:messageBoxColorType>
+
+=over
+
+=item C<SDL_MESSAGEBOX_COLOR_BACKGROUND>
+
+=item C<SDL_MESSAGEBOX_COLOR_TEXT>
+
+=item C<SDL_MESSAGEBOX_COLOR_BUTTON_BORDER>
+
+=item C<SDL_MESSAGEBOX_COLOR_BUTTON_BACKGROUND>
+
+=item C<SDL_MESSAGEBOX_COLOR_BUTTON_SELECTED>
+
+=item C<SDL_MESSAGEBOX_COLOR_MAX>
+
+=back
+
+=head1 C<:systemCursor>
+
+Cursor types for L<< C<SDL_CreateSystemCursor( ...
+)>|SDL2::FFI/C<SDL_CreateSystemCursor( ... )> >>.
+
+=over
+
+=item C<SDL_SYSTEM_CURSOR_ARROW> - Arrow
+
+=item C<SDL_SYSTEM_CURSOR_IBEAM> - I-beam
+
+=item C<SDL_SYSTEM_CURSOR_WAIT> - Wait
+
+=item C<SDL_SYSTEM_CURSOR_CROSSHAIR> - Crosshair
+
+=item C<SDL_SYSTEM_CURSOR_WAITARROW> - Small wait cursor (or Wait if not available)
+
+=item C<SDL_SYSTEM_CURSOR_SIZENWSE> - Double arrow pointing northwest and southeast
+
+=item C<SDL_SYSTEM_CURSOR_SIZENESW> - Double arrow pointing northeast and southwest
+
+=item C<SDL_SYSTEM_CURSOR_SIZEWE> - Double arrow pointing west and east
+
+=item C<SDL_SYSTEM_CURSOR_SIZENS> - Double arrow pointing north and south
+
+=item C<SDL_SYSTEM_CURSOR_SIZEALL> - Four pointed arrow pointing north, south, east, and west
+
+=item C<SDL_SYSTEM_CURSOR_NO> - Slashed circle or crossbones
+
+=item C<SDL_SYSTEM_CURSOR_HAND> - Hand
+
+=item C<SDL_NUM_SYSTEM_CURSORS>
+
+=back
+
+=head1 C<:mouseWheelDirection>
+
+Scroll direction types for the Scroll event.
+
+=over
+
+=item C<SDL_MOUSEWHEEL_NORMAL>
+
+=item C<SDL_MOUSEWHEEL_FLIPPED>
+
+=back
+
+=head1 C<:mouseButton>
+
+Used as a mask when testing buttons in buttonstate.
+
+=over
+
+=item Button 1:  Left mouse button
+
+=item Button 2:  Middle mouse button
+
+=item Button 3:  Right mouse button
+
+=back
+
+=over
+
+=item C<SDL_BUTTON>
+
+=item C<SDL_BUTTON_LEFT>
+
+=item C<SDL_BUTTON_MIDDLE>
+
+=item C<SDL_BUTTON_RIGHT>
+
+=item C<SDL_BUTTON_X1>
+
+=item C<SDL_BUTTON_X2>
+
+=item C<SDL_BUTTON_LMASK>
+
+=item C<SDL_BUTTON_MMASK>
+
+=item C<SDL_BUTTON_RMASK>
+
+=item C<SDL_BUTTON_X1MASK>
+
+=item C<SDL_BUTTON_X2MASK>
+
+=back
+
+=head1 C<:alpha>
+
+Transparency definitions. These define alpha as the opacity of a surface.
+
+=over
+
+=item C<SDL_ALPHA_OPAQUE>
+
+=item C<SDL_ALPHA_TRANSPARENT>
+
+=back
+
+=head1 C<:pixelType>
+
+=over
+
+=item C<SDL_PIXELTYPE_UNKNOWN>
+
+=item C<SDL_PIXELTYPE_INDEX1>
+
+=item C<SDL_PIXELTYPE_INDEX4>
+
+=item C<SDL_PIXELTYPE_INDEX8>
+
+=item C<SDL_PIXELTYPE_PACKED8>
+
+=item C<SDL_PIXELTYPE_PACKED16>
+
+=item C<SDL_PIXELTYPE_PACKED32>
+
+=item C<SDL_PIXELTYPE_ARRAYU8>
+
+=item C<SDL_PIXELTYPE_ARRAYU16>
+
+=item C<SDL_PIXELTYPE_ARRAYU32>
+
+=item C<SDL_PIXELTYPE_ARRAYF16>
+
+=item C<SDL_PIXELTYPE_ARRAYF32>
+
+=back
+
+=head1 C<:bitmapOrder>
+
+Bitmap pixel order, high bit -> low bit.
+
+=over
+
+=item C<SDL_BITMAPORDER_NONE>
+
+=item C<SDL_BITMAPORDER_4321>
+
+=item C<SDL_BITMAPORDER_1234>
+
+=back
+
+=head1 C<:packedOrder>
+
+Packed component order, high bit -> low bit.
+
+=over
+
+=item C<SDL_PACKEDORDER_NONE>
+
+=item C<SDL_PACKEDORDER_XRGB>
+
+=item C<SDL_PACKEDORDER_RGBX>
+
+=item C<SDL_PACKEDORDER_ARGB>
+
+=item C<SDL_PACKEDORDER_RGBA>
+
+=item C<SDL_PACKEDORDER_XBGR>
+
+=item C<SDL_PACKEDORDER_BGRX>
+
+=item C<SDL_PACKEDORDER_ABGR>
+
+=item C<SDL_PACKEDORDER_BGRA>
+
+=back
+
+=head1 C<:arrayOrder>
+
+Array component order, low byte -> high byte.
+
+=over
+
+=item C<SDL_ARRAYORDER_NONE>
+
+=item C<SDL_ARRAYORDER_RGB>
+
+=item C<SDL_ARRAYORDER_RGBA>
+
+=item C<SDL_ARRAYORDER_ARGB>
+
+=item C<SDL_ARRAYORDER_BGR>
+
+=item C<SDL_ARRAYORDER_BGRA>
+
+=item C<SDL_ARRAYORDER_ABGR>
+
+=back
+
+=head1 C<:packedLayout>
+
+Packed component layout.
+
+=over
+
+=item C<SDL_PACKEDLAYOUT_NONE>
+
+=item C<SDL_PACKEDLAYOUT_332>
+
+=item C<SDL_PACKEDLAYOUT_4444>
+
+=item C<SDL_PACKEDLAYOUT_1555>
+
+=item C<SDL_PACKEDLAYOUT_5551>
+
+=item C<SDL_PACKEDLAYOUT_565>
+
+=item C<SDL_PACKEDLAYOUT_8888>
+
+=item C<SDL_PACKEDLAYOUT_2101010>
+
+=item C<SDL_PACKEDLAYOUT_1010102>
+
+=back
+
+=head1 C<:pixels>
+
+=over
+
+=item C<SDL_DEFINE_PIXELFOURCC>
+
+=item C<SDL_DEFINE_PIXELFORMAT>
+
+=item C<SDL_PIXELFLAG>
+
+=item C<SDL_PIXELTYPE>
+
+=item C<SDL_PIXELORDER>
+
+=item C<SDL_PIXELLAYOUT>
+
+=item C<SDL_BITSPERPIXEL>
+
+=item C<SDL_BYTESPERPIXEL>
+
+=item C<SDL_ISPIXELFORMAT_INDEXED>
+
+=item C<SDL_ISPIXELFORMAT_PACKED>
+
+=item C<SDL_ISPIXELFORMAT_ARRAY>
+
+=item C<SDL_ISPIXELFORMAT_ALPHA>
+
+=item C<SDL_ISPIXELFORMAT_FOURCC>
+
+=back
+
+=head1 C<:pixelFormatEnum>
+
+=over
+
+=item C<SDL_PIXELFORMAT_UNKNOWN>
+
+=item C<SDL_PIXELFORMAT_INDEX1LSB>
+
+=item C<SDL_PIXELFORMAT_INDEX1MSB>
+
+=item C<SDL_PIXELFORMAT_INDEX4LSB>
+
+=item C<SDL_PIXELFORMAT_INDEX4MSB>
+
+=item C<SDL_PIXELFORMAT_INDEX8>
+
+=item C<SDL_PIXELFORMAT_RGB332>
+
+=item C<SDL_PIXELFORMAT_XRGB4444>
+
+=item C<SDL_PIXELFORMAT_RGB444>
+
+=item C<SDL_PIXELFORMAT_XBGR4444>
+
+=item C<SDL_PIXELFORMAT_BGR444>
+
+=item C<SDL_PIXELFORMAT_XRGB1555>
+
+=item C<SDL_PIXELFORMAT_RGB555>
+
+=item C<SDL_PIXELFORMAT_XBGR1555>
+
+=item C<SDL_PIXELFORMAT_BGR555>
+
+=item C<SDL_PIXELFORMAT_ARGB4444>
+
+=item C<SDL_PIXELFORMAT_RGBA4444>
+
+=item C<SDL_PIXELFORMAT_ABGR4444>
+
+=item C<SDL_PIXELFORMAT_BGRA4444>
+
+=item C<SDL_PIXELFORMAT_ARGB1555>
+
+=item C<SDL_PIXELFORMAT_RGBA5551>
+
+=item C<SDL_PIXELFORMAT_ABGR1555>
+
+=item C<SDL_PIXELFORMAT_BGRA5551>
+
+=item C<SDL_PIXELFORMAT_RGB565>
+
+=item C<SDL_PIXELFORMAT_BGR565>
+
+=item C<SDL_PIXELFORMAT_RGB24>
+
+=item C<SDL_PIXELFORMAT_BGR24>
+
+=item C<SDL_PIXELFORMAT_XRGB8888>
+
+=item C<SDL_PIXELFORMAT_RGB888>
+
+=item C<SDL_PIXELFORMAT_RGBX8888>
+
+=item C<SDL_PIXELFORMAT_XBGR8888>
+
+=item C<SDL_PIXELFORMAT_BGR888>
+
+=item C<SDL_PIXELFORMAT_BGRX8888>
+
+=item C<SDL_PIXELFORMAT_ARGB8888>
+
+=item C<SDL_PIXELFORMAT_RGBA8888>
+
+=item C<SDL_PIXELFORMAT_ABGR8888>
+
+=item C<SDL_PIXELFORMAT_BGRA8888>
+
+=item C<SDL_PIXELFORMAT_ARGB2101010>
+
+=item C<SDL_PIXELFORMAT_RGBA32>
+
+=item C<SDL_PIXELFORMAT_ARGB32>
+
+=item C<SDL_PIXELFORMAT_BGRA32>
+
+=item C<SDL_PIXELFORMAT_ABGR32>
+
+=item C<SDL_PIXELFORMAT_YV12> - Planar mode: Y + V + U  (3 planes)
+
+=item C<SDL_PIXELFORMAT_IYUV> - Planar mode: Y + U + V  (3 planes)
+
+=item C<SDL_PIXELFORMAT_YUY2> - Packed mode: Y0+U0+Y1+V0 (1 plane)
+
+=item C<SDL_PIXELFORMAT_UYVY> - Packed mode: U0+Y0+V0+Y1 (1 plane)
+
+=item C<SDL_PIXELFORMAT_YVYU> - Packed mode: Y0+V0+Y1+U0 (1 plane)
+
+=item C<SDL_PIXELFORMAT_NV12> - Planar mode: Y + U/V interleaved  (2 planes)
+
+=item C<SDL_PIXELFORMAT_NV21> - Planar mode: Y + V/U interleaved  (2 planes)
+
+=item C<SDL_PIXELFORMAT_EXTERNAL_OES> - Android video texture format
+
+=back
+
+=head1 C<:powerState>
+
+The basic state for the system's power supply.
+
+=over
+
+=item C<SDL_POWERSTATE_UNKNOWN> - Cannot determine power status
+
+=item C<SDL_POWERSTATE_ON_BATTERY> - Not plugged in, running on the battery
+
+=item C<SDL_POWERSTATE_NO_BATTERY> - Plugged in, no battery available
+
+=item C<SDL_POWERSTATE_CHARGING> - Plugged in, charging battery
+
+=item C<SDL_POWERSTATE_CHARGED> - Plugged in, battery charged
+
+=back
+
+
+
+
+
+
+
+
+
+
+
+=head1 C<:assertState>
+
+
+
+=over
+
+=item C<SDL_ASSERTION_RETRY> - Retry the assert immediately
+
+=item C<SDL_ASSERTION_BREAK> - Make the debugger trigger a breakpoint
+
+=item C<SDL_ASSERTION_ABORT> - Terminate the program
+
+=item C<SDL_ASSERTION_IGNORE> - Ignore the assert
+
+=item C<SDL_ASSERTION_ALWAYS_IGNORE> - Ignore the assert from now on
 
 =back
 
@@ -3704,7 +6047,8 @@ AVAudioSessionCategoryPlayback VoIP OpenGLES opengl opengles opengles2 spammy
 popup tooltip taskbar subwindow high-dpi subpixel borderless draggable viewport
 user-resizable resizable srcA srcC GiB dstrect rect subrectangle pseudocode ms
 verystrict resampler eglSwapBuffers backbuffer scancode unhandled lifespan wgl
-glX framerate deadzones vice-versa kmsdrm jp CAMetalLayer touchpad
+glX framerate deadzones vice-versa kmsdrm jp CAMetalLayer touchpad autodetect
+autocenter encodings artesian buttonstate
 
 =end stopwords
 
