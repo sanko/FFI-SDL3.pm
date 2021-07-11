@@ -1,7 +1,5 @@
 package SDL2::FFI 0.04 {
-
-
-    use lib '../lib', 'lib', '/home/sanko/Projects/SDL2.pm/lib';
+    use lib '../lib', 'lib';
 
     # ABSTRACT: FFI Wrapper for SDL (Simple DirectMedia Layer) Development Library
     use strictures 2;
@@ -9,8 +7,8 @@ package SDL2::FFI 0.04 {
     use base 'Exporter::Tiny';
     use SDL2::Utils;
     use Config;
-    my $bigendian = $Config{byteorder} != 4321;
-    our %EXPORT_TAGS; 
+    sub bigendian () { CORE::state $bigendian //= ( $Config{byteorder} != 4321 ); $bigendian }
+    our %EXPORT_TAGS;
 
     # I need these first
     attach version => { SDL_GetVersion => [ ['SDL_version'] ] };
@@ -23,6 +21,25 @@ package SDL2::FFI 0.04 {
     use SDL2::Enum;
     use SDL2::AudioCVT;
     use SDL2::AudioSpec;
+    use SDL2::CommonEvent;
+    use SDL2::DisplayEvent;
+    use SDL2::KeyboardEvent;
+    use SDL2::MouseButtonEvent;
+    use SDL2::MouseMotionEvent;
+    use SDL2::MouseWheelEvent;
+    use SDL2::JoyAxisEvent;
+    use SDL2::JoyBallEvent;
+    use SDL2::JoyHatEvent;
+    use SDL2::JoyButtonEvent;
+    use SDL2::JoyDeviceEvent;
+    use SDL2::ControllerAxisEvent;
+    use SDL2::ControllerButtonEvent;
+    use SDL2::ControllerDeviceEvent;
+    use SDL2::AudioDeviceEvent;
+    use SDL2::TouchFingerEvent;
+    use SDL2::TextEditingEvent;
+    use SDL2::TextInputEvent;
+    use SDL2::WindowEvent;
     use SDL2::Point;
     use SDL2::FPoint;
     use SDL2::FRect;
@@ -34,197 +51,19 @@ package SDL2::FFI 0.04 {
     use SDL2::Texture;
     use SDL2::Renderer;
     use SDL2::RendererInfo;
+    use Data::Dump;
 
     # https://github.com/libsdl-org/SDL/blob/main/include/SDL.h
     push @{ $EXPORT_TAGS{default} }, qw[:init];
     attach init => {
         SDL_Init          => [ ['uint32'] => 'int' ],
         SDL_InitSubSystem => [ ['uint32'] => 'int' ],
-        SDL_QuitSubSystem => [ ['uint32'] ],
-        SDL_WasInit       => [ ['uint32'] => 'uint32' ],
         SDL_Quit          => [ [] ],
+        SDL_QuitSubSystem => [ ['uint32'] ],
+        SDL_WasInit       => [ ['uint32'] => 'uint32' ]
     };
-    #
-    package SDL2::AssertData {
-        use SDL2::Utils;
-        has
-            always_ignore => 'int',
-            trigger_count => 'uint',
-            condition     => 'opaque',    # string
-            filename      => 'opaque',    # string
-            linenum       => 'int',
-            function      => 'opaque',    # string
-            next          => 'opaque'     # const struct SDL_AssertData *next
-    };
-    attach assert => {
-        SDL_ReportAssertion    => [ [ 'opaque', 'string', 'string', 'int' ], 'opaque' ],
-        SDL_GetAssertionReport => [ ['SDL_AssertData'] ],
-    };
-    define
-
-        # https://github.com/libsdl-org/SDL/blob/main/include/SDL_hints.h
-        SDL_Hint => [
-        [ SDL_HINT_ACCELEROMETER_AS_JOYSTICK   => 'SDL_ACCELEROMETER_AS_JOYSTICK' ],
-        [ SDL_HINT_ALLOW_ALT_TAB_WHILE_GRABBED => 'SDL_ALLOW_ALT_TAB_WHILE_GRABBED' ],
-        [ SDL_HINT_ALLOW_TOPMOST               => 'SDL_ALLOW_TOPMOST' ],
-        [   SDL_HINT_ANDROID_APK_EXPANSION_MAIN_FILE_VERSION =>
-                'SDL_ANDROID_APK_EXPANSION_MAIN_FILE_VERSION'
-        ],
-        [   SDL_HINT_ANDROID_APK_EXPANSION_PATCH_FILE_VERSION =>
-                'SDL_ANDROID_APK_EXPANSION_PATCH_FILE_VERSION'
-        ],
-        [ SDL_HINT_ANDROID_BLOCK_ON_PAUSE            => 'SDL_ANDROID_BLOCK_ON_PAUSE' ],
-        [ SDL_HINT_ANDROID_BLOCK_ON_PAUSE_PAUSEAUDIO => 'SDL_ANDROID_BLOCK_ON_PAUSE_PAUSEAUDIO' ],
-        [ SDL_HINT_ANDROID_SEPARATE_MOUSE_AND_TOUCH  => 'SDL_ANDROID_SEPARATE_MOUSE_AND_TOUCH' ],
-        [ SDL_HINT_ANDROID_TRAP_BACK_BUTTON          => 'SDL_ANDROID_TRAP_BACK_BUTTON' ],
-        [ SDL_HINT_APPLE_TV_CONTROLLER_UI_EVENTS     => 'SDL_APPLE_TV_CONTROLLER_UI_EVENTS' ],
-        [ SDL_HINT_APPLE_TV_REMOTE_ALLOW_ROTATION    => 'SDL_APPLE_TV_REMOTE_ALLOW_ROTATION' ],
-        [ SDL_HINT_AUDIO_CATEGORY                    => 'SDL_AUDIO_CATEGORY' ],
-        [ SDL_HINT_AUDIO_DEVICE_APP_NAME             => 'SDL_AUDIO_DEVICE_APP_NAME' ],
-        [ SDL_HINT_AUDIO_DEVICE_STREAM_NAME          => 'SDL_AUDIO_DEVICE_STREAM_NAME' ],
-        [ SDL_HINT_AUDIO_DEVICE_STREAM_ROLE          => 'SDL_AUDIO_DEVICE_STREAM_ROLE' ],
-        [ SDL_HINT_AUDIO_RESAMPLING_MODE             => 'SDL_AUDIO_RESAMPLING_MODE' ],
-        [ SDL_HINT_AUTO_UPDATE_JOYSTICKS             => 'SDL_AUTO_UPDATE_JOYSTICKS' ],
-        [ SDL_HINT_AUTO_UPDATE_SENSORS               => 'SDL_AUTO_UPDATE_SENSORS' ],
-        [ SDL_HINT_BMP_SAVE_LEGACY_FORMAT            => 'SDL_BMP_SAVE_LEGACY_FORMAT' ],
-        [ SDL_HINT_DISPLAY_USABLE_BOUNDS             => 'SDL_DISPLAY_USABLE_BOUNDS' ],
-        [ SDL_HINT_EMSCRIPTEN_ASYNCIFY               => 'SDL_EMSCRIPTEN_ASYNCIFY' ],
-        [ SDL_HINT_EMSCRIPTEN_KEYBOARD_ELEMENT       => 'SDL_EMSCRIPTEN_KEYBOARD_ELEMENT' ],
-        [ SDL_HINT_ENABLE_STEAM_CONTROLLERS          => 'SDL_ENABLE_STEAM_CONTROLLERS' ],
-        [ SDL_HINT_EVENT_LOGGING                     => 'SDL_EVENT_LOGGING' ],
-        [ SDL_HINT_FRAMEBUFFER_ACCELERATION          => 'SDL_FRAMEBUFFER_ACCELERATION' ],
-        [ SDL_HINT_GAMECONTROLLERCONFIG              => 'SDL_GAMECONTROLLERCONFIG' ],
-        [ SDL_HINT_GAMECONTROLLERCONFIG_FILE         => 'SDL_GAMECONTROLLERCONFIG_FILE' ],
-        [ SDL_HINT_GAMECONTROLLERTYPE                => 'SDL_GAMECONTROLLERTYPE' ],
-        [ SDL_HINT_GAMECONTROLLER_IGNORE_DEVICES     => 'SDL_GAMECONTROLLER_IGNORE_DEVICES' ],
-        [   SDL_HINT_GAMECONTROLLER_IGNORE_DEVICES_EXCEPT =>
-                'SDL_GAMECONTROLLER_IGNORE_DEVICES_EXCEPT'
-        ],
-        [ SDL_HINT_GAMECONTROLLER_USE_BUTTON_LABELS   => 'SDL_GAMECONTROLLER_USE_BUTTON_LABELS' ],
-        [ SDL_HINT_GRAB_KEYBOARD                      => 'SDL_GRAB_KEYBOARD' ],
-        [ SDL_HINT_IDLE_TIMER_DISABLED                => 'SDL_IDLE_TIMER_DISABLED' ],
-        [ SDL_HINT_IME_INTERNAL_EDITING               => 'SDL_IME_INTERNAL_EDITING' ],
-        [ SDL_HINT_IOS_HIDE_HOME_INDICATOR            => 'SDL_IOS_HIDE_HOME_INDICATOR' ],
-        [ SDL_HINT_JOYSTICK_ALLOW_BACKGROUND_EVENTS   => 'SDL_JOYSTICK_ALLOW_BACKGROUND_EVENTS' ],
-        [ SDL_HINT_JOYSTICK_HIDAPI                    => 'SDL_JOYSTICK_HIDAPI' ],
-        [ SDL_HINT_JOYSTICK_HIDAPI_CORRELATE_XINPUT   => 'SDL_JOYSTICK_HIDAPI_CORRELATE_XINPUT' ],
-        [ SDL_HINT_JOYSTICK_HIDAPI_GAMECUBE           => 'SDL_JOYSTICK_HIDAPI_GAMECUBE' ],
-        [ SDL_HINT_JOYSTICK_HIDAPI_JOY_CONS           => 'SDL_JOYSTICK_HIDAPI_JOY_CONS' ],
-        [ SDL_HINT_JOYSTICK_HIDAPI_PS4                => 'SDL_JOYSTICK_HIDAPI_PS4' ],
-        [ SDL_HINT_JOYSTICK_HIDAPI_PS4_RUMBLE         => 'SDL_JOYSTICK_HIDAPI_PS4_RUMBLE' ],
-        [ SDL_HINT_JOYSTICK_HIDAPI_PS5                => 'SDL_JOYSTICK_HIDAPI_PS5' ],
-        [ SDL_HINT_JOYSTICK_HIDAPI_PS5_PLAYER_LED     => 'SDL_JOYSTICK_HIDAPI_PS5_PLAYER_LED' ],
-        [ SDL_HINT_JOYSTICK_HIDAPI_PS5_RUMBLE         => 'SDL_JOYSTICK_HIDAPI_PS5_RUMBLE' ],
-        [ SDL_HINT_JOYSTICK_HIDAPI_STADIA             => 'SDL_JOYSTICK_HIDAPI_STADIA' ],
-        [ SDL_HINT_JOYSTICK_HIDAPI_STEAM              => 'SDL_JOYSTICK_HIDAPI_STEAM' ],
-        [ SDL_HINT_JOYSTICK_HIDAPI_SWITCH             => 'SDL_JOYSTICK_HIDAPI_SWITCH' ],
-        [ SDL_HINT_JOYSTICK_HIDAPI_SWITCH_HOME_LED    => 'SDL_JOYSTICK_HIDAPI_SWITCH_HOME_LED' ],
-        [ SDL_HINT_JOYSTICK_HIDAPI_XBOX               => 'SDL_JOYSTICK_HIDAPI_XBOX' ],
-        [ SDL_HINT_JOYSTICK_RAWINPUT                  => 'SDL_JOYSTICK_RAWINPUT' ],
-        [ SDL_HINT_JOYSTICK_THREAD                    => 'SDL_JOYSTICK_THREAD' ],
-        [ SDL_HINT_KMSDRM_REQUIRE_DRM_MASTER          => 'SDL_KMSDRM_REQUIRE_DRM_MASTER' ],
-        [ SDL_HINT_LINUX_JOYSTICK_DEADZONES           => 'SDL_LINUX_JOYSTICK_DEADZONES' ],
-        [ SDL_HINT_MAC_BACKGROUND_APP                 => 'SDL_MAC_BACKGROUND_APP' ],
-        [ SDL_HINT_MAC_CTRL_CLICK_EMULATE_RIGHT_CLICK => 'SDL_MAC_CTRL_CLICK_EMULATE_RIGHT_CLICK' ],
-        [ SDL_HINT_MOUSE_DOUBLE_CLICK_RADIUS          => 'SDL_MOUSE_DOUBLE_CLICK_RADIUS' ],
-        [ SDL_HINT_MOUSE_DOUBLE_CLICK_TIME            => 'SDL_MOUSE_DOUBLE_CLICK_TIME' ],
-        [ SDL_HINT_MOUSE_FOCUS_CLICKTHROUGH           => 'SDL_MOUSE_FOCUS_CLICKTHROUGH' ],
-        [ SDL_HINT_MOUSE_NORMAL_SPEED_SCALE           => 'SDL_MOUSE_NORMAL_SPEED_SCALE' ],
-        [ SDL_HINT_MOUSE_RELATIVE_MODE_WARP           => 'SDL_MOUSE_RELATIVE_MODE_WARP' ],
-        [ SDL_HINT_MOUSE_RELATIVE_SCALING             => 'SDL_MOUSE_RELATIVE_SCALING' ],
-        [ SDL_HINT_MOUSE_RELATIVE_SPEED_SCALE         => 'SDL_MOUSE_RELATIVE_SPEED_SCALE' ],
-        [ SDL_HINT_MOUSE_TOUCH_EVENTS                 => 'SDL_MOUSE_TOUCH_EVENTS' ],
-        [ SDL_HINT_NO_SIGNAL_HANDLERS                 => 'SDL_NO_SIGNAL_HANDLERS' ],
-        [ SDL_HINT_OPENGL_ES_DRIVER                   => 'SDL_OPENGL_ES_DRIVER' ],
-        [ SDL_HINT_ORIENTATIONS                       => 'SDL_ORIENTATIONS' ],
-        [ SDL_HINT_PREFERRED_LOCALES                  => 'SDL_PREFERRED_LOCALES' ],
-        [ SDL_HINT_QTWAYLAND_CONTENT_ORIENTATION      => 'SDL_QTWAYLAND_CONTENT_ORIENTATION' ],
-        [ SDL_HINT_QTWAYLAND_WINDOW_FLAGS             => 'SDL_QTWAYLAND_WINDOW_FLAGS' ],
-        [ SDL_HINT_RENDER_BATCHING                    => 'SDL_RENDER_BATCHING' ],
-        [ SDL_HINT_RENDER_DIRECT3D11_DEBUG            => 'SDL_RENDER_DIRECT3D11_DEBUG' ],
-        [ SDL_HINT_RENDER_DIRECT3D_THREADSAFE         => 'SDL_RENDER_DIRECT3D_THREADSAFE' ],
-        [ SDL_HINT_RENDER_DRIVER                      => 'SDL_RENDER_DRIVER' ],
-        [ SDL_HINT_RENDER_LOGICAL_SIZE_MODE           => 'SDL_RENDER_LOGICAL_SIZE_MODE' ],
-        [ SDL_HINT_RENDER_OPENGL_SHADERS              => 'SDL_RENDER_OPENGL_SHADERS' ],
-        [ SDL_HINT_RENDER_SCALE_QUALITY               => 'SDL_RENDER_SCALE_QUALITY' ],
-        [ SDL_HINT_RENDER_VSYNC                       => 'SDL_RENDER_VSYNC' ],
-        [ SDL_HINT_RETURN_KEY_HIDES_IME               => 'SDL_RETURN_KEY_HIDES_IME' ],
-        [ SDL_HINT_RPI_VIDEO_LAYER                    => 'SDL_RPI_VIDEO_LAYER' ],
-        [   SDL_HINT_THREAD_FORCE_REALTIME_TIME_CRITICAL =>
-                'SDL_THREAD_FORCE_REALTIME_TIME_CRITICAL'
-        ],
-        [ SDL_HINT_THREAD_PRIORITY_POLICY             => 'SDL_THREAD_PRIORITY_POLICY' ],
-        [ SDL_HINT_THREAD_STACK_SIZE                  => 'SDL_THREAD_STACK_SIZE' ],
-        [ SDL_HINT_TIMER_RESOLUTION                   => 'SDL_TIMER_RESOLUTION' ],
-        [ SDL_HINT_TOUCH_MOUSE_EVENTS                 => 'SDL_TOUCH_MOUSE_EVENTS' ],
-        [ SDL_HINT_TV_REMOTE_AS_JOYSTICK              => 'SDL_TV_REMOTE_AS_JOYSTICK' ],
-        [ SDL_HINT_VIDEO_ALLOW_SCREENSAVER            => 'SDL_VIDEO_ALLOW_SCREENSAVER' ],
-        [ SDL_HINT_VIDEO_DOUBLE_BUFFER                => 'SDL_VIDEO_DOUBLE_BUFFER' ],
-        [ SDL_HINT_VIDEO_EXTERNAL_CONTEXT             => 'SDL_VIDEO_EXTERNAL_CONTEXT' ],
-        [ SDL_HINT_VIDEO_HIGHDPI_DISABLED             => 'SDL_VIDEO_HIGHDPI_DISABLED' ],
-        [ SDL_HINT_VIDEO_MAC_FULLSCREEN_SPACES        => 'SDL_VIDEO_MAC_FULLSCREEN_SPACES' ],
-        [ SDL_HINT_VIDEO_MINIMIZE_ON_FOCUS_LOSS       => 'SDL_VIDEO_MINIMIZE_ON_FOCUS_LOSS' ],
-        [ SDL_HINT_VIDEO_WINDOW_SHARE_PIXEL_FORMAT    => 'SDL_VIDEO_WINDOW_SHARE_PIXEL_FORMAT' ],
-        [ SDL_HINT_VIDEO_WIN_D3DCOMPILE               => 'SDL_VIDEO_WIN_D3DCOMPILE' ],
-        [ SDL_HINT_VIDEO_WIN_D3DCOMPILER              => 'SDL_VIDEO_WIN_D3DCOMPILER' ],
-        [ SDL_HINT_VIDEO_X11_FORCE_EGL                => 'SDL_VIDEO_X11_FORCE_EGL' ],
-        [ SDL_HINT_VIDEO_X11_NET_WM_BYPASS_COMPOSITOR => 'SDL_VIDEO_X11_NET_WM_BYPASS_COMPOSITOR' ],
-        [ SDL_HINT_VIDEO_X11_NET_WM_PING              => 'SDL_VIDEO_X11_NET_WM_PING' ],
-        [ SDL_HINT_VIDEO_X11_WINDOW_VISUALID          => 'SDL_VIDEO_X11_WINDOW_VISUALID' ],
-        [ SDL_HINT_VIDEO_X11_XINERAMA                 => 'SDL_VIDEO_X11_XINERAMA' ],
-        [ SDL_HINT_VIDEO_X11_XRANDR                   => 'SDL_VIDEO_X11_XRANDR' ],
-        [ SDL_HINT_VIDEO_X11_XVIDMODE                 => 'SDL_VIDEO_X11_XVIDMODE' ],
-        [ SDL_HINT_WAVE_FACT_CHUNK                    => 'SDL_WAVE_FACT_CHUNK' ],
-        [ SDL_HINT_WAVE_RIFF_CHUNK_SIZE               => 'SDL_WAVE_RIFF_CHUNK_SIZE' ],
-        [ SDL_HINT_WAVE_TRUNCATION                    => 'SDL_WAVE_TRUNCATION' ],
-        [ SDL_HINT_WINDOWS_DISABLE_THREAD_NAMING      => 'SDL_WINDOWS_DISABLE_THREAD_NAMING' ],
-        [ SDL_HINT_WINDOWS_ENABLE_MESSAGELOOP         => 'SDL_WINDOWS_ENABLE_MESSAGELOOP' ],
-        [   SDL_HINT_WINDOWS_FORCE_MUTEX_CRITICAL_SECTIONS =>
-                'SDL_WINDOWS_FORCE_MUTEX_CRITICAL_SECTIONS'
-        ],
-        [ SDL_HINT_WINDOWS_FORCE_SEMAPHORE_KERNEL => 'SDL_WINDOWS_FORCE_SEMAPHORE_KERNEL' ],
-        [ SDL_HINT_WINDOWS_INTRESOURCE_ICON       => 'SDL_WINDOWS_INTRESOURCE_ICON' ],
-        [ SDL_HINT_WINDOWS_INTRESOURCE_ICON_SMALL => 'SDL_WINDOWS_INTRESOURCE_ICON_SMALL' ],
-        [ SDL_HINT_WINDOWS_NO_CLOSE_ON_ALT_F4     => 'SDL_WINDOWS_NO_CLOSE_ON_ALT_F4' ],
-        [ SDL_HINT_WINDOWS_USE_D3D9EX             => 'SDL_WINDOWS_USE_D3D9EX' ],
-        [   SDL_HINT_WINDOW_FRAME_USABLE_WHILE_CURSOR_HIDDEN =>
-                'SDL_WINDOW_FRAME_USABLE_WHILE_CURSOR_HIDDEN'
-        ],
-        [ SDL_HINT_WINRT_HANDLE_BACK_BUTTON        => 'SDL_WINRT_HANDLE_BACK_BUTTON' ],
-        [ SDL_HINT_WINRT_PRIVACY_POLICY_LABEL      => 'SDL_WINRT_PRIVACY_POLICY_LABEL' ],
-        [ SDL_HINT_WINRT_PRIVACY_POLICY_URL        => 'SDL_WINRT_PRIVACY_POLICY_URL' ],
-        [ SDL_HINT_XINPUT_ENABLED                  => 'SDL_XINPUT_ENABLED' ],
-        [ SDL_HINT_XINPUT_USE_OLD_JOYSTICK_MAPPING => 'SDL_XINPUT_USE_OLD_JOYSTICK_MAPPING' ]
-        ];
-    FFI::C::ArrayDef->new(    # Used sparingly when I need to pass a list of SDL_Point objects
-        ffi,
-        name    => 'SDL2x_PointList',
-        class   => 'SDL2x::PointList',
-        members => ['SDL_Point'],
-    );
-    FFI::C::ArrayDef->new(    # Used sparingly when I need to pass a list of SDL_Point objects
-        ffi,
-        name    => 'SDL2x_FPointList',
-        class   => 'SDL2x::FPointList',
-        members => ['SDL_Point'],
-    );
-    FFI::C::ArrayDef->new(    # Used sparingly when I need to pass a list of SDL_Rect objects
-        ffi,
-        name    => 'SDL2x_RectList',
-        class   => 'SDL2x::RectList',
-        members => ['SDL_Rect'],
-    );
-    FFI::C::ArrayDef->new(    # Used sparingly when I need to pass a list of SDL_Rect objects
-        ffi,
-        name    => 'SDL2x_FRectList',
-        class   => 'SDL2x::FRectList',
-        members => ['SDL_FRect'],
-    );
-    #
     #
     ffi->type( '(opaque,string,string,string)->void' => 'SDL_HintCallback' );
-    ffi->type( '(opaque,int,int,string)->void'       => 'SDL_LogOutputFunction' );
-    ffi->type( '(opaque,opaque,opaque)->int'         => 'SDL_HitTest' );
     attach hints => {
         SDL_SetHintWithPriority => [ [ 'string', 'string', 'int' ] => 'bool' ],
         SDL_SetHint             => [ [ 'string', 'string' ]        => 'bool' ],
@@ -264,8 +103,9 @@ package SDL2::FFI 0.04 {
             }
         ],
         SDL_ClearError => [ [] => 'void' ]
-        },
-        log => {
+        };
+    ffi->type( '(opaque,int,int,string)->void' => 'SDL_LogOutputFunction' );
+    attach log => {
         SDL_LogSetAllPriority  => [ ['SDL_LogPriority'] ],
         SDL_LogSetPriority     => [ [ 'SDL_LogCategory', 'SDL_LogPriority' ] ],
         SDL_LogGetPriority     => [ ['SDL_LogCategory'] => 'SDL_LogPriority' ],
@@ -323,119 +163,52 @@ package SDL2::FFI 0.04 {
                 return $cb;
             }
         ]
-        };
-    enum
-        SDL_WindowFlags => [
-        [ SDL_WINDOW_FULLSCREEN         => 0x00000001 ],
-        [ SDL_WINDOW_OPENGL             => 0x00000002 ],
-        [ SDL_WINDOW_SHOWN              => 0x00000004 ],
-        [ SDL_WINDOW_HIDDEN             => 0x00000008 ],
-        [ SDL_WINDOW_BORDERLESS         => 0x00000010 ],
-        [ SDL_WINDOW_RESIZABLE          => 0x00000020 ],
-        [ SDL_WINDOW_MINIMIZED          => 0x00000040 ],
-        [ SDL_WINDOW_MAXIMIZED          => 0x00000080 ],
-        [ SDL_WINDOW_MOUSE_GRABBED      => 0x00000100 ],
-        [ SDL_WINDOW_INPUT_FOCUS        => 0x00000200 ],
-        [ SDL_WINDOW_MOUSE_FOCUS        => 0x00000400 ],
-        [ SDL_WINDOW_FULLSCREEN_DESKTOP => sub { ( SDL_WINDOW_FULLSCREEN() | 0x00001000 ) } ],
-        [ SDL_WINDOW_FOREIGN            => 0x00000800 ],
-        [ SDL_WINDOW_ALLOW_HIGHDPI      => 0x00002000 ],
-        [ SDL_WINDOW_MOUSE_CAPTURE      => 0x00004000 ],
-        [ SDL_WINDOW_ALWAYS_ON_TOP      => 0x00008000 ],
-        [ SDL_WINDOW_SKIP_TASKBAR       => 0x00010000 ],
-        [ SDL_WINDOW_UTILITY            => 0x00020000 ],
-        [ SDL_WINDOW_TOOLTIP            => 0x00040000 ],
-        [ SDL_WINDOW_POPUP_MENU         => 0x00080000 ],
-        [ SDL_WINDOW_KEYBOARD_GRABBED   => 0x00100000 ],
-        [ SDL_WINDOW_VULKAN             => 0x10000000 ],
-        [ SDL_WINDOW_METAL              => 0x20000000 ],
-        [ SDL_WINDOW_INPUT_GRABBED      => sub { SDL_WINDOW_MOUSE_GRABBED() } ],
-        ],
-        SDL_WindowFlagsX => [
-        qw[
-            SDL_WINDOWEVENT_NONE
-            SDL_WINDOWEVENT_SHOWN
-            SDL_WINDOWEVENT_HIDDEN
-            SDL_WINDOWEVENT_EXPOSED
-            SDL_WINDOWEVENT_MOVED
-            SDL_WINDOWEVENT_RESIZED
-            SDL_WINDOWEVENT_SIZE_CHANGED
-            SDL_WINDOWEVENT_MINIMIZED
-            SDL_WINDOWEVENT_MAXIMIZED
-            SDL_WINDOWEVENT_RESTORED
-            SDL_WINDOWEVENT_ENTER
-            SDL_WINDOWEVENT_LEAVE
-            SDL_WINDOWEVENT_FOCUS_GAINED
-            SDL_WINDOWEVENT_FOCUS_LOST
-            SDL_WINDOWEVENT_CLOSE
-            SDL_WINDOWEVENT_TAKE_FOCUS
-            SDL_WINDOWEVENT_HIT_TEST
-        ]
-        ],
-        SDL_DisplayEventID => [
-        qw[SDL_DISPLAYEVENT_NONE SDL_DISPLAYEVENT_ORIENTATION
-            SDL_DISPLAYEVENT_CONNECTED SDL_DISPLAYEVENT_DISCONNECTED
-        ]
-        ],
-        SDL_DisplayOrientation => [
-        qw[SDL_ORIENTATION_UNKNOWN
-            SDL_ORIENTATION_LANDSCAPE SDL_ORIENTATION_LANDSCAPE_FLIPPED
-            SDL_ORIENTATION_PORTRAIT  SDL_ORIENTATION_PORTRAIT_FLIPPED
-        ]
-        ];
+    };
+    #
+    package SDL2::AssertData {
+        use SDL2::Utils;
+        has
+            always_ignore => 'int',
+            trigger_count => 'uint',
+            condition     => 'opaque',    # string
+            filename      => 'opaque',    # string
+            linenum       => 'int',
+            function      => 'opaque',    # string
+            next          => 'opaque'     # const struct SDL_AssertData *next
+    };
+    attach assert => {
+        SDL_ReportAssertion    => [ [ 'opaque', 'string', 'string', 'int' ], 'opaque' ],
+        SDL_GetAssertionReport => [ ['SDL_AssertData'] ],
+    };
+    FFI::C::ArrayDef->new(    # Used sparingly when I need to pass a list of SDL_Point objects
+        ffi,
+        name    => 'SDL2x_PointList',
+        class   => 'SDL2x::PointList',
+        members => ['SDL_Point'],
+    );
+    FFI::C::ArrayDef->new(    # Used sparingly when I need to pass a list of SDL_Point objects
+        ffi,
+        name    => 'SDL2x_FPointList',
+        class   => 'SDL2x::FPointList',
+        members => ['SDL_Point'],
+    );
+    FFI::C::ArrayDef->new(    # Used sparingly when I need to pass a list of SDL_Rect objects
+        ffi,
+        name    => 'SDL2x_RectList',
+        class   => 'SDL2x::RectList',
+        members => ['SDL_Rect'],
+    );
+    FFI::C::ArrayDef->new(    # Used sparingly when I need to pass a list of SDL_Rect objects
+        ffi,
+        name    => 'SDL2x_FRectList',
+        class   => 'SDL2x::FRectList',
+        members => ['SDL_FRect'],
+    );
+    #
+    ffi->type( '(opaque,opaque,opaque)->int' => 'SDL_HitTest' );
 
     # An opaque handle to an OpenGL context.
     package SDL2::GLContext { use SDL2::Utils; has() };
-    enum SDL_GLattr => [
-        qw[
-            SDL_GL_RED_SIZE
-            SDL_GL_GREEN_SIZE
-            SDL_GL_BLUE_SIZE
-            SDL_GL_ALPHA_SIZE
-            SDL_GL_BUFFER_SIZE
-            SDL_GL_DOUBLEBUFFER
-            SDL_GL_DEPTH_SIZE
-            SDL_GL_STENCIL_SIZE
-            SDL_GL_ACCUM_RED_SIZE
-            SDL_GL_ACCUM_GREEN_SIZE
-            SDL_GL_ACCUM_BLUE_SIZE
-            SDL_GL_ACCUM_ALPHA_SIZE
-            SDL_GL_STEREO
-            SDL_GL_MULTISAMPLEBUFFERS
-            SDL_GL_MULTISAMPLESAMPLES
-            SDL_GL_ACCELERATED_VISUAL
-            SDL_GL_RETAINED_BACKING
-            SDL_GL_CONTEXT_MAJOR_VERSION
-            SDL_GL_CONTEXT_MINOR_VERSION
-            SDL_GL_CONTEXT_EGL
-            SDL_GL_CONTEXT_FLAGS
-            SDL_GL_CONTEXT_PROFILE_MASK
-            SDL_GL_SHARE_WITH_CURRENT_CONTEXT
-            SDL_GL_FRAMEBUFFER_SRGB_CAPABLE
-            SDL_GL_CONTEXT_RELEASE_BEHAVIOR
-            SDL_GL_CONTEXT_RESET_NOTIFICATION
-            SDL_GL_CONTEXT_NO_ERROR
-        ]
-        ],
-        SDL_GLprofile => [
-        [ SDL_GL_CONTEXT_PROFILE_CORE          => 0x0001 ],
-        [ SDL_GL_CONTEXT_PROFILE_COMPATIBILITY => 0x0002 ],
-        [ SDL_GL_CONTEXT_PROFILE_ES            => 0x0004 ]
-        ],
-        SDL_GLcontextFlag => [
-        [ SDL_GL_CONTEXT_DEBUG_FLAG              => 0x0001 ],
-        [ SDL_GL_CONTEXT_FORWARD_COMPATIBLE_FLAG => 0x0002 ],
-        [ SDL_GL_CONTEXT_ROBUST_ACCESS_FLAG      => 0x0004 ],
-        [ SDL_GL_CONTEXT_RESET_ISOLATION_FLAG    => 0x0008 ]
-        ],
-        SDL_GLcontextReleaseFlag => [
-        [ SDL_GL_CONTEXT_RELEASE_BEHAVIOR_NONE  => 0x0000 ],
-        [ SDL_GL_CONTEXT_RELEASE_BEHAVIOR_FLUSH => 0x0001 ]
-        ],
-        SDL_GLContextResetNotification => [
-        [ SDL_GL_CONTEXT_RESET_NO_NOTIFICATION => 0x0000 ],
-        [ SDL_GL_CONTEXT_RESET_LOSE_CONTEXT    => 0x0001 ]
-        ];
     attach video => {
         SDL_GetNumVideoDrivers     => [ [],         'int' ],
         SDL_GetVideoDriver         => [ ['int'],    'string' ],
@@ -558,53 +331,6 @@ package SDL2::FFI 0.04 {
         SDL_GL_SwapWindow         => [ ['SDL_Window'] ],
         SDL_GL_DeleteContext      => [ ['SDL_GLContext'] ]
         };
-    enum SDL_RendererFlags => [
-        [ SDL_RENDERER_SOFTWARE      => 0x00000001 ],
-        [ SDL_RENDERER_ACCELERATED   => 0x00000002 ],
-        [ SDL_RENDERER_PRESENTVSYNC  => 0x00000004 ],
-        [ SDL_RENDERER_TARGETTEXTURE => 0x00000008 ]
-    ];
-    enum
-        SDL_ScaleMode     => [qw[SDL_SCALEMODENEAREST SDL_SCALEMODELINEAR SDL_SCALEMODEBEST]],
-        SDL_TextureAccess =>
-        [qw[SDL_TEXTUREACCESS_STATIC SDL_TEXTUREACCESS_STREAMING SDL_TEXTUREACCESS_TARGET]],
-        SDL_TextureModulate => [
-        [ SDL_TEXTUREMODULATE_NONE  => 0x00000000 ],
-        [ SDL_TEXTUREMODULATE_COLOR => 0x00000001 ],
-        [ SDL_TEXTUREMODULATE_ALPHA => 0x00000002 ]
-        ],
-        SDL_RendererFlip => [
-        [ SDL_FLIP_NONE       => 0x00000000 ],
-        [ SDL_FLIP_HORIZONTAL => 0x00000001 ],
-        [ SDL_FLIP_VERTICAL   => 0x00000002 ]
-        ],
-        SDL_BlendMode => [
-        [ SDL_BLENDMODE_NONE    => 0x00000000 ],
-        [ SDL_BLENDMODE_BLEND   => 0x00000001 ],
-        [ SDL_BLENDMODE_ADD     => 0x00000002, ],
-        [ SDL_BLENDMODE_MOD     => 0x00000004, ],
-        [ SDL_BLENDMODE_MUL     => 0x00000008, ],
-        [ SDL_BLENDMODE_INVALID => 0x7FFFFFFF ]
-        ],
-        SDL_BlendOperation => [
-        [ SDL_BLENDOPERATION_ADD          => 0x1 ],
-        [ SDL_BLENDOPERATION_SUBTRACT     => 0x2 ],
-        [ SDL_BLENDOPERATION_REV_SUBTRACT => 0x3 ],
-        [ SDL_BLENDOPERATION_MINIMUM      => 0x4 ],
-        [ SDL_BLENDOPERATION_MAXIMUM      => 0x5 ]
-        ],
-        SDL_BlendFactor => [
-        [ SDL_BLENDFACTOR_ZERO                => 0x1 ],
-        [ SDL_BLENDFACTOR_ONE                 => 0x2 ],
-        [ SDL_BLENDFACTOR_SRC_COLOR           => 0x3 ],
-        [ SDL_BLENDFACTOR_ONE_MINUS_SRC_COLOR => 0x4 ],
-        [ SDL_BLENDFACTOR_SRC_ALPHA           => 0x5 ],
-        [ SDL_BLENDFACTOR_ONE_MINUS_SRC_ALPHA => 0x6 ],
-        [ SDL_BLENDFACTOR_DST_COLOR           => 0x7 ],
-        [ SDL_BLENDFACTOR_ONE_MINUS_DST_COLOR => 0x8 ],
-        [ SDL_BLENDFACTOR_DST_ALPHA           => 0x9 ],
-        [ SDL_BLENDFACTOR_ONE_MINUS_DST_ALPHA => 0xA ]
-        ];
     attach render => {
         SDL_GetNumRenderDrivers     => [ [],                            'int' ],
         SDL_GetRenderDriverInfo     => [ [ 'int', 'SDL_RendererInfo' ], 'int' ],
@@ -878,54 +604,6 @@ package SDL2::FFI 0.04 {
         ],
         SDL_RemoveTimer => [ ['uint32'] => 'bool' ],
     };
-    define audio => [
-        [ SDL_AUDIO_MASK_BITSIZE   => 0xFF ],
-        [ SDL_AUDIO_MASK_DATATYPE  => ( 1 << 8 ) ],
-        [ SDL_AUDIO_MASK_ENDIAN    => ( 1 << 12 ) ],
-        [ SDL_AUDIO_MASK_SIGNED    => ( 1 << 15 ) ],
-        [ SDL_AUDIO_BITSIZE        => sub ($x) { $x & SDL_AUDIO_MASK_BITSIZE() } ],
-        [ SDL_AUDIO_ISFLOAT        => sub ($x) { $x & SDL_AUDIO_MASK_DATATYPE() } ],
-        [ SDL_AUDIO_ISBIGENDIAN    => sub ($x) { $x & SDL_AUDIO_MASK_ENDIAN() } ],
-        [ SDL_AUDIO_ISSIGNED       => sub ($x) { $x & SDL_AUDIO_MASK_SIGNED() } ],
-        [ SDL_AUDIO_ISINT          => sub ($x) { !SDL_AUDIO_ISFLOAT($x) } ],
-        [ SDL_AUDIO_ISLITTLEENDIAN => sub ($x) { !SDL_AUDIO_ISBIGENDIAN($x) } ],
-        [ SDL_AUDIO_ISUNSIGNED     => sub ($x) { !SDL_AUDIO_ISSIGNED($x) } ],
-        [ AUDIO_U8                 => 0x0008 ],
-        [ AUDIO_S8                 => 0x8008 ],
-        [ AUDIO_U16LSB             => 0x0010 ],
-        [ AUDIO_S16LSB             => 0x8010 ],
-        [ AUDIO_U16MSB             => 0x1010 ],
-        [ AUDIO_S16MSB             => 0x9010 ],
-        [ AUDIO_U16                => sub () { AUDIO_U16LSB() } ],
-        [ AUDIO_S16                => sub () { AUDIO_S16LSB() } ],
-        [ AUDIO_S32LSB             => 0x8020 ],
-        [ AUDIO_S32MSB             => 0x9020 ],
-        [ AUDIO_S32                => sub () { AUDIO_S32LSB() } ],
-        [ AUDIO_F32LSB             => 0x8120 ],
-        [ AUDIO_F32MSB             => 0x9120 ],
-        [ AUDIO_F32                => sub () { AUDIO_F32LSB() } ], (
-            $bigendian ? (
-                [ AUDIO_U16SYS => sub () { AUDIO_U16MSB() } ],
-                [ AUDIO_S16SYS => sub () { AUDIO_S16MSB() } ],
-                [ AUDIO_S32SYS => sub () { AUDIO_S32MSB() } ],
-                [ AUDIO_F32SYS => sub () { AUDIO_F32MSB() } ]
-                ) : (
-                [ AUDIO_U16SYS => sub () { AUDIO_U16LSB() } ],
-                [ AUDIO_S16SYS => sub () { AUDIO_S16LSB() } ],
-                [ AUDIO_S32SYS => sub () { AUDIO_S32LSB() } ],
-                [ AUDIO_F32SYS => sub () { AUDIO_F32LSB() } ],
-                )
-        ),
-        [ SDL_AUDIO_ALLOW_FREQUENCY_CHANGE => sub () {0x00000001} ],
-        [ SDL_AUDIO_ALLOW_FORMAT_CHANGE    => sub () {0x00000002} ],
-        [ SDL_AUDIO_ALLOW_CHANNELS_CHANGE  => sub () {0x00000004} ],
-        [ SDL_AUDIO_ALLOW_SAMPLES_CHANGE   => sub () {0x00000008} ],
-        [   SDL_AUDIO_ALLOW_ANY_CHANGE => sub () {
-                ( SDL_AUDIO_ALLOW_FREQUENCY_CHANGE() | SDL_AUDIO_ALLOW_FORMAT_CHANGE()
-                        | SDL_AUDIO_ALLOW_CHANNELS_CHANGE() | SDL_AUDIO_ALLOW_SAMPLES_CHANGE() )
-            }
-        ],
-    ];
     ffi->type( '(opaque,string,int)->void' => 'SDL_AudioCallback' );
     ffi->type( 'int'                       => 'SDL_AudioFormat' );
     ffi->type( '(opaque,uint16)->void'     => 'SDL_AudioFilter' );
@@ -936,11 +614,6 @@ package SDL2::FFI 0.04 {
     };
 
     package SDL2::AudioDeviceID {
-        use SDL2::Utils;
-        has();
-    };
-
-    package SDL2::AudioStatus {
         use SDL2::Utils;
         has();
     };
@@ -1044,31 +717,21 @@ END
             'SDL_Surface' );
 
     # https://wiki.libsdl.org/CategoryCPU
-    ffi->attach( SDL_GetCPUCacheLineSize => [] => 'int' );
-    ffi->attach( SDL_GetCPUCount         => [] => 'int' );
-    ffi->attach( SDL_GetSystemRAM        => [] => 'int' );
-    ffi->attach( SDL_Has3DNow            => [] => 'bool' );
-    ffi->attach( SDL_HasAVX              => [] => 'bool' );
-    ffi->attach( SDL_HasAVX2             => [] => 'bool' );
-    ffi->attach( SDL_HasAltiVec          => [] => 'bool' );
-    ffi->attach( SDL_HasMMX              => [] => 'bool' );
-    ffi->attach( SDL_HasRDTSC            => [] => 'bool' );
-    ffi->attach( SDL_HasSSE              => [] => 'bool' );
-    ffi->attach( SDL_HasSSE2             => [] => 'bool' );
-    ffi->attach( SDL_HasSSE3             => [] => 'bool' );
-    ffi->attach( SDL_HasSSE41            => [] => 'bool' );
-    ffi->attach( SDL_HasSSE42            => [] => 'bool' );
-
-    # https://wiki.libsdl.org/CategoryPower
-    FFI::C->enum(
-        'SDL_PowerState',
-        [   qw[
-                SDL_POWERSTATE_UNKNOWN
-                SDL_POWERSTATE_ON_BATTERY SDL_POWERSTATE_NO_BATTERY
-                SDL_POWERSTATE_CHARGING   SDL_POWERSTATE_CHARGED]
-        ]
-    );
-    ffi->attach( SDL_GetPowerInfo => [ 'int*', 'int*' ] => 'int' );
+    ffi->attach( SDL_GetCPUCacheLineSize => []                 => 'int' );
+    ffi->attach( SDL_GetCPUCount         => []                 => 'int' );
+    ffi->attach( SDL_GetSystemRAM        => []                 => 'int' );
+    ffi->attach( SDL_Has3DNow            => []                 => 'bool' );
+    ffi->attach( SDL_HasAVX              => []                 => 'bool' );
+    ffi->attach( SDL_HasAVX2             => []                 => 'bool' );
+    ffi->attach( SDL_HasAltiVec          => []                 => 'bool' );
+    ffi->attach( SDL_HasMMX              => []                 => 'bool' );
+    ffi->attach( SDL_HasRDTSC            => []                 => 'bool' );
+    ffi->attach( SDL_HasSSE              => []                 => 'bool' );
+    ffi->attach( SDL_HasSSE2             => []                 => 'bool' );
+    ffi->attach( SDL_HasSSE3             => []                 => 'bool' );
+    ffi->attach( SDL_HasSSE41            => []                 => 'bool' );
+    ffi->attach( SDL_HasSSE42            => []                 => 'bool' );
+    ffi->attach( SDL_GetPowerInfo        => [ 'int*', 'int*' ] => 'int' );
 
     # https://wiki.libsdl.org/CategoryStandard
     ffi->attach( SDL_acos => ['double'] => 'double' );
@@ -1139,303 +802,6 @@ END
                 $inner->( $format, $r, $g, $b );
             }
         ]
-    };
-
-    # https://wiki.libsdl.org/CategoryEvents
-    define events => [
-        [ SDL_RELEASED => 0 ], [ SDL_PRESSED => 1 ],
-
-        # SDL_EventType
-        [ SDL_FIRSTEVENT => 0 ],    #     /**< Unused (do not remove) */
-
-        #
-        [ SDL_QUIT                    => 0x100 ],                      # /**< User-requested quit */
-        [ SDL_APP_TERMINATING         => sub () { SDL_QUIT() + 1 } ],
-        [ SDL_APP_LOWMEMORY           => sub () { SDL_QUIT() + 2 } ],
-        [ SDL_APP_WILLENTERBACKGROUND => sub () { SDL_QUIT() + 3 } ],
-        [ SDL_APP_DIDENTERBACKGROUND  => sub () { SDL_QUIT() + 4 } ],
-        [ SDL_APP_WILLENTERFOREGROUND => sub () { SDL_QUIT() + 5 } ],
-        [ SDL_APP_DIDENTERFOREGROUND  => sub () { SDL_QUIT() + 6 } ],
-        #
-        [ SDL_DISPLAYEVENT => 0x150 ],
-        #
-        [ SDL_WINDOWEVENT => 0x200 ], [ SDL_SYSWMEVENT => sub () { SDL_WINDOWEVENT() + 1 } ],
-        #
-        [ SDL_KEYDOWN       => 0x300 ], [ SDL_KEYUP => sub () { SDL_KEYDOWN() + 1 } ],
-        [ SDL_TEXTEDITING   => sub () { SDL_KEYDOWN() + 2 } ],
-        [ SDL_TEXTINPUT     => sub () { SDL_KEYDOWN() + 3 } ],
-        [ SDL_KEYMAPCHANGED => sub () { SDL_KEYDOWN() + 4 } ],
-        #
-        [ SDL_MOUSEMOTION   => 0x400 ], [ SDL_MOUSEBUTTONDOWN => sub () { SDL_MOUSEMOTION() + 1 } ],
-        [ SDL_MOUSEBUTTONUP => sub () { SDL_MOUSEMOTION() + 2 } ],
-        [ SDL_MOUSEWHEEL    => sub () { SDL_MOUSEMOTION() + 3 } ],
-        #
-        [ SDL_JOYAXISMOTION    => 0x600 ],
-        [ SDL_JOYBALLMOTION    => sub () { SDL_JOYAXISMOTION() + 1 } ],
-        [ SDL_JOYHATMOTION     => sub () { SDL_JOYAXISMOTION() + 2 } ],
-        [ SDL_JOYBUTTONDOWN    => sub () { SDL_JOYAXISMOTION() + 3 } ],
-        [ SDL_JOYBUTTONUP      => sub () { SDL_JOYAXISMOTION() + 4 } ],
-        [ SDL_JOYDEVICEADDED   => sub () { SDL_JOYAXISMOTION() + 5 } ],
-        [ SDL_JOYDEVICEREMOVED => sub () { SDL_JOYAXISMOTION() + 6 } ],
-        #
-        [ SDL_CONTROLLERAXISMOTION     => 0x650 ],
-        [ SDL_CONTROLLERBUTTONDOWN     => sub () { SDL_CONTROLLERAXISMOTION() + 1 } ],
-        [ SDL_CONTROLLERBUTTONUP       => sub () { SDL_CONTROLLERAXISMOTION() + 2 } ],
-        [ SDL_CONTROLLERDEVICEADDED    => sub () { SDL_CONTROLLERAXISMOTION() + 3 } ],
-        [ SDL_CONTROLLERDEVICEREMOVED  => sub () { SDL_CONTROLLERAXISMOTION() + 4 } ],
-        [ SDL_CONTROLLERDEVICEREMAPPED => sub () { SDL_CONTROLLERAXISMOTION() + 5 } ],
-        #
-        [ SDL_FINGERDOWN   => 0x700 ], [ SDL_FINGERUP => sub () { SDL_FINGERDOWN() + 1 } ],
-        [ SDL_FINGERMOTION => sub () { SDL_FINGERDOWN() + 2 } ],
-        #
-        [ SDL_DOLLARGESTURE => 0x800 ], [ SDL_DOLLARRECORD => sub () { SDL_DOLLARGESTURE() + 1 } ],
-        [ SDL_MULTIGESTURE  => sub () { SDL_DOLLARGESTURE() + 2 } ],
-        #
-        [ SDL_CLIPBOARDUPDATE => 0x900 ],
-        #
-        [ SDL_DROPFILE     => 0x1000 ], [ SDL_DROPTEXT => sub () { SDL_DROPFILE() + 1 } ],
-        [ SDL_DROPBEGIN    => sub () { SDL_DROPFILE() + 2 } ],
-        [ SDL_DROPCOMPLETE => sub () { SDL_DROPFILE() + 3 } ],
-        #
-        [ SDL_AUDIODEVICEADDED   => 0x1100 ],
-        [ SDL_AUDIODEVICEREMOVED => sub () { SDL_AUDIODEVICEADDED() + 1 } ],
-        #
-        [ SDL_SENSORUPDATE => 0x1200 ],
-        #
-        [ SDL_RENDER_TARGETS_RESET => 0x2000 ],
-        [ SDL_RENDER_DEVICE_RESET  => sub () { SDL_RENDER_TARGETS_RESET() + 1 } ],
-        #
-        [ SDL_USEREVENT => 0x8000 ],
-        #
-        [ SDL_LASTEVENT => 0xFFFF ],
-    ];
-    #
-    package SDL2::CommonEvent {
-        use SDL2::Utils;
-        has
-            type      => 'uint32',
-            timestamp => 'uint32';
-    };
-
-    package SDL2::DisplayEvent {
-        use SDL2::Utils;
-        has
-            type      => 'uint32',
-            timestamp => 'uint32',
-            display   => 'uint32',
-            event     => 'uint8',
-            padding1  => 'uint8',
-            padding2  => 'uint8',
-            padding3  => 'uint8',
-            data1     => 'sint32';
-    };
-
-    package SDL2::WindowEvent {
-        use SDL2::Utils;
-        has
-            type      => 'uint32',
-            timestamp => 'uint32',
-            windowId  => 'uint32',
-            event     => 'uint8',
-            padding1  => 'uint8',
-            padding2  => 'uint8',
-            padding3  => 'uint8',
-            data1     => 'sint32',
-            data2     => 'sint32';
-    };
-
-    package SDL2::KeyboardEvent {
-        use SDL2::Utils;
-        has
-            type      => 'uint32',
-            timestamp => 'uint32',
-            windowId  => 'uint32',
-            state     => 'uint8',
-            repeat    => 'uint8',
-            padding2  => 'uint8',
-            padding3  => 'uint8',
-            keysym    => 'opaque'    # SDL_Keysym
-    };
-
-    package SDL2::TextEditingEvent {
-        use SDL2::Utils;
-        has
-            type      => 'uint32',
-            timestamp => 'uint32',
-            windowId  => 'uint32',
-            text      => 'char[32]',
-            start     => 'sint32',
-            length    => 'sint32';
-    };
-
-    package SDL2::TextInputEvent {
-        use SDL2::Utils;
-        has
-            type      => 'uint32',
-            timestamp => 'uint32',
-            windowId  => 'uint32',
-            text      => 'char[32]';
-    };
-
-    package SDL2::MouseMotionEvent {
-        use SDL2::Utils;
-        has
-            type      => 'uint32',
-            timestamp => 'uint32',
-            windowId  => 'uint32',
-            which     => 'uint32',
-            state     => 'uint8',
-            x         => 'sint32',
-            y         => 'sint32',
-            xrel      => 'sint32',
-            yrel      => 'sint32';
-    };
-
-    package SDL2::MouseButtonEvent {
-        use SDL2::Utils;
-        has
-            type      => 'uint32',
-            timestamp => 'uint32',
-            windowID  => 'uint32',
-            which     => 'uint32',
-            button    => 'uint8',
-            state     => 'uint8',
-            clicks    => 'uint8',
-            padding1  => 'uint8',
-            x         => 'sint32',
-            y         => 'sint32';
-    };
-
-    package SDL2::MouseWheelEvent {
-        use SDL2::Utils;
-        has
-            type      => 'uint32',
-            timestamp => 'uint32',
-            windowId  => 'uint32',
-            which     => 'uint8',
-            x         => 'sint32',
-            y         => 'sint32',
-            direction => 'uint32';
-    };
-
-    package SDL2::JoyAxisEvent {
-        use SDL2::Utils;
-        has
-            type      => 'uint32',
-            timestamp => 'uint32',
-            which     => 'opaque',    # SDL_JoystickID
-            padding1  => 'uint8',
-            padding2  => 'uint8',
-            padding3  => 'uint8',
-            value     => 'sint16',
-            padding4  => 'uint16';
-    };
-
-    package SDL2::JoyBallEvent {
-        use SDL2::Utils;
-        has
-            type      => 'uint32',
-            timestamp => 'uint32',
-            which     => 'opaque',    # SDL_JoystickID
-            padding1  => 'uint8',
-            padding2  => 'uint8',
-            padding3  => 'uint8',
-            xrel      => 'sint16',
-            yrel      => 'uint16',
-            ;
-    };
-
-    package SDL2::JoyHatEvent {
-        use SDL2::Utils;
-        has
-            type      => 'uint32',
-            timestamp => 'uint32',
-            which     => 'opaque',    # SDL_JoystickID
-            hat       => 'uint8',
-            value     => 'uint8',
-            padding1  => 'uint8',
-            padding2  => 'uint8';
-    };
-
-    package SDL2::JoyButtonEvent {
-        use SDL2::Utils;
-        has
-            type      => 'uint32',
-            timestamp => 'uint32',
-            which     => 'opaque',    # SDL_JoystickID
-            button    => 'uint8',
-            state     => 'uint8',
-            padding1  => 'uint8',
-            padding2  => 'uint8';
-    };
-
-    package SDL2::JoyDeviceEvent {
-        use SDL2::Utils;
-        has
-            type      => 'uint32',
-            timestamp => 'uint32',
-            which     => 'sint32';
-    };
-
-    package SDL2::ControllerAxisEvent {
-        use SDL2::Utils;
-        has
-            type      => 'uint32',
-            timestamp => 'uint32',
-            which     => 'opaque',    # SDL_JoystickID
-            axis      => 'uint8',
-            padding1  => 'uint8',
-            padding2  => 'uint8',
-            padding3  => 'uint8',
-            value     => 'sint16',
-            padding4  => 'uint8';
-    };
-
-    package SDL2::ControllerButtonEvent {
-        use SDL2::Utils;
-        has
-            type      => 'uint32',
-            timestamp => 'uint32',
-            which     => 'opaque',    # SDL_JoystickID
-            button    => 'uint8',
-            state     => 'uint8',
-            padding1  => 'uint8',
-            padding2  => 'uint8',
-            ;
-    };
-
-    package SDL2::ControllerDeviceEvent {
-        use SDL2::Utils;
-        has
-            type      => 'uint32',
-            timestamp => 'uint32',
-            which     => 'sint32';
-    };
-
-    package SDL2::AudioDeviceEvent {
-        use SDL2::Utils;
-        has
-            type      => 'uint32',
-            timestamp => 'uint32',
-            which     => 'uint32',
-            iscapture => 'uint8',
-            padding1  => 'uint8',
-            padding2  => 'uint8',
-            padding3  => 'uint8';
-    };
-
-    package SDL2::TouchFingerEvent {
-        use SDL2::Utils;
-        has
-            type      => 'uint32',
-            timestamp => 'uint32',
-            touchId   => 'opaque',    # SDL_TouchID
-            fingerId  => 'opaque',    # SDL_FingerID
-            x         => 'float',
-            y         => 'float',
-            dx        => 'float',
-            dy        => 'float',
-            pressure  => 'float';
     };
 
     package SDL2::MultiGestureEvent {
@@ -1555,12 +921,6 @@ END
             padding  => 'uint8[56]'
         ]
     );
-    enum SDL_EventAction => [
-        qw[
-            SDL_ADDEVENT
-            SDL_PEEKEVENT
-            SDL_GETEVENT]
-    ];
     ffi->type( '(opaque, opaque)->int' => 'SDL_EventFilter' );
     attach events => {
         SDL_PeepEvents =>
@@ -1598,28 +958,6 @@ END
     };
 
     # From SDL_mouse.h
-    enum SDL_SystemCursor => [
-        qw[
-            SDL_SYSTEM_CURSOR_ARROW
-            SDL_SYSTEM_CURSOR_IBEAM
-            SDL_SYSTEM_CURSOR_WAIT
-            SDL_SYSTEM_CURSOR_CROSSHAIR
-            SDL_SYSTEM_CURSOR_WAITARROW
-            SDL_SYSTEM_CURSOR_SIZENWSE
-            SDL_SYSTEM_CURSOR_SIZENESW
-            SDL_SYSTEM_CURSOR_SIZEWE
-            SDL_SYSTEM_CURSOR_SIZENS
-            SDL_SYSTEM_CURSOR_SIZEALL
-            SDL_SYSTEM_CURSOR_NO
-            SDL_SYSTEM_CURSOR_HAND
-            SDL_NUM_SYSTEM_CURSORS]
-        ],
-        SDL_MouseWheelDirection => [
-        qw[
-            SDL_MOUSEWHEEL_NORMAL
-            SDL_MOUSEWHEEL_FLIPPED
-        ]
-        ];
     ffi->attach( SDL_GetMouseFocus         => [] => 'SDL_Window' );
     ffi->attach( SDL_GetMouseState         => [ 'int',        'int' ] => 'uint32' );
     ffi->attach( SDL_GetGlobalMouseState   => [ 'int',        'int' ] => 'uint32' );
@@ -1638,78 +976,8 @@ END
     ffi->attach( SDL_ShowCursor         => ['int'] => 'int' );
 
     # https://wiki.libsdl.org/CategoryPixels
-    sub SDL_ALPHA_OPAQUE()      {255}
-    sub SDL_ALPHA_TRANSPARENT() {0}
-    FFI::C->enum(
-        pixel_type => [
-            qw[
-                SDL_PIXELTYPE_UNKNOWN
-                SDL_PIXELTYPE_INDEX1
-                SDL_PIXELTYPE_INDEX4
-                SDL_PIXELTYPE_INDEX8
-                SDL_PIXELTYPE_PACKED8
-                SDL_PIXELTYPE_PACKED16
-                SDL_PIXELTYPE_PACKED32
-                SDL_PIXELTYPE_ARRAYU8
-                SDL_PIXELTYPE_ARRAYU16
-                SDL_PIXELTYPE_ARRAYU32
-                SDL_PIXELTYPE_ARRAYF16
-                SDL_PIXELTYPE_ARRAYF32
-            ]
-        ]
-    );
-    FFI::C->enum(
-        bitmap_order => [
-            qw[
-                SDL_BITMAPORDER_NONE
-                SDL_BITMAPORDER_4321
-                SDL_BITMAPORDER_1234
-            ]
-        ]
-    );
-    FFI::C->enum(
-        packed_order => [
-            qw[
-                SDL_PACKEDORDER_NONE
-                SDL_PACKEDORDER_XRGB
-                SDL_PACKEDORDER_RGBX
-                SDL_PACKEDORDER_ARGB
-                SDL_PACKEDORDER_RGBA
-                SDL_PACKEDORDER_XBGR
-                SDL_PACKEDORDER_BGRX
-                SDL_PACKEDORDER_ABGR
-                SDL_PACKEDORDER_BGRA
-            ]
-        ]
-    );
-    FFI::C->enum(
-        array_order => [
-            qw[
-                SDL_ARRAYORDER_NONE
-                SDL_ARRAYORDER_RGB
-                SDL_ARRAYORDER_RGBA
-                SDL_ARRAYORDER_ARGB
-                SDL_ARRAYORDER_BGR
-                SDL_ARRAYORDER_BGRA
-                SDL_ARRAYORDER_ABGR
-            ]
-        ]
-    );
-    FFI::C->enum(
-        packed_layout => [
-            qw[
-                SDL_PACKEDLAYOUT_NONE
-                SDL_PACKEDLAYOUT_332
-                SDL_PACKEDLAYOUT_4444
-                SDL_PACKEDLAYOUT_1555
-                SDL_PACKEDLAYOUT_5551
-                SDL_PACKEDLAYOUT_565
-                SDL_PACKEDLAYOUT_8888
-                SDL_PACKEDLAYOUT_2101010
-                SDL_PACKEDLAYOUT_1010102
-            ]
-        ]
-    );
+    sub SDL_ALPHA_OPAQUE()                        {255}
+    sub SDL_ALPHA_TRANSPARENT()                   {0}
     sub SDL_DEFINE_PIXELFOURCC ( $A, $B, $C, $D ) { SDL_FOURCC( $A, $B, $C, $D ) }
 
     sub SDL_DEFINE_PIXELFORMAT ( $type, $order, $layout, $bits, $bytes ) {
@@ -1982,18 +1250,6 @@ END
 
 # Unsorted - https://github.com/libsdl-org/SDL/blob/c59d4dcd38c382a1e9b69b053756f1139a861574/include/SDL_keycode.h
 #    https://github.com/libsdl-org/SDL/blob/c59d4dcd38c382a1e9b69b053756f1139a861574/include/SDL_scancode.h#L151
-    sub SDLK_SCANCODE_MASK           { 1 << 30 }
-    sub SDL_SCANCODE_TO_KEYCODE ($X) { $X | SDLK_SCANCODE_MASK }
-    FFI::C->enum(
-        'SDL_Keycode',
-        [   [ SDLK_UP => SDL_SCANCODE_TO_KEYCODE(82) ],    # 82 comes from include/SDL_scancode.h
-
-            # The following are incorrect!!!!!!!!!!!!!!!!!!!
-            qw[SDLK_DOWN
-                SDLK_LEFT
-                SDLK_RIGHT]
-        ]
-    );
     attach(
         all => {
 
@@ -2171,8 +1427,6 @@ END
 
     package SDL2::SysWMinfo { };
 
-    package SDL2::SysWMmsg { };
-
     package SDL2::Sensor { };
 
     package SDL2::SensorID { };    # type
@@ -2283,6 +1537,12 @@ END
 
     package SDL2::VideoBootStrap { };
 
+    package SDL2::SpinLock { };
+
+    package SDL2::AtomicLock { };
+
+    package SDL2::AudioFormat { };
+
     #warn SDL2::SDLK_UP();
     #warn SDL2::SDLK_DOWN();
     # https://github.com/libsdl-org/SDL/blob/main/include/SDL_hints.h
@@ -2328,19 +1588,20 @@ SDL2::FFI - FFI Wrapper for SDL (Simple DirectMedia Layer) Development Library
 
 =head1 DESCRIPTION
 
-SDL2 is an FFI::Platypus-backed wrapper around the B<S>imple B<D>irectMedia
-B<L>ayer - a cross-platform development library designed to provide low level
-access to audio, keyboard, mouse, joystick, and graphics hardware.
- 
+SDL2::FFI is an L<FFI::Platypus> backed bindings to the B<S>imple
+B<D>irectMedia B<L>ayer - a cross-platform development library designed to
+provide low level access to audio, keyboard, mouse, joystick, and graphics
+hardware.
+
 =head1 Initialization and Shutdown
 
-The functions in this category are used to set up SDL for use and generally
+The functions in this category are used to set SDL up for use and generally
 have global effects in your program. These functions may be imported with the
 C<:init> or C<:default> tag.
 
 =head2 C<SDL_Init( ... )>
 
-Initialize the SDL library. This must be called before using most other SDL
+Initializes the SDL library. This must be called before using most other SDL
 functions.
 
 	SDL_Init( SDL_INIT_TIMER | SDL_INIT_VIDEO | SDL_INIT_EVENTS );
@@ -2480,7 +1741,8 @@ This category contains functions to set and get configuration hints, as well as
 listing each of them alphabetically.
 
 The convention for naming hints is C<SDL_HINT_X>, where C<SDL_X> is the
-environment variable that can be used to override the default.
+environment variable that can be used to override the default. You may import
+those recognised by SDL2 with the L<< C<:hints>|SDL2::Enum/C<:hints> >> tag.
 
 In general these hints are just that - they may or may not be supported or
 applicable on any given platform, but they provide a way for an application or
@@ -2655,14 +1917,14 @@ Clear all hints.
 This function is automatically called during L<< C<SDL_Quit( )>|/C<SDL_Quit( )>
 >>.
 
-
 =head1 Error Handling
 
 Functions in this category provide simple error message routines for SDL. L<<
 C<SDL_GetError( )>|/C<SDL_GetError( )> >> can be called for almost all SDL
 functions to determine what problems are occurring. Check the wiki page of each
 specific SDL function to see whether L<< C<SDL_GetError( )>|/C<SDL_GetError( )>
->> is meaningful for them or not.
+>> is meaningful for them or not. These functions may be imported with the
+C<:error> tag.
 
 The SDL error messages are in English.
 
@@ -2674,7 +1936,6 @@ Calling this function will replace any previous error message that was set.
 
 This function always returns C<-1>, since SDL frequently uses C<-1> to signify
 an failing result, leading to this idiom:
-
 
 	if ($error_code) {
 		return SDL_SetError( 'This operation has failed: %d', $error_code );
@@ -2756,10 +2017,10 @@ Returns the pointer passed in as the C<errstr> parameter.
 
 Clear any previous error message for this thread.
 
-
 =head1 Log Handling
 
-Simple log messages with categories and priorities.
+Simple log messages with categories and priorities. These functions may be
+imported with the C<:logging> tag.
 
 By default, logs are quiet but if you're debugging SDL you might want:
 
@@ -3627,7 +2888,7 @@ Expected parameters include:
 
 =item C<h> - the height of the window, in screen coordinates
 
-=item C<flags> - 0, or one or more C<SDL_WindowFlags> OR'd together
+=item C<flags> - 0, or one or more L<< C<:windowFlags>|SDL2::Enum/C<:windowFlags> >> OR'd together
 
 =back
 
@@ -3713,7 +2974,8 @@ Expected parameters include:
 
 =back
 
-Returns a mask of the SDL_WindowFlags associated with C<window>.
+Returns a mask of the L<< C<:windowFlags>|SDL2::Enum/C<:windowFlags> >>
+associated with C<window>.
 
 =head2 C<SDL_SetWindowTitle( ... )>
 

@@ -37,9 +37,8 @@ package SDL2::Utils {
         $package = 'SDL2::FFI';
         for my $tag ( keys %args ) {
             FFI::C->enum( $tag => $args{$tag}, { package => $package } );
-            $SDL2::FFI::EXPORT_TAGS{ lc substr $tag, 4 }
-                = [ sort map { ref $_ ? ref $_ eq 'CODE' ? $_->() : $_->[0] : $_ }
-                    @{ $args{$tag} } ];
+            push @{ $SDL2::FFI::EXPORT_TAGS{ lc substr $tag, 4 } },
+                sort map { ref $_ ? ref $_ eq 'CODE' ? $_->() : $_->[0] : $_ } @{ $args{$tag} };
         }
     }
 
@@ -92,10 +91,8 @@ package SDL2::Utils {
                 ->() :
                 constant->import( $package . '::' . $_->[0] => $_->[1] )
                 for @{ $args{$tag} };
-
-            #constant->import( $_ => $_ ) for @{ $Defines{$tag} };
-            $SDL2::FFI::EXPORT_TAGS{ lc substr $tag, 4 }
-                = [ sort map { ref $_ ? $_->[0] : $_ } @{ $args{$tag} } ];
+            push @{ $SDL2::FFI::EXPORT_TAGS{$tag} },
+                sort map { ref $_ ? $_->[0] : $_ } @{ $args{$tag} };
         }
     }
 };

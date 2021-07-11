@@ -1,5 +1,4 @@
 package SDL2::version 0.01 {
-    use lib '../lib', 'lib', '/home/sanko/Projects/SDL2.pm/lib';
     use SDL2::Utils;
     has major => 'uint8', minor => 'uint8', patch => 'uint8';
 

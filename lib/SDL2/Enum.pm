@@ -1,27 +1,604 @@
 package SDL2::Enum {
+    use lib '../../lib';
+    use strictures 2;
+    use experimental 'signatures';
     use SDL2::Utils;
+
+    # https://github.com/libsdl-org/SDL/blob/main/include/SDL.h
+    define init => [
+        [ SDL_INIT_TIMER          => 0x00000001 ],
+        [ SDL_INIT_AUDIO          => 0x00000010 ],
+        [ SDL_INIT_VIDEO          => 0x00000020 ],
+        [ SDL_INIT_JOYSTICK       => 0x00000200 ],
+        [ SDL_INIT_HAPTIC         => 0x00001000 ],
+        [ SDL_INIT_GAMECONTROLLER => 0x00002000 ],
+        [ SDL_INIT_EVENTS         => 0x00004000 ],
+        [ SDL_INIT_SENSOR         => 0x00008000 ],
+        [ SDL_INIT_NOPARACHUTE    => 0x00100000 ],
+        [   SDL_INIT_EVERYTHING => sub {
+                SDL_INIT_TIMER() | SDL_INIT_AUDIO() | SDL_INIT_VIDEO() | SDL_INIT_EVENTS()
+                    | SDL_INIT_JOYSTICK() | SDL_INIT_HAPTIC() | SDL_INIT_GAMECONTROLLER()
+                    | SDL_INIT_SENSOR();
+            }
+        ]
+    ];
+
+    # https://github.com/libsdl-org/SDL/blob/main/include/SDL_audio.h
+    define audioformat => [
+        [ SDL_AUDIO_MASK_BITSIZE   => 0xFF ],
+        [ SDL_AUDIO_MASK_DATATYPE  => ( 1 << 8 ) ],
+        [ SDL_AUDIO_MASK_ENDIAN    => ( 1 << 12 ) ],
+        [ SDL_AUDIO_MASK_SIGNED    => ( 1 << 15 ) ],
+        [ SDL_AUDIO_BITSIZE        => sub ($x) { $x & SDL_AUDIO_MASK_BITSIZE() } ],
+        [ SDL_AUDIO_ISFLOAT        => sub ($x) { $x & SDL_AUDIO_MASK_DATATYPE() } ],
+        [ SDL_AUDIO_ISBIGENDIAN    => sub ($x) { $x & SDL_AUDIO_MASK_ENDIAN() } ],
+        [ SDL_AUDIO_ISSIGNED       => sub ($x) { $x & SDL_AUDIO_MASK_SIGNED() } ],
+        [ SDL_AUDIO_ISINT          => sub ($x) { !SDL_AUDIO_ISFLOAT($x) } ],
+        [ SDL_AUDIO_ISLITTLEENDIAN => sub ($x) { !SDL_AUDIO_ISBIGENDIAN($x) } ],
+        [ SDL_AUDIO_ISUNSIGNED     => sub ($x) { !SDL_AUDIO_ISSIGNED($x) } ],
+        [ AUDIO_U8                 => 0x0008 ],
+        [ AUDIO_S8                 => 0x8008 ],
+        [ AUDIO_U16LSB             => 0x0010 ],
+        [ AUDIO_S16LSB             => 0x8010 ],
+        [ AUDIO_U16MSB             => 0x1010 ],
+        [ AUDIO_S16MSB             => 0x9010 ],
+        [ AUDIO_U16                => sub () { AUDIO_U16LSB() } ],
+        [ AUDIO_S16                => sub () { AUDIO_S16LSB() } ],
+        [ AUDIO_S32LSB             => 0x8020 ],
+        [ AUDIO_S32MSB             => 0x9020 ],
+        [ AUDIO_S32                => sub () { AUDIO_S32LSB() } ],
+        [ AUDIO_F32LSB             => 0x8120 ],
+        [ AUDIO_F32MSB             => 0x9120 ],
+        [ AUDIO_F32                => sub () { AUDIO_F32LSB() } ], (
+            SDL2::FFI::bigendian() ? (
+                [ AUDIO_U16SYS => sub () { AUDIO_U16MSB() } ],
+                [ AUDIO_S16SYS => sub () { AUDIO_S16MSB() } ],
+                [ AUDIO_S32SYS => sub () { AUDIO_S32MSB() } ],
+                [ AUDIO_F32SYS => sub () { AUDIO_F32MSB() } ]
+                ) : (
+                [ AUDIO_U16SYS => sub () { AUDIO_U16LSB() } ],
+                [ AUDIO_S16SYS => sub () { AUDIO_S16LSB() } ],
+                [ AUDIO_S32SYS => sub () { AUDIO_S32LSB() } ],
+                [ AUDIO_F32SYS => sub () { AUDIO_F32LSB() } ],
+                )
+        ),
+        [ SDL_AUDIO_ALLOW_FREQUENCY_CHANGE => sub () {0x00000001} ],
+        [ SDL_AUDIO_ALLOW_FORMAT_CHANGE    => sub () {0x00000002} ],
+        [ SDL_AUDIO_ALLOW_CHANNELS_CHANGE  => sub () {0x00000004} ],
+        [ SDL_AUDIO_ALLOW_SAMPLES_CHANGE   => sub () {0x00000008} ],
+        [   SDL_AUDIO_ALLOW_ANY_CHANGE => sub () {
+                ( SDL_AUDIO_ALLOW_FREQUENCY_CHANGE() | SDL_AUDIO_ALLOW_FORMAT_CHANGE()
+                        | SDL_AUDIO_ALLOW_CHANNELS_CHANGE() | SDL_AUDIO_ALLOW_SAMPLES_CHANGE() )
+            }
+        ],
+        [ SDL_AUDIOCVT_MAX_FILTERS => 9 ]
+    ];
+    enum
+        SDL_AudioStatus => [ [ SDL_AUDIO_STOPPED => 0 ], qw[SDL_AUDIO_PLAYING SDL_AUDIO_PAUSED] ],
+        SDL_BlendMode   => [
+        [ SDL_BLENDMODE_NONE    => 0x00000000 ],
+        [ SDL_BLENDMODE_BLEND   => 0x00000001 ],
+        [ SDL_BLENDMODE_ADD     => 0x00000002, ],
+        [ SDL_BLENDMODE_MOD     => 0x00000004, ],
+        [ SDL_BLENDMODE_MUL     => 0x00000008, ],
+        [ SDL_BLENDMODE_INVALID => 0x7FFFFFFF ]
+        ],
+        SDL_BlendOperation => [
+        [ SDL_BLENDOPERATION_ADD          => 0x1 ],
+        [ SDL_BLENDOPERATION_SUBTRACT     => 0x2 ],
+        [ SDL_BLENDOPERATION_REV_SUBTRACT => 0x3 ],
+        [ SDL_BLENDOPERATION_MINIMUM      => 0x4 ],
+        [ SDL_BLENDOPERATION_MAXIMUM      => 0x5 ]
+        ],
+        SDL_BlendFactor => [
+        [ SDL_BLENDFACTOR_ZERO                => 0x1 ],
+        [ SDL_BLENDFACTOR_ONE                 => 0x2 ],
+        [ SDL_BLENDFACTOR_SRC_COLOR           => 0x3 ],
+        [ SDL_BLENDFACTOR_ONE_MINUS_SRC_COLOR => 0x4 ],
+        [ SDL_BLENDFACTOR_SRC_ALPHA           => 0x5 ],
+        [ SDL_BLENDFACTOR_ONE_MINUS_SRC_ALPHA => 0x6 ],
+        [ SDL_BLENDFACTOR_DST_COLOR           => 0x7 ],
+        [ SDL_BLENDFACTOR_ONE_MINUS_DST_COLOR => 0x8 ],
+        [ SDL_BLENDFACTOR_DST_ALPHA           => 0x9 ],
+        [ SDL_BLENDFACTOR_ONE_MINUS_DST_ALPHA => 0xA ]
+        ],
+        SDL_errorcode => [
+        qw[
+            SDL_ENOMEM
+            SDL_EFREAD
+            SDL_EFWRITE
+            SDL_EFSEEK
+            SDL_UNSUPPORTED
+            SDL_LASTERROR
+        ]
+        ];
+    define eventstate  => [ [ SDL_RELEASED => 0 ], [ SDL_PRESSED => 1 ] ];
+    enum SDL_EventType => [
+        [ SDL_FIRSTEVENT => 0 ], [ SDL_QUIT => 0x100 ],
+
+        # These application events have special meaning on iOS, see README-ios.md for details
+        qw[SDL_APP_TERMINATING
+            SDL_APP_LOWMEMORY
+            SDL_APP_WILLENTERBACKGROUND
+            SDL_APP_DIDENTERBACKGROUND
+            SDL_APP_WILLENTERFOREGROUND
+            SDL_APP_DIDENTERFOREGROUND],
+        #
+        'SDL_LOCALECHANGED',
+
+        #Display events
+        [ SDL_DISPLAYEVENT => 0x150 ],
+
+        # Window events
+        [ SDL_WINDOWEVENT => 0x200 ], 'SDL_SYSWMEVENT',
+
+        # Keyboard events
+        [ SDL_KEYDOWN => 0x300 ], qw[SDL_KEYUP
+            SDL_TEXTEDITING
+            SDL_TEXTINPUT
+            SDL_KEYMAPCHANGED],
+
+        # Mouse events
+        [ SDL_MOUSEMOTION => 0x400 ], qw[SDL_MOUSEBUTTONDOWN
+            SDL_MOUSEBUTTONUP
+            SDL_MOUSEWHEEL],
+
+        # Joystick events
+        [ SDL_JOYAXISMOTION => 0x600 ], qw[SDL_JOYBALLMOTION
+            SDL_JOYHATMOTION
+            SDL_JOYBUTTONDOWN
+            SDL_JOYBUTTONUP
+            SDL_JOYDEVICEADDED
+            SDL_JOYDEVICEREMOVED],
+
+        # Game controller events
+        [ SDL_CONTROLLERAXISMOTION => 0x650 ], qw[SDL_CONTROLLERBUTTONDOWN
+            SDL_CONTROLLERBUTTONUP
+            SDL_CONTROLLERDEVICEADDED
+            SDL_CONTROLLERDEVICEREMOVED
+            SDL_CONTROLLERDEVICEREMAPPED
+            SDL_CONTROLLERTOUCHPADDOWN
+            SDL_CONTROLLERTOUCHPADMOTION
+            SDL_CONTROLLERTOUCHPADUP
+            SDL_CONTROLLERSENSORUPDATE],
+
+        # Touch events
+        [ SDL_FINGERDOWN => 0x700 ], qw[SDL_FINGERUP
+            SDL_FINGERMOTION],
+
+        # Gesture events
+        [ SDL_DOLLARGESTURE => 0x800 ], qw[SDL_DOLLARRECORD
+            SDL_MULTIGESTURE],
+
+        # Clipboard events
+        [ SDL_CLIPBOARDUPDATE => 0x900 ],
+
+        # Drag and drop events
+        [ SDL_DROPFILE => 0x1000 ], qw[SDL_DROPTEXT
+            SDL_DROPBEGIN
+            SDL_DROPCOMPLETE],
+
+        # Audio hotplug events
+        [ SDL_AUDIODEVICEADDED => 0x1100 ], 'SDL_AUDIODEVICEREMOVED',
+
+        # Sensor events
+        [ SDL_SENSORUPDATE => 0x1200 ],
+
+        # Render events
+        [ SDL_RENDER_TARGETS_RESET => 0x2000 ], 'SDL_RENDER_DEVICE_RESET',
+
+        # Events ::SDL_USEREVENT through ::SDL_LASTEVENT are for your use,
+        # and should be allocated with SDL_RegisterEvents()
+        [ SDL_USEREVENT => 0x8000 ],
+
+        # This last event is only  for bounding internal arrays
+        [ SDL_LASTEVENT => 0xFFFF ]
+    ];
+
+    # START HERE
+    enum SDL_HintPriority => [qw[SDL_HINT_DEFAULT SDL_HINT_NORMAL SDL_HINT_OVERRIDE]];
+    define
+
+        # https://github.com/libsdl-org/SDL/blob/main/include/SDL_hints.h
+        SDL_Hint => [
+        [ SDL_HINT_ACCELEROMETER_AS_JOYSTICK   => 'SDL_ACCELEROMETER_AS_JOYSTICK' ],
+        [ SDL_HINT_ALLOW_ALT_TAB_WHILE_GRABBED => 'SDL_ALLOW_ALT_TAB_WHILE_GRABBED' ],
+        [ SDL_HINT_ALLOW_TOPMOST               => 'SDL_ALLOW_TOPMOST' ],
+        [   SDL_HINT_ANDROID_APK_EXPANSION_MAIN_FILE_VERSION =>
+                'SDL_ANDROID_APK_EXPANSION_MAIN_FILE_VERSION'
+        ],
+        [   SDL_HINT_ANDROID_APK_EXPANSION_PATCH_FILE_VERSION =>
+                'SDL_ANDROID_APK_EXPANSION_PATCH_FILE_VERSION'
+        ],
+        [ SDL_HINT_ANDROID_BLOCK_ON_PAUSE            => 'SDL_ANDROID_BLOCK_ON_PAUSE' ],
+        [ SDL_HINT_ANDROID_BLOCK_ON_PAUSE_PAUSEAUDIO => 'SDL_ANDROID_BLOCK_ON_PAUSE_PAUSEAUDIO' ],
+        [ SDL_HINT_ANDROID_SEPARATE_MOUSE_AND_TOUCH  => 'SDL_ANDROID_SEPARATE_MOUSE_AND_TOUCH' ],
+        [ SDL_HINT_ANDROID_TRAP_BACK_BUTTON          => 'SDL_ANDROID_TRAP_BACK_BUTTON' ],
+        [ SDL_HINT_APPLE_TV_CONTROLLER_UI_EVENTS     => 'SDL_APPLE_TV_CONTROLLER_UI_EVENTS' ],
+        [ SDL_HINT_APPLE_TV_REMOTE_ALLOW_ROTATION    => 'SDL_APPLE_TV_REMOTE_ALLOW_ROTATION' ],
+        [ SDL_HINT_AUDIO_CATEGORY                    => 'SDL_AUDIO_CATEGORY' ],
+        [ SDL_HINT_AUDIO_DEVICE_APP_NAME             => 'SDL_AUDIO_DEVICE_APP_NAME' ],
+        [ SDL_HINT_AUDIO_DEVICE_STREAM_NAME          => 'SDL_AUDIO_DEVICE_STREAM_NAME' ],
+        [ SDL_HINT_AUDIO_DEVICE_STREAM_ROLE          => 'SDL_AUDIO_DEVICE_STREAM_ROLE' ],
+        [ SDL_HINT_AUDIO_RESAMPLING_MODE             => 'SDL_AUDIO_RESAMPLING_MODE' ],
+        [ SDL_HINT_AUTO_UPDATE_JOYSTICKS             => 'SDL_AUTO_UPDATE_JOYSTICKS' ],
+        [ SDL_HINT_AUTO_UPDATE_SENSORS               => 'SDL_AUTO_UPDATE_SENSORS' ],
+        [ SDL_HINT_BMP_SAVE_LEGACY_FORMAT            => 'SDL_BMP_SAVE_LEGACY_FORMAT' ],
+        [ SDL_HINT_DISPLAY_USABLE_BOUNDS             => 'SDL_DISPLAY_USABLE_BOUNDS' ],
+        [ SDL_HINT_EMSCRIPTEN_ASYNCIFY               => 'SDL_EMSCRIPTEN_ASYNCIFY' ],
+        [ SDL_HINT_EMSCRIPTEN_KEYBOARD_ELEMENT       => 'SDL_EMSCRIPTEN_KEYBOARD_ELEMENT' ],
+        [ SDL_HINT_ENABLE_STEAM_CONTROLLERS          => 'SDL_ENABLE_STEAM_CONTROLLERS' ],
+        [ SDL_HINT_EVENT_LOGGING                     => 'SDL_EVENT_LOGGING' ],
+        [ SDL_HINT_FRAMEBUFFER_ACCELERATION          => 'SDL_FRAMEBUFFER_ACCELERATION' ],
+        [ SDL_HINT_GAMECONTROLLERCONFIG              => 'SDL_GAMECONTROLLERCONFIG' ],
+        [ SDL_HINT_GAMECONTROLLERCONFIG_FILE         => 'SDL_GAMECONTROLLERCONFIG_FILE' ],
+        [ SDL_HINT_GAMECONTROLLERTYPE                => 'SDL_GAMECONTROLLERTYPE' ],
+        [ SDL_HINT_GAMECONTROLLER_IGNORE_DEVICES     => 'SDL_GAMECONTROLLER_IGNORE_DEVICES' ],
+        [   SDL_HINT_GAMECONTROLLER_IGNORE_DEVICES_EXCEPT =>
+                'SDL_GAMECONTROLLER_IGNORE_DEVICES_EXCEPT'
+        ],
+        [ SDL_HINT_GAMECONTROLLER_USE_BUTTON_LABELS   => 'SDL_GAMECONTROLLER_USE_BUTTON_LABELS' ],
+        [ SDL_HINT_GRAB_KEYBOARD                      => 'SDL_GRAB_KEYBOARD' ],
+        [ SDL_HINT_IDLE_TIMER_DISABLED                => 'SDL_IDLE_TIMER_DISABLED' ],
+        [ SDL_HINT_IME_INTERNAL_EDITING               => 'SDL_IME_INTERNAL_EDITING' ],
+        [ SDL_HINT_IOS_HIDE_HOME_INDICATOR            => 'SDL_IOS_HIDE_HOME_INDICATOR' ],
+        [ SDL_HINT_JOYSTICK_ALLOW_BACKGROUND_EVENTS   => 'SDL_JOYSTICK_ALLOW_BACKGROUND_EVENTS' ],
+        [ SDL_HINT_JOYSTICK_HIDAPI                    => 'SDL_JOYSTICK_HIDAPI' ],
+        [ SDL_HINT_JOYSTICK_HIDAPI_CORRELATE_XINPUT   => 'SDL_JOYSTICK_HIDAPI_CORRELATE_XINPUT' ],
+        [ SDL_HINT_JOYSTICK_HIDAPI_GAMECUBE           => 'SDL_JOYSTICK_HIDAPI_GAMECUBE' ],
+        [ SDL_HINT_JOYSTICK_HIDAPI_JOY_CONS           => 'SDL_JOYSTICK_HIDAPI_JOY_CONS' ],
+        [ SDL_HINT_JOYSTICK_HIDAPI_PS4                => 'SDL_JOYSTICK_HIDAPI_PS4' ],
+        [ SDL_HINT_JOYSTICK_HIDAPI_PS4_RUMBLE         => 'SDL_JOYSTICK_HIDAPI_PS4_RUMBLE' ],
+        [ SDL_HINT_JOYSTICK_HIDAPI_PS5                => 'SDL_JOYSTICK_HIDAPI_PS5' ],
+        [ SDL_HINT_JOYSTICK_HIDAPI_PS5_PLAYER_LED     => 'SDL_JOYSTICK_HIDAPI_PS5_PLAYER_LED' ],
+        [ SDL_HINT_JOYSTICK_HIDAPI_PS5_RUMBLE         => 'SDL_JOYSTICK_HIDAPI_PS5_RUMBLE' ],
+        [ SDL_HINT_JOYSTICK_HIDAPI_STADIA             => 'SDL_JOYSTICK_HIDAPI_STADIA' ],
+        [ SDL_HINT_JOYSTICK_HIDAPI_STEAM              => 'SDL_JOYSTICK_HIDAPI_STEAM' ],
+        [ SDL_HINT_JOYSTICK_HIDAPI_SWITCH             => 'SDL_JOYSTICK_HIDAPI_SWITCH' ],
+        [ SDL_HINT_JOYSTICK_HIDAPI_SWITCH_HOME_LED    => 'SDL_JOYSTICK_HIDAPI_SWITCH_HOME_LED' ],
+        [ SDL_HINT_JOYSTICK_HIDAPI_XBOX               => 'SDL_JOYSTICK_HIDAPI_XBOX' ],
+        [ SDL_HINT_JOYSTICK_RAWINPUT                  => 'SDL_JOYSTICK_RAWINPUT' ],
+        [ SDL_HINT_JOYSTICK_THREAD                    => 'SDL_JOYSTICK_THREAD' ],
+        [ SDL_HINT_KMSDRM_REQUIRE_DRM_MASTER          => 'SDL_KMSDRM_REQUIRE_DRM_MASTER' ],
+        [ SDL_HINT_LINUX_JOYSTICK_DEADZONES           => 'SDL_LINUX_JOYSTICK_DEADZONES' ],
+        [ SDL_HINT_MAC_BACKGROUND_APP                 => 'SDL_MAC_BACKGROUND_APP' ],
+        [ SDL_HINT_MAC_CTRL_CLICK_EMULATE_RIGHT_CLICK => 'SDL_MAC_CTRL_CLICK_EMULATE_RIGHT_CLICK' ],
+        [ SDL_HINT_MOUSE_DOUBLE_CLICK_RADIUS          => 'SDL_MOUSE_DOUBLE_CLICK_RADIUS' ],
+        [ SDL_HINT_MOUSE_DOUBLE_CLICK_TIME            => 'SDL_MOUSE_DOUBLE_CLICK_TIME' ],
+        [ SDL_HINT_MOUSE_FOCUS_CLICKTHROUGH           => 'SDL_MOUSE_FOCUS_CLICKTHROUGH' ],
+        [ SDL_HINT_MOUSE_NORMAL_SPEED_SCALE           => 'SDL_MOUSE_NORMAL_SPEED_SCALE' ],
+        [ SDL_HINT_MOUSE_RELATIVE_MODE_WARP           => 'SDL_MOUSE_RELATIVE_MODE_WARP' ],
+        [ SDL_HINT_MOUSE_RELATIVE_SCALING             => 'SDL_MOUSE_RELATIVE_SCALING' ],
+        [ SDL_HINT_MOUSE_RELATIVE_SPEED_SCALE         => 'SDL_MOUSE_RELATIVE_SPEED_SCALE' ],
+        [ SDL_HINT_MOUSE_TOUCH_EVENTS                 => 'SDL_MOUSE_TOUCH_EVENTS' ],
+        [ SDL_HINT_NO_SIGNAL_HANDLERS                 => 'SDL_NO_SIGNAL_HANDLERS' ],
+        [ SDL_HINT_OPENGL_ES_DRIVER                   => 'SDL_OPENGL_ES_DRIVER' ],
+        [ SDL_HINT_ORIENTATIONS                       => 'SDL_ORIENTATIONS' ],
+        [ SDL_HINT_PREFERRED_LOCALES                  => 'SDL_PREFERRED_LOCALES' ],
+        [ SDL_HINT_QTWAYLAND_CONTENT_ORIENTATION      => 'SDL_QTWAYLAND_CONTENT_ORIENTATION' ],
+        [ SDL_HINT_QTWAYLAND_WINDOW_FLAGS             => 'SDL_QTWAYLAND_WINDOW_FLAGS' ],
+        [ SDL_HINT_RENDER_BATCHING                    => 'SDL_RENDER_BATCHING' ],
+        [ SDL_HINT_RENDER_DIRECT3D11_DEBUG            => 'SDL_RENDER_DIRECT3D11_DEBUG' ],
+        [ SDL_HINT_RENDER_DIRECT3D_THREADSAFE         => 'SDL_RENDER_DIRECT3D_THREADSAFE' ],
+        [ SDL_HINT_RENDER_DRIVER                      => 'SDL_RENDER_DRIVER' ],
+        [ SDL_HINT_RENDER_LOGICAL_SIZE_MODE           => 'SDL_RENDER_LOGICAL_SIZE_MODE' ],
+        [ SDL_HINT_RENDER_OPENGL_SHADERS              => 'SDL_RENDER_OPENGL_SHADERS' ],
+        [ SDL_HINT_RENDER_SCALE_QUALITY               => 'SDL_RENDER_SCALE_QUALITY' ],
+        [ SDL_HINT_RENDER_VSYNC                       => 'SDL_RENDER_VSYNC' ],
+        [ SDL_HINT_RETURN_KEY_HIDES_IME               => 'SDL_RETURN_KEY_HIDES_IME' ],
+        [ SDL_HINT_RPI_VIDEO_LAYER                    => 'SDL_RPI_VIDEO_LAYER' ],
+        [   SDL_HINT_THREAD_FORCE_REALTIME_TIME_CRITICAL =>
+                'SDL_THREAD_FORCE_REALTIME_TIME_CRITICAL'
+        ],
+        [ SDL_HINT_THREAD_PRIORITY_POLICY             => 'SDL_THREAD_PRIORITY_POLICY' ],
+        [ SDL_HINT_THREAD_STACK_SIZE                  => 'SDL_THREAD_STACK_SIZE' ],
+        [ SDL_HINT_TIMER_RESOLUTION                   => 'SDL_TIMER_RESOLUTION' ],
+        [ SDL_HINT_TOUCH_MOUSE_EVENTS                 => 'SDL_TOUCH_MOUSE_EVENTS' ],
+        [ SDL_HINT_TV_REMOTE_AS_JOYSTICK              => 'SDL_TV_REMOTE_AS_JOYSTICK' ],
+        [ SDL_HINT_VIDEO_ALLOW_SCREENSAVER            => 'SDL_VIDEO_ALLOW_SCREENSAVER' ],
+        [ SDL_HINT_VIDEO_DOUBLE_BUFFER                => 'SDL_VIDEO_DOUBLE_BUFFER' ],
+        [ SDL_HINT_VIDEO_EXTERNAL_CONTEXT             => 'SDL_VIDEO_EXTERNAL_CONTEXT' ],
+        [ SDL_HINT_VIDEO_HIGHDPI_DISABLED             => 'SDL_VIDEO_HIGHDPI_DISABLED' ],
+        [ SDL_HINT_VIDEO_MAC_FULLSCREEN_SPACES        => 'SDL_VIDEO_MAC_FULLSCREEN_SPACES' ],
+        [ SDL_HINT_VIDEO_MINIMIZE_ON_FOCUS_LOSS       => 'SDL_VIDEO_MINIMIZE_ON_FOCUS_LOSS' ],
+        [ SDL_HINT_VIDEO_WINDOW_SHARE_PIXEL_FORMAT    => 'SDL_VIDEO_WINDOW_SHARE_PIXEL_FORMAT' ],
+        [ SDL_HINT_VIDEO_WIN_D3DCOMPILE               => 'SDL_VIDEO_WIN_D3DCOMPILE' ],
+        [ SDL_HINT_VIDEO_WIN_D3DCOMPILER              => 'SDL_VIDEO_WIN_D3DCOMPILER' ],
+        [ SDL_HINT_VIDEO_X11_FORCE_EGL                => 'SDL_VIDEO_X11_FORCE_EGL' ],
+        [ SDL_HINT_VIDEO_X11_NET_WM_BYPASS_COMPOSITOR => 'SDL_VIDEO_X11_NET_WM_BYPASS_COMPOSITOR' ],
+        [ SDL_HINT_VIDEO_X11_NET_WM_PING              => 'SDL_VIDEO_X11_NET_WM_PING' ],
+        [ SDL_HINT_VIDEO_X11_WINDOW_VISUALID          => 'SDL_VIDEO_X11_WINDOW_VISUALID' ],
+        [ SDL_HINT_VIDEO_X11_XINERAMA                 => 'SDL_VIDEO_X11_XINERAMA' ],
+        [ SDL_HINT_VIDEO_X11_XRANDR                   => 'SDL_VIDEO_X11_XRANDR' ],
+        [ SDL_HINT_VIDEO_X11_XVIDMODE                 => 'SDL_VIDEO_X11_XVIDMODE' ],
+        [ SDL_HINT_WAVE_FACT_CHUNK                    => 'SDL_WAVE_FACT_CHUNK' ],
+        [ SDL_HINT_WAVE_RIFF_CHUNK_SIZE               => 'SDL_WAVE_RIFF_CHUNK_SIZE' ],
+        [ SDL_HINT_WAVE_TRUNCATION                    => 'SDL_WAVE_TRUNCATION' ],
+        [ SDL_HINT_WINDOWS_DISABLE_THREAD_NAMING      => 'SDL_WINDOWS_DISABLE_THREAD_NAMING' ],
+        [ SDL_HINT_WINDOWS_ENABLE_MESSAGELOOP         => 'SDL_WINDOWS_ENABLE_MESSAGELOOP' ],
+        [   SDL_HINT_WINDOWS_FORCE_MUTEX_CRITICAL_SECTIONS =>
+                'SDL_WINDOWS_FORCE_MUTEX_CRITICAL_SECTIONS'
+        ],
+        [ SDL_HINT_WINDOWS_FORCE_SEMAPHORE_KERNEL => 'SDL_WINDOWS_FORCE_SEMAPHORE_KERNEL' ],
+        [ SDL_HINT_WINDOWS_INTRESOURCE_ICON       => 'SDL_WINDOWS_INTRESOURCE_ICON' ],
+        [ SDL_HINT_WINDOWS_INTRESOURCE_ICON_SMALL => 'SDL_WINDOWS_INTRESOURCE_ICON_SMALL' ],
+        [ SDL_HINT_WINDOWS_NO_CLOSE_ON_ALT_F4     => 'SDL_WINDOWS_NO_CLOSE_ON_ALT_F4' ],
+        [ SDL_HINT_WINDOWS_USE_D3D9EX             => 'SDL_WINDOWS_USE_D3D9EX' ],
+        [   SDL_HINT_WINDOW_FRAME_USABLE_WHILE_CURSOR_HIDDEN =>
+                'SDL_WINDOW_FRAME_USABLE_WHILE_CURSOR_HIDDEN'
+        ],
+        [ SDL_HINT_WINRT_HANDLE_BACK_BUTTON        => 'SDL_WINRT_HANDLE_BACK_BUTTON' ],
+        [ SDL_HINT_WINRT_PRIVACY_POLICY_LABEL      => 'SDL_WINRT_PRIVACY_POLICY_LABEL' ],
+        [ SDL_HINT_WINRT_PRIVACY_POLICY_URL        => 'SDL_WINRT_PRIVACY_POLICY_URL' ],
+        [ SDL_HINT_XINPUT_ENABLED                  => 'SDL_XINPUT_ENABLED' ],
+        [ SDL_HINT_XINPUT_USE_OLD_JOYSTICK_MAPPING => 'SDL_XINPUT_USE_OLD_JOYSTICK_MAPPING' ]
+        ];
+    enum SDL_LogCategory => [
+        qw[
+            SDL_LOG_CATEGORY_APPLICATION SDL_LOG_CATEGORY_ERROR SDL_LOG_CATEGORY_ASSERT
+            SDL_LOG_CATEGORY_SYSTEM      SDL_LOG_CATEGORY_AUDIO SDL_LOG_CATEGORY_VIDEO
+            SDL_LOG_CATEGORY_RENDER      SDL_LOG_CATEGORY_INPUT SDL_LOG_CATEGORY_TEST
+            SDL_LOG_CATEGORY_RESERVED1   SDL_LOG_CATEGORY_RESERVED2
+            SDL_LOG_CATEGORY_RESERVED3   SDL_LOG_CATEGORY_RESERVED4
+            SDL_LOG_CATEGORY_RESERVED5   SDL_LOG_CATEGORY_RESERVED6
+            SDL_LOG_CATEGORY_RESERVED7   SDL_LOG_CATEGORY_RESERVED8
+            SDL_LOG_CATEGORY_RESERVED9   SDL_LOG_CATEGORY_RESERVED10
+            SDL_LOG_CATEGORY_CUSTOM
+        ]
+        ],
+        SDL_LogPriority => [
+        [ SDL_LOG_PRIORITY_VERBOSE => 1 ], qw[SDL_LOG_PRIORITY_DEBUG SDL_LOG_PRIORITY_INFO
+            SDL_LOG_PRIORITY_WARN SDL_LOG_PRIORITY_ERROR SDL_LOG_PRIORITY_CRITICAL
+            SDL_NUM_LOG_PRIORITIES]
+        ],
+        SDL_WindowFlags => [
+        [ SDL_WINDOW_FULLSCREEN         => 0x00000001 ],
+        [ SDL_WINDOW_OPENGL             => 0x00000002 ],
+        [ SDL_WINDOW_SHOWN              => 0x00000004 ],
+        [ SDL_WINDOW_HIDDEN             => 0x00000008 ],
+        [ SDL_WINDOW_BORDERLESS         => 0x00000010 ],
+        [ SDL_WINDOW_RESIZABLE          => 0x00000020 ],
+        [ SDL_WINDOW_MINIMIZED          => 0x00000040 ],
+        [ SDL_WINDOW_MAXIMIZED          => 0x00000080 ],
+        [ SDL_WINDOW_MOUSE_GRABBED      => 0x00000100 ],
+        [ SDL_WINDOW_INPUT_FOCUS        => 0x00000200 ],
+        [ SDL_WINDOW_MOUSE_FOCUS        => 0x00000400 ],
+        [ SDL_WINDOW_FULLSCREEN_DESKTOP => sub { ( SDL_WINDOW_FULLSCREEN() | 0x00001000 ) } ],
+        [ SDL_WINDOW_FOREIGN            => 0x00000800 ],
+        [ SDL_WINDOW_ALLOW_HIGHDPI      => 0x00002000 ],
+        [ SDL_WINDOW_MOUSE_CAPTURE      => 0x00004000 ],
+        [ SDL_WINDOW_ALWAYS_ON_TOP      => 0x00008000 ],
+        [ SDL_WINDOW_SKIP_TASKBAR       => 0x00010000 ],
+        [ SDL_WINDOW_UTILITY            => 0x00020000 ],
+        [ SDL_WINDOW_TOOLTIP            => 0x00040000 ],
+        [ SDL_WINDOW_POPUP_MENU         => 0x00080000 ],
+        [ SDL_WINDOW_KEYBOARD_GRABBED   => 0x00100000 ],
+        [ SDL_WINDOW_VULKAN             => 0x10000000 ],
+        [ SDL_WINDOW_METAL              => 0x20000000 ],
+        [ SDL_WINDOW_INPUT_GRABBED      => sub { SDL_WINDOW_MOUSE_GRABBED() } ],
+        ],
+        SDL_WindowFlags => [
+        qw[
+            SDL_WINDOWEVENT_NONE
+            SDL_WINDOWEVENT_SHOWN
+            SDL_WINDOWEVENT_HIDDEN
+            SDL_WINDOWEVENT_EXPOSED
+            SDL_WINDOWEVENT_MOVED
+            SDL_WINDOWEVENT_RESIZED
+            SDL_WINDOWEVENT_SIZE_CHANGED
+            SDL_WINDOWEVENT_MINIMIZED
+            SDL_WINDOWEVENT_MAXIMIZED
+            SDL_WINDOWEVENT_RESTORED
+            SDL_WINDOWEVENT_ENTER
+            SDL_WINDOWEVENT_LEAVE
+            SDL_WINDOWEVENT_FOCUS_GAINED
+            SDL_WINDOWEVENT_FOCUS_LOST
+            SDL_WINDOWEVENT_CLOSE
+            SDL_WINDOWEVENT_TAKE_FOCUS
+            SDL_WINDOWEVENT_HIT_TEST
+        ]
+        ],
+        SDL_DisplayEventID => [
+        qw[SDL_DISPLAYEVENT_NONE SDL_DISPLAYEVENT_ORIENTATION
+            SDL_DISPLAYEVENT_CONNECTED SDL_DISPLAYEVENT_DISCONNECTED
+        ]
+        ],
+        SDL_DisplayOrientation => [
+        qw[SDL_ORIENTATION_UNKNOWN
+            SDL_ORIENTATION_LANDSCAPE SDL_ORIENTATION_LANDSCAPE_FLIPPED
+            SDL_ORIENTATION_PORTRAIT  SDL_ORIENTATION_PORTRAIT_FLIPPED
+        ]
+        ],
+        SDL_GLattr => [
+        qw[
+            SDL_GL_RED_SIZE
+            SDL_GL_GREEN_SIZE
+            SDL_GL_BLUE_SIZE
+            SDL_GL_ALPHA_SIZE
+            SDL_GL_BUFFER_SIZE
+            SDL_GL_DOUBLEBUFFER
+            SDL_GL_DEPTH_SIZE
+            SDL_GL_STENCIL_SIZE
+            SDL_GL_ACCUM_RED_SIZE
+            SDL_GL_ACCUM_GREEN_SIZE
+            SDL_GL_ACCUM_BLUE_SIZE
+            SDL_GL_ACCUM_ALPHA_SIZE
+            SDL_GL_STEREO
+            SDL_GL_MULTISAMPLEBUFFERS
+            SDL_GL_MULTISAMPLESAMPLES
+            SDL_GL_ACCELERATED_VISUAL
+            SDL_GL_RETAINED_BACKING
+            SDL_GL_CONTEXT_MAJOR_VERSION
+            SDL_GL_CONTEXT_MINOR_VERSION
+            SDL_GL_CONTEXT_EGL
+            SDL_GL_CONTEXT_FLAGS
+            SDL_GL_CONTEXT_PROFILE_MASK
+            SDL_GL_SHARE_WITH_CURRENT_CONTEXT
+            SDL_GL_FRAMEBUFFER_SRGB_CAPABLE
+            SDL_GL_CONTEXT_RELEASE_BEHAVIOR
+            SDL_GL_CONTEXT_RESET_NOTIFICATION
+            SDL_GL_CONTEXT_NO_ERROR
+        ]
+        ],
+        SDL_GLprofile => [
+        [ SDL_GL_CONTEXT_PROFILE_CORE          => 0x0001 ],
+        [ SDL_GL_CONTEXT_PROFILE_COMPATIBILITY => 0x0002 ],
+        [ SDL_GL_CONTEXT_PROFILE_ES            => 0x0004 ]
+        ],
+        SDL_GLcontextFlag => [
+        [ SDL_GL_CONTEXT_DEBUG_FLAG              => 0x0001 ],
+        [ SDL_GL_CONTEXT_FORWARD_COMPATIBLE_FLAG => 0x0002 ],
+        [ SDL_GL_CONTEXT_ROBUST_ACCESS_FLAG      => 0x0004 ],
+        [ SDL_GL_CONTEXT_RESET_ISOLATION_FLAG    => 0x0008 ]
+        ],
+        SDL_GLcontextReleaseFlag => [
+        [ SDL_GL_CONTEXT_RELEASE_BEHAVIOR_NONE  => 0x0000 ],
+        [ SDL_GL_CONTEXT_RELEASE_BEHAVIOR_FLUSH => 0x0001 ]
+        ],
+        SDL_GLContextResetNotification => [
+        [ SDL_GL_CONTEXT_RESET_NO_NOTIFICATION => 0x0000 ],
+        [ SDL_GL_CONTEXT_RESET_LOSE_CONTEXT    => 0x0001 ]
+        ],
+        SDL_RendererFlags => [
+        [ SDL_RENDERER_SOFTWARE      => 0x00000001 ],
+        [ SDL_RENDERER_ACCELERATED   => 0x00000002 ],
+        [ SDL_RENDERER_PRESENTVSYNC  => 0x00000004 ],
+        [ SDL_RENDERER_TARGETTEXTURE => 0x00000008 ]
+        ],
+        SDL_ScaleMode     => [qw[SDL_SCALEMODENEAREST SDL_SCALEMODELINEAR SDL_SCALEMODEBEST]],
+        SDL_TextureAccess =>
+        [qw[SDL_TEXTUREACCESS_STATIC SDL_TEXTUREACCESS_STREAMING SDL_TEXTUREACCESS_TARGET]],
+        SDL_TextureModulate => [
+        [ SDL_TEXTUREMODULATE_NONE  => 0x00000000 ],
+        [ SDL_TEXTUREMODULATE_COLOR => 0x00000001 ],
+        [ SDL_TEXTUREMODULATE_ALPHA => 0x00000002 ]
+        ],
+        SDL_RendererFlip => [
+        [ SDL_FLIP_NONE       => 0x00000000 ],
+        [ SDL_FLIP_HORIZONTAL => 0x00000001 ],
+        [ SDL_FLIP_VERTICAL   => 0x00000002 ]
+        ],
+        SDL_PowerState => [
+        qw[
+            SDL_POWERSTATE_UNKNOWN
+            SDL_POWERSTATE_ON_BATTERY SDL_POWERSTATE_NO_BATTERY
+            SDL_POWERSTATE_CHARGING   SDL_POWERSTATE_CHARGED]
+        ],
+        SDL_EventAction => [
+        qw[
+            SDL_ADDEVENT
+            SDL_PEEKEVENT
+            SDL_GETEVENT]
+        ],
+        SDL_SystemCursor => [
+        qw[
+            SDL_SYSTEM_CURSOR_ARROW
+            SDL_SYSTEM_CURSOR_IBEAM
+            SDL_SYSTEM_CURSOR_WAIT
+            SDL_SYSTEM_CURSOR_CROSSHAIR
+            SDL_SYSTEM_CURSOR_WAITARROW
+            SDL_SYSTEM_CURSOR_SIZENWSE
+            SDL_SYSTEM_CURSOR_SIZENESW
+            SDL_SYSTEM_CURSOR_SIZEWE
+            SDL_SYSTEM_CURSOR_SIZENS
+            SDL_SYSTEM_CURSOR_SIZEALL
+            SDL_SYSTEM_CURSOR_NO
+            SDL_SYSTEM_CURSOR_HAND
+            SDL_NUM_SYSTEM_CURSORS]
+        ],
+        SDL_MouseWheelDirection => [
+        qw[
+            SDL_MOUSEWHEEL_NORMAL
+            SDL_MOUSEWHEEL_FLIPPED
+        ]
+        ],
+        pixel_type => [
+        qw[
+            SDL_PIXELTYPE_UNKNOWN
+            SDL_PIXELTYPE_INDEX1
+            SDL_PIXELTYPE_INDEX4
+            SDL_PIXELTYPE_INDEX8
+            SDL_PIXELTYPE_PACKED8
+            SDL_PIXELTYPE_PACKED16
+            SDL_PIXELTYPE_PACKED32
+            SDL_PIXELTYPE_ARRAYU8
+            SDL_PIXELTYPE_ARRAYU16
+            SDL_PIXELTYPE_ARRAYU32
+            SDL_PIXELTYPE_ARRAYF16
+            SDL_PIXELTYPE_ARRAYF32
+        ]
+        ],
+        bitmap_order => [
+        qw[
+            SDL_BITMAPORDER_NONE
+            SDL_BITMAPORDER_4321
+            SDL_BITMAPORDER_1234
+        ]
+        ],
+        packed_order => [
+        qw[
+            SDL_PACKEDORDER_NONE
+            SDL_PACKEDORDER_XRGB
+            SDL_PACKEDORDER_RGBX
+            SDL_PACKEDORDER_ARGB
+            SDL_PACKEDORDER_RGBA
+            SDL_PACKEDORDER_XBGR
+            SDL_PACKEDORDER_BGRX
+            SDL_PACKEDORDER_ABGR
+            SDL_PACKEDORDER_BGRA
+        ]
+        ],
+        array_order => [
+        qw[
+            SDL_ARRAYORDER_NONE
+            SDL_ARRAYORDER_RGB
+            SDL_ARRAYORDER_RGBA
+            SDL_ARRAYORDER_ARGB
+            SDL_ARRAYORDER_BGR
+            SDL_ARRAYORDER_BGRA
+            SDL_ARRAYORDER_ABGR
+        ]
+        ],
+        packed_layout => [
+        qw[
+            SDL_PACKEDLAYOUT_NONE
+            SDL_PACKEDLAYOUT_332
+            SDL_PACKEDLAYOUT_4444
+            SDL_PACKEDLAYOUT_1555
+            SDL_PACKEDLAYOUT_5551
+            SDL_PACKEDLAYOUT_565
+            SDL_PACKEDLAYOUT_8888
+            SDL_PACKEDLAYOUT_2101010
+            SDL_PACKEDLAYOUT_1010102
+        ]
+        ],
+        SDL_Keycode => [
+        [ SDLK_UP => SDL_SCANCODE_TO_KEYCODE(82) ],    # 82 comes from include/SDL_scancode.h
+
+        # The following are incorrect!!!!!!!!!!!!!!!!!!!
+        qw[SDLK_DOWN
+            SDLK_LEFT
+            SDLK_RIGHT]
+        ];
+
+    # Keyboard codes
+    sub SDLK_SCANCODE_MASK           { 1 << 30 }
+    sub SDL_SCANCODE_TO_KEYCODE ($X) { $X | SDLK_SCANCODE_MASK }
 
 =encoding utf-8
 
 =head1 NAME
 
-SDL2::Enum - Enumerations and defined values related to SDL
+SDL2::Enum - Enumerations and Defined Constants Related to SDL
 
 =head1 SYNOPSIS
 
-    use SDL2::FFI qw[:all];
-
+    use SDL2::FFI qw[:all]; # Yep, you import from SDL2::FFI
 
 =head1 DESCRIPTION
 
 
-
-=head1 Constants/Imports
-
-This list of constants may be imported by name or with their related tags.
-Here, we've organized them by their import tag.
-
-=head2 C<:init>
+=head1 C<:init>
 
 These are the flags which may be passed to L<< C<SDL_Init( ...
 )>|SDL2::FFI/C<SDL_Init( ... )> >>. You should specify the subsystems which you
@@ -53,76 +630,433 @@ will be using in your application.
 
 =cut
 
-    define SDL_Init => [
-        [ SDL_INIT_TIMER          => 0x00000001 ],
-        [ SDL_INIT_AUDIO          => 0x00000010 ],
-        [ SDL_INIT_VIDEO          => 0x00000020 ],
-        [ SDL_INIT_JOYSTICK       => 0x00000200 ],
-        [ SDL_INIT_HAPTIC         => 0x00001000 ],
-        [ SDL_INIT_GAMECONTROLLER => 0x00002000 ],
-        [ SDL_INIT_EVENTS         => 0x00004000 ],
-        [ SDL_INIT_SENSOR         => 0x00008000 ],
-        [ SDL_INIT_NOPARACHUTE    => 0x00100000 ],
-        [   SDL_INIT_EVERYTHING => sub {
-                SDL_INIT_TIMER() | SDL_INIT_AUDIO() | SDL_INIT_VIDEO() | SDL_INIT_EVENTS()
-                    | SDL_INIT_JOYSTICK() | SDL_INIT_HAPTIC() | SDL_INIT_GAMECONTROLLER()
-                    | SDL_INIT_SENSOR();
-            }
-        ]
-    ];
-    enum
+=head1 C<:audioformat>
 
-        # https://github.com/libsdl-org/SDL/blob/main/include/SDL_hints.h
-        SDL_HintPriority => [qw[SDL_HINT_DEFAULT SDL_HINT_NORMAL SDL_HINT_OVERRIDE]],
-        SDL_LogCategory  => [
-        qw[
-            SDL_LOG_CATEGORY_APPLICATION SDL_LOG_CATEGORY_ERROR SDL_LOG_CATEGORY_ASSERT
-            SDL_LOG_CATEGORY_SYSTEM      SDL_LOG_CATEGORY_AUDIO SDL_LOG_CATEGORY_VIDEO
-            SDL_LOG_CATEGORY_RENDER      SDL_LOG_CATEGORY_INPUT SDL_LOG_CATEGORY_TEST
-            SDL_LOG_CATEGORY_RESERVED1   SDL_LOG_CATEGORY_RESERVED2
-            SDL_LOG_CATEGORY_RESERVED3   SDL_LOG_CATEGORY_RESERVED4
-            SDL_LOG_CATEGORY_RESERVED5   SDL_LOG_CATEGORY_RESERVED6
-            SDL_LOG_CATEGORY_RESERVED7   SDL_LOG_CATEGORY_RESERVED8
-            SDL_LOG_CATEGORY_RESERVED9   SDL_LOG_CATEGORY_RESERVED10
-            SDL_LOG_CATEGORY_CUSTOM
-        ]
-        ],
-        SDL_LogPriority => [
-        [ SDL_LOG_PRIORITY_VERBOSE => 1 ], qw[SDL_LOG_PRIORITY_DEBUG SDL_LOG_PRIORITY_INFO
-            SDL_LOG_PRIORITY_WARN SDL_LOG_PRIORITY_ERROR SDL_LOG_PRIORITY_CRITICAL
-            SDL_NUM_LOG_PRIORITIES]
-        ];
+Audio format flags.
 
-=head2 C<:assertState>
+These are what the 16 bits in SDL_AudioFormat currently mean... (Unspecified
+bits are always zero).
 
-
+    ++-----------------------sample is signed if set
+    ||
+    ||       ++-----------sample is bigendian if set
+    ||       ||
+    ||       ||          ++---sample is float if set
+    ||       ||          ||
+    ||       ||          || +---sample bit size---+
+    ||       ||          || |                     |
+    15 14 13 12 11 10 09 08 07 06 05 04 03 02 01 00
 
 =over
 
-=item C<SDL_ASSERTION_RETRY> - Retry the assert immediately
+=item C<SDL_AUDIO_MASK_BITSIZE>
 
-=item C<SDL_ASSERTION_BREAK> - Make the debugger trigger a breakpoint
+=item C<SDL_AUDIO_MASK_DATATYPE>
 
-=item C<SDL_ASSERTION_ABORT> - Terminate the program
+=item C<SDL_AUDIO_MASK_ENDIAN>
 
-=item C<SDL_ASSERTION_IGNORE> - Ignore the assert
+=item C<SDL_AUDIO_MASK_SIGNED>
 
-=item C<SDL_ASSERTION_ALWAYS_IGNORE> - Ignore the assert from now on
+=item C<SDL_AUDIO_BITSIZE( ... >
+
+=item C<SDL_AUDIO_ISFLOAT( ... )>
+
+=item C<SDL_AUDIO_ISBIGENDIAN( ... )>
+
+=item C<SDL_AUDIO_ISSIGNED( ... )>
+
+=item C<SDL_AUDIO_ISINT( ... )>
+
+=item C<SDL_AUDIO_ISLITTLEENDIAN( ... )>
+
+=item C<SDL_AUDIO_ISUNSIGNED( ... )>
 
 =back
 
-=cut
+Defaults to LSB byte order.
 
-    enum SDL_AssertState => [
-        qw[ SDL_ASSERTION_RETRY
-            SDL_ASSERTION_BREAK
-            SDL_ASSERTION_ABORT
-            SDL_ASSERTION_IGNORE
-            SDL_ASSERTION_ALWAYS_IGNORE
-        ]
-    ];
+=over
 
-=head2 C<:hints>
+=item C<AUDIO_U8> - Unsigned 8-bit samples
+
+=item C<AUDIO_S8> - Signed 8-bit samples
+
+=item C<AUDIO_U16LSB> - Unsigned 16-bit samples
+
+=item C<AUDIO_S16LSB> - Signed 16-bit samples
+
+=item C<AUDIO_U16MSB> - As above, but big-endian byte order
+
+=item C<AUDIO_S16MSB> - As above, but big-endian byte order
+
+=item C<AUDIO_U16> - C<AUDIO_U16LSB>
+
+=item C<AUDIO_S16> - C<AUDIO_S16LSB>
+
+=back
+
+int32 support.
+
+=over
+
+=item C<AUDIO_S32LSB> - 32-bit integer samples
+
+=item C<AUDIO_S32MSB> - As above, but big-endian byte order
+
+=item C<AUDIO_S32> - C<AUDIO_S32LSB>
+
+=back
+
+float 32 support.
+
+=over
+
+=item C<AUDIO_F32LSB> - 32-bit floating point samples
+
+=item C<AUDIO_F32MSB> - As above, but big-endian byte order
+
+=item C<AUDIO_F32> - C<AUDIO_F32LSB>
+
+=back
+
+Native audio byte ordering.
+
+=over 
+
+=item C<AUDIO_U16SYS>
+
+=item C<AUDIO_S16SYS>
+
+=item C<AUDIO_S32SYS>
+
+=item C<AUDIO_F32SYS>
+
+=back
+
+Which audio format changes are allowed when opening a device.
+
+=over
+
+=item C<SDL_AUDIO_ALLOW_FREQUENCY_CHANGE>
+
+=item C<SDL_AUDIO_ALLOW_FORMAT_CHANGE>
+
+=item C<SDL_AUDIO_ALLOW_CHANNELS_CHANGE>
+
+=item C<SDL_AUDIO_ALLOW_SAMPLES_CHANGE>
+
+=item C<SDL_AUDIO_ALLOW_ANY_CHANGE>
+
+=back
+
+Upper limit of filters in SDL_AudioCVT
+
+=over
+
+C<SDL_AUDIOCVT_MAX_FILTERS> - The maximum number of SDL_AudioFilter functions
+in SDL_AudioCVT is currently limited to 9. The C<SDL2::AudioCVT->filters( )>
+array has 10 pointers, one of which is the terminating NULL pointer.
+
+=back
+
+=head1 C<:audiostatus>
+
+Get the current audio state.
+
+=over
+
+=item C<SDL_AUDIO_STOPPED>
+
+=item C<SDL_AUDIO_PLAYING>
+
+=item C<SDL_AUDIO_PAUSED>
+
+=back
+
+=head1 C<:blendmode>
+
+The blend mode used in L<< C<SDL_RenderCopy( ... )>|SDL::FFI/C<SDL_RenderCopy(
+... )> >> and drawing operations.
+
+=over
+
+=item C<SDL_BLENDMODE_NONE> - no blending
+
+    dstRGBA = srcRGBA
+
+=item C<SDL_BLENDMODE_BLEND> - alpha blending
+                                        
+    dstRGB = (srcRGB * srcA) + (dstRGB * (1-srcA))
+    dstA = srcA + (dstA * (1-srcA))
+
+=item C<SDL_BLENDMODE_ADD> - additive blending
+
+    dstRGB = (srcRGB * srcA) + dstRGB
+    dstA = dstA
+
+=item C<SDL_BLENDMODE_MOD> - color modulate
+
+    dstRGB = srcRGB * dstRGB
+    dstA = dstA
+
+=item C<SDL_BLENDMODE_MUL> - color multiply
+
+    dstRGB = (srcRGB * dstRGB) + (dstRGB * (1-srcA))
+    dstA = (srcA * dstA) + (dstA * (1-srcA))
+
+=item C<SDL_BLENDMODE_INVALID>
+
+=back
+
+Additional custom blend modes can be returned by L<<
+C<SDL_ComposeCustomBlendMode( ... )>|SDL2::FFI/C<SDL_ComposeCustomBlendMode(
+... )> >>.
+
+=head2 C<:blendoperation>
+
+The blend operation used when combining source and destination pixel
+components.
+
+=over
+
+=item C<SDL_BLENDOPERATION_ADD> - supported by all renderers
+
+    dst + src
+
+=item C<SDL_BLENDOPERATION_SUBTRACT> - supported by D3D9, D3D11, OpenGL, OpenGLES
+
+    dst - src
+
+=item C<SDL_BLENDOPERATION_REV_SUBTRACT> - supported by D3D9, D3D11, OpenGL, OpenGLES
+
+    src - dst
+
+=item C<SDL_BLENDOPERATION_MINIMUM> - supported by D3D11
+
+    min(dst, src)
+
+=item C<SDL_BLENDOPERATION_MAXIMUM> - supported by D3D11
+
+    max(dst, src)
+
+=back
+
+=head1 C<:blendfactor>
+
+The normalized factor used to multiply pixel components.
+
+=over
+
+=item C<SDL_BLENDFACTOR_ZERO> - C< 0, 0, 0, 0 >
+
+=item C<SDL_BLENDFACTOR_ONE> - C< 1, 1, 1, 1 >
+
+=item C<SDL_BLENDFACTOR_SRC_COLOR> - C< srcR, srcG, srcB, srcA >
+
+=item C<SDL_BLENDFACTOR_ONE_MINUS_SRC_COLOR> - C< 1-srcR, 1-srcG, 1-srcB, 1-srcA >
+
+=item C<SDL_BLENDFACTOR_SRC_ALPHA> - C< srcA, srcA, srcA, srcA >
+
+=item C<SDL_BLENDFACTOR_ONE_MINUS_SRC_ALPHA> - C< 1-srcA, 1-srcA, 1-srcA, 1-srcA >
+
+=item C<SDL_BLENDFACTOR_DST_COLOR> - C< dstR, dstG, dstB, dstA >
+
+=item C<SDL_BLENDFACTOR_ONE_MINUS_DST_COLOR> - C< 1-dstR, 1-dstG, 1-dstB, 1-dstA >
+
+=item C<SDL_BLENDFACTOR_DST_ALPHA> - C< dstA, dstA, dstA, dstA >
+
+=item C<SDL_BLENDFACTOR_ONE_MINUS_DST_ALPHA> - C< 1-dstA, 1-dstA, 1-dstA, 1-dstA >
+
+=back
+
+=head1 C<:errorcode>
+
+=over
+
+=item C<SDL_ENOMEM> - Out of memory
+
+=item C<SDL_EFREAD> - Error reading file
+
+=item C<SDL_EFWRITE> - Error writing file
+
+=item C<SDL_EFSEEK> - Error seeking in file
+
+=item C<SDL_UNSUPPORTED>
+
+=item C<SDL_LASTERROR>
+
+=back
+
+=head1 C<:eventstate>
+
+General keyboard/mouse state definitions
+
+=over
+
+=item C<SDL_RELEASED>
+
+=item C<SDL_PRESSED>
+
+=back
+
+=head1 C<:eventtype>
+
+The types of events that can be delivered.
+
+=over
+
+=item C<SDL_FIRSTEVENT> - Unused
+
+=item C<SDL_QUIT> - User-requested quit
+
+=item C<SDL_APP_TERMINATING> - The application is being terminated by the OS
+
+Called on iOS in C<applicationWillTerminate()>
+
+Called on Android in C<onDestroy()>
+
+=item C<SDL_APP_LOWMEMORY> - The application is low on memory, free memory if possible
+
+Called on iOS in C<applicationDidReceiveMemoryWarning()>
+
+Called on Android in C<onLowMemory()>
+
+=item C<SDL_APP_WILLENTERBACKGROUND> - The application is about to enter the background
+
+Called on iOS in C<applicationWillResignActive()>
+
+Called on Android in C<onPause()>
+
+=item C<SDL_APP_DIDENTERBACKGROUND> - The application did enter the background and may not get CPU for some time
+
+Called on iOS in C<applicationDidEnterBackground()>
+
+Called on Android in C<onPause()>
+
+=item C<SDL_APP_WILLENTERFOREGROUND> - The application is about to enter the foreground
+
+Called on iOS in C<applicationWillEnterForeground()>
+
+Called on Android in C<onResume()>
+
+=item C<SDL_APP_DIDENTERFOREGROUND> - The application is now interactive
+
+Called on iOS in C<applicationDidBecomeActive()>
+
+Called on Android in C<onResume()>
+
+=item C<SDL_LOCALECHANGED> - The user's locale preferences have changed
+
+=item C<SDL_DISPLAYEVENT> - Display state change
+
+=item C<SDL_WINDOWEVENT> - Window state change
+
+=item C<SDL_SYSWMEVENT> - System specific event
+
+=item C<SDL_KEYDOWN> - Key pressed
+
+=item C<SDL_KEYUP> - Key released
+
+=item C<SDL_TEXTEDITING> - Keyboard text editing (composition)
+
+=item C<SDL_TEXTINPUT> - Keyboard text input
+
+=item C<SDL_KEYMAPCHANGED> - Keymap changed due to a system event such as an input language or keyboard layout change
+
+=item C<SDL_MOUSEMOTION> - Mouse moved
+
+=item C<SDL_MOUSEBUTTONDOWN> - Mouse button pressed
+
+=item C<SDL_MOUSEBUTTONUP> - Mouse button released
+
+=item C<SDL_MOUSEWHEEL> - Mouse wheel motion
+
+=item C<SDL_JOYAXISMOTION> - Joystick axis motion
+
+=item C<SDL_JOYBALLMOTION> - Joystick trackball motion
+
+=item C<SDL_JOYHATMOTION> - Joystick hat position change
+
+=item C<SDL_JOYBUTTONDOWN> - Joystick button pressed
+
+=item C<SDL_JOYBUTTONUP> - Joystick button released
+
+=item C<SDL_JOYDEVICEADDED> - A new joystick has been inserted into the system
+
+=item C<SDL_JOYDEVICEREMOVED> - An opened joystick has been removed
+
+=item C<SDL_CONTROLLERAXISMOTION> - Game controller axis motion
+
+=item C<SDL_CONTROLLERBUTTONDOWN> - Game controller button pressed
+
+=item C<SDL_CONTROLLERBUTTONUP> - Game controller button released
+
+=item C<SDL_CONTROLLERDEVICEADDED> - A new Game controller has been inserted into the system
+
+=item C<SDL_CONTROLLERDEVICEREMOVED> - An opened Game controller has been removed
+
+=item C<SDL_CONTROLLERDEVICEREMAPPED> - The controller mapping was updated
+
+=item C<SDL_CONTROLLERTOUCHPADDOWN> - Game controller touchpad was touched
+
+=item C<SDL_CONTROLLERTOUCHPADMOTION> - Game controller touchpad finger was moved
+
+=item C<SDL_CONTROLLERTOUCHPADUP> - Game controller touchpad finger was lifted
+
+=item C<SDL_CONTROLLERSENSORUPDATE> - Game controller sensor was updated 
+
+=item C<SDL_FINGERDOWN>
+
+=item C<SDL_FINGERUP>
+
+=item C<SDL_FINGERMOTION>
+
+=item C<SDL_DOLLARGESTURE>
+
+=item C<SDL_DOLLARRECORD> 
+
+=item C<SDL_MULTIGESTURE> 
+
+=item C<SDL_CLIPBOARDUPDATE> - The clipboard changed
+
+=item C<SDL_DROPFILE> - The system requests a file open
+
+=item C<SDL_DROPTEXT> - text/plain drag-and-drop event
+
+=item C<SDL_DROPBEGIN> - A new set of drops is beginning (NULL filename)
+
+=item C<SDL_DROPCOMPLETE> - Current set of drops is now complete (NULL filename)
+
+=item C<SDL_AUDIODEVICEADDED> - A new audio device is available
+
+=item C<SDL_AUDIODEVICEREMOVED> - An audio device has been removed
+
+=item C<SDL_SENSORUPDATE> - A sensor was updated
+
+=item C<SDL_RENDER_TARGETS_RESET> - The render targets have been reset and their contents need to be updated
+
+=item C<SDL_RENDER_DEVICE_RESET> - The device has been reset and all textures need to be recreated
+
+=item C<SDL_USEREVENT>
+
+=item C<SDL_LASTEVENT> - This last event is only for bounding internal arrays
+
+=back
+
+Events C<SDL_USEREVENT> through C<SDL_LASTEVENT> are for your use and should be
+allocated with  L<< C<SDL_RegisterEvents( ...
+)>|SDL2::FFI/C<SDL_RegisterEvents( ... )> >>.
+
+
+
+
+
+
+
+
+
+
+=head1 C<:hints>
 
 =over
 
@@ -2109,6 +3043,35 @@ optional: "en". So you might have a list like this: "en_GB,jp,es_PT"
 
 =back
 
+=head2 C<:assertState>
+
+
+
+=over
+
+=item C<SDL_ASSERTION_RETRY> - Retry the assert immediately
+
+=item C<SDL_ASSERTION_BREAK> - Make the debugger trigger a breakpoint
+
+=item C<SDL_ASSERTION_ABORT> - Terminate the program
+
+=item C<SDL_ASSERTION_IGNORE> - Ignore the assert
+
+=item C<SDL_ASSERTION_ALWAYS_IGNORE> - Ignore the assert from now on
+
+=back
+
+=cut
+
+    enum SDL_AssertState => [
+        qw[ SDL_ASSERTION_RETRY
+            SDL_ASSERTION_BREAK
+            SDL_ASSERTION_ABORT
+            SDL_ASSERTION_IGNORE
+            SDL_ASSERTION_ALWAYS_IGNORE
+        ]
+    ];
+
 =head2 C<:logcategory>
 
 The predefined log categories
@@ -2741,7 +3704,7 @@ AVAudioSessionCategoryPlayback VoIP OpenGLES opengl opengles opengles2 spammy
 popup tooltip taskbar subwindow high-dpi subpixel borderless draggable viewport
 user-resizable resizable srcA srcC GiB dstrect rect subrectangle pseudocode ms
 verystrict resampler eglSwapBuffers backbuffer scancode unhandled lifespan wgl
-glX framerate deadzones vice-versa kmsdrm jp CAMetalLayer
+glX framerate deadzones vice-versa kmsdrm jp CAMetalLayer touchpad
 
 =end stopwords
 

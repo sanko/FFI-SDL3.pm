@@ -31,26 +31,6 @@ sub DrawChessBoard {
     }
 }
 
-sub loop() {
-    while ( SDL_PollEvent( my $e = SDL2::Event->new ) ) {
-        if ( $e->type == SDL_QUIT ) {
-            $done = 1;
-            return;
-        }
-
-        #     SDLK_ESCAPE = '\x1B', but isn't in SDL2::Enum yet
-        #if (($e->type == SDL_KEYDOWN) && ($e->key->keysym->sym == SDLK_ESCAPE)) {
-        #    $done = 1;
-        #    return;
-        #}
-    }
-    DrawChessBoard($renderer);
-
-    # Got everything on rendering surface,
-    #  now Update the drawing image on window screen
-    SDL_UpdateWindowSurface($window);
-}
-
 # Enable standard application logging
 SDL_LogSetPriority( SDL_LOG_CATEGORY_APPLICATION, SDL_LOG_PRIORITY_INFO );
 
@@ -68,7 +48,7 @@ if ( !$window ) {
     SDL_LogError( SDL_LOG_CATEGORY_APPLICATION, "Window creation fail : %s\n", SDL_GetError() );
     exit 1;
 }
-$renderer = SDL_CreateSoftwareRenderer(SDL_GetWindowSurface($window));
+$renderer = SDL_CreateSoftwareRenderer( SDL_GetWindowSurface($window) );
 if ( !$renderer ) {
     SDL_LogError( SDL_LOG_CATEGORY_APPLICATION, "Render creation for surface fail : %s\n",
         SDL_GetError() );
@@ -82,7 +62,23 @@ SDL_RenderClear($renderer);
 # Draw the Image on rendering surface */
 $done = 0;
 while ( !$done ) {
-    loop();
+    while ( SDL_PollEvent( my $e = SDL2::Event->new ) ) {
+        if ( $e->type == SDL_QUIT ) {
+            $done = 1;
+            exit;
+        }
+
+        #     SDLK_ESCAPE = '\x1B', but isn't in SDL2::Enum yet
+        #if (($e->type == SDL_KEYDOWN) && ($e->key->keysym->sym == SDLK_ESCAPE)) {
+        #    $done = 1;
+        #    return;
+        #}
+    }
+    DrawChessBoard($renderer);
+
+    # Got everything on rendering surface,
+    #  now Update the drawing image on window screen
+    SDL_UpdateWindowSurface($window);
 }
 SDL_Quit();
 exit 0;

@@ -25,19 +25,20 @@ SDL2::FFI - FFI Wrapper for SDL (Simple DirectMedia Layer) Development Library
 
 # DESCRIPTION
 
-SDL2 is an FFI::Platypus-backed wrapper around the **S**imple **D**irectMedia
-**L**ayer - a cross-platform development library designed to provide low level
-access to audio, keyboard, mouse, joystick, and graphics hardware.
+SDL2::FFI is an [FFI::Platypus](https://metacpan.org/pod/FFI%3A%3APlatypus) backed bindings to the **S**imple
+**D**irectMedia **L**ayer - a cross-platform development library designed to
+provide low level access to audio, keyboard, mouse, joystick, and graphics
+hardware.
 
 # Initialization and Shutdown
 
-The functions in this category are used to set up SDL for use and generally
+The functions in this category are used to set SDL up for use and generally
 have global effects in your program. These functions may be imported with the
 `:init` or `:default` tag.
 
 ## `SDL_Init( ... )`
 
-Initialize the SDL library. This must be called before using most other SDL
+Initializes the SDL library. This must be called before using most other SDL
 functions.
 
         SDL_Init( SDL_INIT_TIMER | SDL_INIT_VIDEO | SDL_INIT_EVENTS );
@@ -152,7 +153,8 @@ This category contains functions to set and get configuration hints, as well as
 listing each of them alphabetically.
 
 The convention for naming hints is `SDL_HINT_X`, where `SDL_X` is the
-environment variable that can be used to override the default.
+environment variable that can be used to override the default. You may import
+those recognised by SDL2 with the [`:hints`](https://metacpan.org/pod/SDL2%3A%3AEnum#hints) tag.
 
 In general these hints are just that - they may or may not be supported or
 applicable on any given platform, but they provide a way for an application or
@@ -305,7 +307,8 @@ This function is automatically called during [`SDL_Quit( )`](#sdl_quit).
 
 Functions in this category provide simple error message routines for SDL. [`SDL_GetError( )`](#sdl_geterror) can be called for almost all SDL
 functions to determine what problems are occurring. Check the wiki page of each
-specific SDL function to see whether [`SDL_GetError( )`](#sdl_geterror) is meaningful for them or not.
+specific SDL function to see whether [`SDL_GetError( )`](#sdl_geterror) is meaningful for them or not. These functions may be imported with the
+`:error` tag.
 
 The SDL error messages are in English.
 
@@ -391,7 +394,8 @@ Clear any previous error message for this thread.
 
 # Log Handling
 
-Simple log messages with categories and priorities.
+Simple log messages with categories and priorities. These functions may be
+imported with the `:logging` tag.
 
 By default, logs are quiet but if you're debugging SDL you might want:
 
@@ -1082,7 +1086,7 @@ Expected parameters include:
 - `y` - the y position of the window, `SDL_WINDOWPOS_CENTERED`, or `SDL_WINDOWPOS_UNDEFINED`
 - `w` - the width of the window, in screen coordinates
 - `h` - the height of the window, in screen coordinates
-- `flags` - 0, or one or more `SDL_WindowFlags` OR'd together
+- `flags` - 0, or one or more [`:windowFlags`](https://metacpan.org/pod/SDL2%3A%3AEnum#windowFlags) OR'd together
 
 Returns the window that was created or an undefined value on failure; call [`SDL_GetError( )`](#sdl_geterror) for more information.
 
@@ -1146,7 +1150,8 @@ Expected parameters include:
 
 - `window` - the window to query
 
-Returns a mask of the SDL\_WindowFlags associated with `window`.
+Returns a mask of the [`:windowFlags`](https://metacpan.org/pod/SDL2%3A%3AEnum#windowFlags)
+associated with `window`.
 
 ## `SDL_SetWindowTitle( ... )`
 
