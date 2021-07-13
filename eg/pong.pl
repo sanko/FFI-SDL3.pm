@@ -12,7 +12,7 @@ package Pong::Ball {
     use Types::Standard qw[Int Num];
     use SDL2::FFI qw[SDL_SetRenderDrawColor SDL_RenderFillRect];
     has [qw[vx vy speed]] => ( is => 'rw', isa => Num, default => 0, lazy => 1, trigger => \&move );
-    has [qw[x y w h]] => ( is => 'rw', isa => Int, default => 20, lazy => 1 );
+    has [qw[x y w h]] => ( is => 'rw', isa => Num, default => 20, lazy => 1 );
 
     sub move ( $s, $new ) {
         $s->x( $s->x + ( $s->vx * $s->speed ) );
@@ -49,9 +49,10 @@ $win // die 'Failed to create SDL Window: ' . SDL_GetError();
 my $ren = SDL_CreateRenderer( $win, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC );
 $ren // die 'Failed to create SDL Renderer: ' . SDL_GetError();
 #
-my $l    = Pong::Player->new( x => 100,         w => 20, h => 150 );
-my $r    = Pong::Player->new( x => WND_W - 120, w => 20, h => 150 );
-my $ball = Pong::Ball->new( x => 100, y => 40, vx => 1, vy => 1, speed => 5 );
+my $l     = Pong::Player->new( x => 100,         y => ( WND_H / 2 ) - 75, w => 20, h => 150 );
+my $r     = Pong::Player->new( x => WND_W - 120, y => ( WND_H / 2 ) - 75, w => 20, h => 150 );
+my $ball  = Pong::Ball->new( x => 100, y => 40, vx => 1, vy => 1, speed => 5 );
+my @angle = ( -1, -.75, -.5, -.25, 0, 0, .25, .5, .75, 1 );
 #
 while (1) {
     while ( SDL_PollEvent( my $e = SDL2::Event->new ) ) {
@@ -72,22 +73,23 @@ while (1) {
     if ( ( $ball->x + $ball->w ) >= $r->x &&
         $ball->vx == 1 &&
         ( $ball->y >= $r->y && $ball->y <= ( $r->y + $r->h ) ) ) {
+        $ball->vy( $angle[ ( ( $ball->y - $r->y ) / ( $r->h / +@angle ) ) ] // $ball->vy );
         $ball->vx(-1);
     }
     elsif ( $ball->x <= ( $l->x + $l->w ) &&
         $ball->vx == -1 &&
         ( $ball->y >= $l->y && $ball->y <= ( $l->y + $l->h ) ) ) {
+        $ball->vy( $angle[ ( ( $ball->y - $l->y ) / ( $l->h / +@angle ) ) ] // $ball->vy );
         $ball->vx(1);
     }
     else {
         $ball->vx( $ball->x >= WND_W - $ball->w ? -1 : $ball->x <= 0 ? 1 : $ball->vx );
         $ball->vy( $ball->y >= WND_H - $ball->h ? -1 : $ball->y <= 0 ? 1 : $ball->vy );
     }
-    SDL_SetRenderDrawColor( $ren, 67, 68, 69, 255 );    # dark grey (bg)
+    SDL_SetRenderDrawColor( $ren, 33, 34, 35, 255 );
     SDL_RenderClear($ren);
-    SDL_SetRenderDrawColor( $ren, 33, 34, 35, 255 );    # light grey (left bg)
-    SDL_RenderFillRect( $ren,
-        SDL2::Rect->new( { x => WND_W / 2, y => 0, w => WND_W / 2, h => WND_H } ) );
+    SDL_SetRenderDrawColor( $ren, 255, 255, 255, 255 );
+    $_ % 5 && SDL_RenderDrawPoint( $ren, WND_W / 2, $_ ) for 0 .. WND_H;
     $_->draw($ren) for $l, $r, $ball;
     SDL_RenderPresent($ren);
 }
@@ -95,5 +97,3 @@ while (1) {
 # TODO:
 # - display score
 # - hold ball after score
-# - draw net
-# - fix colors (current are for testing)
