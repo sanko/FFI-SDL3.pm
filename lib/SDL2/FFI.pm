@@ -586,22 +586,28 @@ package SDL2::FFI 0.06 {
         SDL_RenderGetMetalLayer          => [ ['SDL_Renderer'],                      'opaque' ],
         SDL_RenderGetMetalCommandEncoder => [ ['SDL_Renderer'],                      'opaque' ]
     };
-    ffi->type( '(int,opaque)->uint32' => 'SDL_TimerCallback' );
+    #ffi->type( '(uint32, opaque)->uint32' => 'SDL_TimerCallback' );
+    ffi->type( '(uint32,opaque)->uint32' => 'SDL_TimerCallback' );
+
+    ffi->type( 'int' => 'SDL_TimerID' );
+
     attach timer => {
         SDL_GetTicks                => [ [], 'uint32' ],
         SDL_GetPerformanceCounter   => [ [], 'uint64' ],
         SDL_GetPerformanceFrequency => [ [], 'uint64' ],
         SDL_Delay                   => [ ['uint32'] ],
-        SDL_AddTimer                => [
-            [ 'uint32', 'SDL_TimerCallback', 'opaque' ],
-            'int' => sub ( $xsub, $interval, $callback, $param = () ) {
-
-                # Fake void pointer
-                my $cb = FFI::Platypus::Closure->new( sub { $callback->(@_); } );
+		SDL_AddTimer => [
+            [ 'uint32', 'SDL_TimerCallback', 'opaque' ] => 'SDL_TimerID'
+							=>
+                sub ($xsub, $interval, $callback, $userdata = ()) {
+                my $cb = FFI::Platypus::Closure->new( $callback );
                 $cb->sticky;
-                $xsub->( $interval, $cb, $param );
+                $xsub->( $interval, $cb, $userdata );
             }
         ],
+
+
+
         SDL_RemoveTimer => [ ['uint32'] => 'bool' ],
     };
     ffi->type( '(opaque,string,int)->void' => 'SDL_AudioCallback' );
