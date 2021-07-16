@@ -18,3 +18,7 @@ on configure => sub {
 	requires 'Devel::CheckBin';
     requires 'Module::Build::Tiny', '0.039';
 };
+
+on development => sub {
+	requires 'Software::License::Artistic_2_0'
+};

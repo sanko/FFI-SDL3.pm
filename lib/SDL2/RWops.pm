@@ -2,49 +2,45 @@ package SDL2::RWops {
     use SDL2::Utils;
     has type => 'uint32';
 
-=for todo
-
-    union
-    {
-#if defined(__ANDROID__)
-        struct
-        {
-            void *asset;
-        } androidio;
-#elif defined(__WIN32__)
-        struct
-        {
-            SDL_bool append;
-            void *h;
-            struct
-            {
-                void *data;
-                size_t size;
-                size_t left;
-            } buffer;
-        } windowsio;
-#elif defined(__VITA__)
-        struct
-        {
-            int h;
-            struct
-            {
-                void *data;
-                size_t size;
-                size_t left;
-            } buffer;
-        } vitaio;
-#endif
-
-#ifdef HAVE_STDIO_H         struct         {             SDL_bool autoclose;   
-         FILE *fp;         } stdio; #endif         struct         {            
-Uint8 *base;             Uint8 *here;             Uint8 *stop;         } mem;  
-      struct         {             void *data1;             void *data2;       
- } unknown;     } hidden;
-
-} SDL_RWops;
-
-=cut
+    #    union
+    #    {
+##if defined(__ANDROID__)
+    #        struct
+    #        {
+    #            void *asset;
+    #        } androidio;
+##elif defined(__WIN32__)
+    #        struct
+    #        {
+    #            SDL_bool append;
+    #            void *h;
+    #            struct
+    #            {
+    #                void *data;
+    #                size_t size;
+    #                size_t left;
+    #            } buffer;
+    #        } windowsio;
+##elif defined(__VITA__)
+    #        struct
+    #        {
+    #            int h;
+    #            struct
+    #            {
+    #                void *data;
+    #                size_t size;
+    #                size_t left;
+    #            } buffer;
+    #        } vitaio;
+##endif
+    #
+##ifdef HAVE_STDIO_H         struct         {             SDL_bool autoclose;
+    #         FILE *fp;         } stdio; #endif         struct         {
+    #Uint8 *base;             Uint8 *here;             Uint8 *stop;         } mem;
+    #      struct         {             void *data1;             void *data2;
+    # } unknown;     } hidden;
+    #
+    #} SDL_RWops;
 
 =encoding utf-8
 

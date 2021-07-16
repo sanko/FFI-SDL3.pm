@@ -1,5 +1,8 @@
 package SDL2::AudioSpec {
+    use strict;
+    use warnings;
     use SDL2::Utils;
+    ffi->type( '(opaque,opaque,int)->void' => 'SDL_AudioCallback' );
     has
         freq     => 'int',
         format   => 'uint16',
@@ -8,9 +11,8 @@ package SDL2::AudioSpec {
         samples  => 'uint16',
         padding  => 'uint16',
         size     => 'uint32',
-        callback => 'opaque',    # SDL_AudioCallback
-        userdata => 'opaque'     # void *
-        ;
+        callback => 'opaque',    # 'SDL_AudioCallback',
+        userdata => 'opaque';    # void *
 
 =encoding utf-8
 
@@ -58,6 +60,15 @@ For multi-channel audio, the default SDL channel mapping is:
 =item C<size> - Audio buffer size in bytes (calculated)
 
 =item C<callback> - Callback that feeds the audio device (undef to use C<SDL_QueueAudio( ... )>)
+
+FFI::Platypus currently cannot properly handle closures for callbacks. You'll
+need to do all the casting manually with something like...
+
+    # ...
+    callback => SDL2::FFI::ffi()->cast(
+            'SDL_AudioCallback' => 'opaque',
+            SDL2::FFI::ffi->closure( \&RefToYourActualCallback )
+    )
 
 =item C<userdata> - Userdata passed to callback (ignored for undef callbacks)
 

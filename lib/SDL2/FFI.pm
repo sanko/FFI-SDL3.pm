@@ -19,8 +19,6 @@ package SDL2::FFI 0.06 {
     #
     use SDL2::version;
     use SDL2::Enum;
-    use SDL2::AudioCVT;
-    use SDL2::AudioSpec;
     use SDL2::Event;                               # Includes all known events
     use SDL2::Point;
     use SDL2::FPoint;
@@ -50,6 +48,7 @@ package SDL2::FFI 0.06 {
     use SDL2::RWops;
     use SDL2::Sensor;
     use SDL2::WindowShapeMode;
+    use SDL2::Finger;
     #
     use Data::Dump;
 
@@ -62,6 +61,115 @@ package SDL2::FFI 0.06 {
         SDL_QuitSubSystem => [ ['uint32'] ],
         SDL_WasInit       => [ ['uint32'] => 'uint32' ]
     };
+    use SDL2::atomic_t;
+    ffi->type( 'int' => 'SDL_SpinLock' );
+    attach atomic => {
+        SDL_AtomicTryLock                => [ ['SDL_SpinLock'], 'SDL_bool' ],
+        SDL_AtomicLock                   => [ ['SDL_SpinLock'], 'SDL_bool' ],
+        SDL_AtomicUnlock                 => [ ['SDL_SpinLock'] ],
+        SDL_MemoryBarrierReleaseFunction => [ [] ],                 # Undocumented
+        SDL_MemoryBarrierAcquireFunction => [ [] ],                 # Undocumented
+        SDL_AtomicCAS                    => [ [ 'SDL_atomic_t', 'int', 'int' ], 'SDL_bool' ],
+        SDL_AtomicSet                    => [ [ 'SDL_atomic_t', 'int' ], 'int' ],
+        SDL_AtomicAdd                    => [ [ 'SDL_atomic_t', 'int' ], 'int' ],
+
+        # Will likely not need these:
+        #SDL_AtomicCASPtr =>  [ ['SDL_atomic_t*', 'int*', 'int*'], 'SDL_bool'],
+        #SDL_AtomicSetPtr =>  [ ['SDL_AtomicSetPtr*', 'int*' ], 'int *'],
+        #SDL_AtomicGetPtr =>  [ ['SDL_AtomicSetPtr*' ], 'int *'],
+    };
+    define atomic => [
+        [ SDL_AtomicIncRef => sub ($a) { SDL_AtomicAdd( $a, 1 ) } ],
+        [ SDL_AtomicDecRef => sub ($a) { SDL_AtomicAdd( $a, -1 ) } ]
+    ];
+    #
+    use SDL2::AudioStream;
+    use SDL2::AudioCVT;
+    use SDL2::AudioSpec;
+    ffi->type( 'uint16'                => 'SDL_AudioFormat' );
+    ffi->type( 'uint32'                => 'SDL_AudioDeviceID' );
+    ffi->type( '(opaque,uint16)->void' => 'SDL_AudioFilter' );
+    attach audio => {
+        SDL_GetNumAudioDrivers    => [ ['int'],    'int' ],
+        SDL_GetAudioDriver        => [ ['int'],    'string' ],
+        SDL_AudioInit             => [ ['string'], 'int' ],
+        SDL_AudioQuit             => [ [] ],
+        SDL_GetCurrentAudioDriver => [ [], 'string' ],
+        SDL_OpenAudio             => [
+            [ 'SDL_AudioSpec', 'SDL_AudioSpec' ],
+            'int' => sub ( $inner, $desired, $obtained = () ) {
+                deprecate <<'END';
+SDL_OpenAudio( ... ) remains for compatibility with SDL 1.2. The new, more
+powerful, and preferred way to do this is SDL_OpenAudioDevice( ... );
+END
+                $inner->( $desired, $obtained );
+            }
+        ],
+        SDL_GetNumAudioDevices => [ ['int'],          'int' ],
+        SDL_GetAudioDeviceName => [ [ 'int', 'int' ], 'string' ], (
+            $ver->patch >= 15 ?
+                ( SDL_GetAudioDeviceSpec => [ [ 'int', 'int', 'SDL_AudioSpec' ], 'int' ] ) :
+                ()
+        ),
+        SDL_OpenAudioDevice =>
+            [ [ "string", "int", "SDL_AudioSpec", "SDL_AudioSpec", "int" ], "SDL_AudioDeviceID", ],
+        SDL_GetAudioStatus       => [ [],                    'SDL_AudioStatus' ],
+        SDL_GetAudioDeviceStatus => [ ['SDL_AudioDeviceID'], 'SDL_AudioStatus' ],
+        SDL_PauseAudio           => [ ['int'] ],
+        SDL_PauseAudioDevice     => [ [ 'SDL_AudioDeviceID', 'int' ] ],
+        SDL_LoadWAV_RW           =>
+            [ [ 'SDL_RWops', 'int', 'SDL_AudioSpec', 'opaque', 'uint32*' ], 'SDL_AudioSpec' ],
+        SDL_FreeWAV       => [ ['uint8*'] ],
+        SDL_BuildAudioCVT => [
+            [   'SDL_AudioCVT',    'SDL_AudioFormat', 'uint8', 'int',
+                'SDL_AudioFormat', 'uint8',           'int',
+            ],
+            'int'
+        ],
+        SDL_ConvertAudio   => [ ['SDL_AudioCVT'], 'int' ],
+        SDL_NewAudioStream => [
+            [ 'SDL_AudioFormat', 'uint8', 'int', 'SDL_AudioFormat', 'uint8', 'int' ],
+            'SDL_AudioStream',
+        ],
+        SDL_AudioStreamPut       => [ [ 'SDL_AudioStream', 'opaque*', 'int' ], 'int' ],
+        SDL_AudioStreamGet       => [ [ 'SDL_AudioStream', 'opaque*', 'int' ], 'int' ],
+        SDL_AudioStreamAvailable => [ ['SDL_AudioStream'], 'int' ],
+        SDL_AudioStreamFlush     => [ ['SDL_AudioStream'], 'int' ],
+        SDL_AudioStreamClear     => [ ['SDL_AudioStream'] ],
+        SDL_FreeAudioStream      => [ ['SDL_AudioStream'] ],
+        SDL_MixAudio             => [ [ 'uint8*', 'uint8*', 'uint32', 'int' ] ],
+        SDL_MixAudioFormat       => [ [ 'uint8*', 'uint8*', 'SDL_AudioFormat', 'uint32', 'int' ] ],
+        SDL_QueueAudio           => [ [ 'SDL_AudioDeviceID', 'opaque*', 'uint32' ], 'int' ],
+        SDL_DequeueAudio         => [ [ 'SDL_AudioDeviceID', 'opaque*', 'uint32' ], 'uint32' ],
+        SDL_GetQueuedAudioSize   => [ ['SDL_AudioDeviceID'], 'uint32' ],
+        SDL_ClearQueuedAudio     => [ ['SDL_AudioDeviceID'] ],
+        SDL_LockAudio            => [ [] ],
+        SDL_LockAudioDevice      => [ ['SDL_AudioDeviceID'] ],
+        SDL_UnlockAudio          => [ [] ],
+        SDL_UnlockAudioDevice    => [ ['SDL_AudioDeviceID'] ],
+        SDL_CloseAudio           => [ [] ],
+        SDL_CloseAudioDevice     => [ ['SDL_AudioDeviceID'] ]
+    };
+    define audio => [
+        [   SDL_LoadWAV => sub ( $file, $spec, $audio_buf, $audio_len ) {
+                SDL_LoadWAV_RW( SDL_RWFromFile( $file, 'rb' ), 1, $spec, $audio_buf, $audio_len );
+            }
+        ]
+    ];
+    attach blendmode => {
+        SDL_ComposeCustomBlendMode => [
+            [   'SDL_BlendFactor',    'SDL_BlendFactor',
+                'SDL_BlendOperation', 'SDL_BlendFactor',
+                'SDL_BlendFactor',    'SDL_BlendOperation'
+            ],
+            'SDL_BlendMode'
+        ],
+    };
+
+    # define atomic => [
+    #        [SDL_AtomicIncRef => sub ($a) { SDL_AtomicAdd($a, 1) }],
+    #        [SDL_AtomicDecRef => sub ($a) { SDL_AtomicAdd($a, -1) }]
+    #    ];
     #
     ffi->type( '(opaque,string,string,string)->void' => 'SDL_HintCallback' );
     attach hints => {
@@ -335,18 +443,20 @@ package SDL2::FFI 0.06 {
         SDL_GetNumRenderDrivers     => [ [],                            'int' ],
         SDL_GetRenderDriverInfo     => [ [ 'int', 'SDL_RendererInfo' ], 'int' ],
         SDL_CreateWindowAndRenderer => [
-            [ 'int', 'int', 'uint32', 'opaque*', 'opaque*' ], 'int'
+            [ 'int', 'int', 'uint32', 'opaque*', 'opaque*' ],
+            'int' => sub ( $inner, $width, $height, $window_flags, $window = (), $renderer = () ) {
+                $window   //= SDL2::Window->new;
+                $renderer //= SDL2::Renderer->new;
+                my $ok = $inner->( $width, $height, $window_flags, \$window, \$renderer );
+                $_[4] = ffi->cast( 'opaque' => 'SDL_Window',   $window );
+                $_[5] = ffi->cast( 'opaque' => 'SDL_Renderer', $renderer );
 
-               #=> sub ( $inner, $width, $height, $window_flags ) {
-               #    my $window   = SDL2::Window->new;
-               #    my $renderer = SDL2::Renderer->new;
-               #    my $ok       = $inner->( $width, $height, $window_flags, \$window, \$renderer );
-               #    $ok == 0 ? (
-               #        ffi->cast( 'opaque' => 'SDL_Window',   $window ),
-               #        ffi->cast( 'opaque' => 'SDL_Renderer', $renderer ),
-               #        ) :
-               #        $ok;
-               #}
+                #$ok == 0 ? (
+                #    ffi->cast( 'opaque' => 'SDL_Window',   $window ),
+                #    ffi->cast( 'opaque' => 'SDL_Renderer', $renderer ),
+                #    ) :
+                $ok;
+            }
         ],
         SDL_CreateRenderer         => [ [ 'SDL_Window', 'int', 'uint32' ],      'SDL_Renderer' ],
         SDL_CreateSoftwareRenderer => [ ['SDL_Surface'],                        'SDL_Renderer' ],
@@ -586,106 +696,24 @@ package SDL2::FFI 0.06 {
         SDL_RenderGetMetalLayer          => [ ['SDL_Renderer'],                      'opaque' ],
         SDL_RenderGetMetalCommandEncoder => [ ['SDL_Renderer'],                      'opaque' ]
     };
+
     #ffi->type( '(uint32, opaque)->uint32' => 'SDL_TimerCallback' );
     ffi->type( '(uint32,opaque)->uint32' => 'SDL_TimerCallback' );
-
-    ffi->type( 'int' => 'SDL_TimerID' );
-
+    ffi->type( 'int'                     => 'SDL_TimerID' );
     attach timer => {
         SDL_GetTicks                => [ [], 'uint32' ],
         SDL_GetPerformanceCounter   => [ [], 'uint64' ],
         SDL_GetPerformanceFrequency => [ [], 'uint64' ],
         SDL_Delay                   => [ ['uint32'] ],
-		SDL_AddTimer => [
-            [ 'uint32', 'SDL_TimerCallback', 'opaque' ] => 'SDL_TimerID'
-							=>
-                sub ($xsub, $interval, $callback, $userdata = ()) {
-                my $cb = FFI::Platypus::Closure->new( $callback );
+        SDL_AddTimer                => [
+            [ 'uint32', 'SDL_TimerCallback', 'opaque' ] => 'SDL_TimerID' =>
+                sub ( $xsub, $interval, $callback, $userdata = () ) {
+                my $cb = FFI::Platypus::Closure->new($callback);
                 $cb->sticky;
                 $xsub->( $interval, $cb, $userdata );
             }
         ],
-
-
-
         SDL_RemoveTimer => [ ['uint32'] => 'bool' ],
-    };
-    ffi->type( '(opaque,string,int)->void' => 'SDL_AudioCallback' );
-    ffi->type( 'int'                       => 'SDL_AudioFormat' );
-    ffi->type( '(opaque,uint16)->void'     => 'SDL_AudioFilter' );
-
-    package SDL2::AudioStream {
-        use SDL2::Utils;
-        has();
-    };
-
-    package SDL2::AudioDeviceID {
-        use SDL2::Utils;
-        has();
-    };
-    attach audio => {
-        SDL_AudioInit            => [ ["string"], "int" ],
-        SDL_AudioQuit            => [ [] ],
-        SDL_AudioStreamAvailable => [ ["SDL_AudioStream"], "int" ],
-        SDL_AudioStreamClear     => [ ["SDL_AudioStream"] ],
-        SDL_AudioStreamFlush     => [ ["SDL_AudioStream"], "int" ],
-        SDL_AudioStreamGet       => [ [ "SDL_AudioStream", "opaque*", "int" ], "int" ],
-        SDL_AudioStreamPut       => [ [ "SDL_AudioStream", "opaque*", "int" ], "int" ],
-        SDL_BuildAudioCVT        => [
-            [   "SDL_AudioCVT",    "SDL_AudioFormat", "uint8", "int",
-                "SDL_AudioFormat", "uint8",           "int",
-            ],
-            "int",
-        ],
-        SDL_ClearQueuedAudio   => [ ["SDL_AudioDeviceID"] ],
-        SDL_CloseAudio         => [ [] ],
-        SDL_CloseAudioDevice   => [ ["SDL_AudioDeviceID"] ],
-        SDL_ConvertAudio       => [ ["SDL_AudioCVT"],                             "int" ],
-        SDL_DequeueAudio       => [ [ "SDL_AudioDeviceID", "opaque*", "uint32" ], "uint32" ],
-        SDL_FreeAudioStream    => [ ["SDL_AudioStream"] ],
-        SDL_FreeWAV            => [ ["uint8 *"] ],
-        SDL_GetAudioDeviceName => [ [ "int", "int" ], "string" ], (
-            $ver->patch >= 15 ?
-                ( SDL_GetAudioDeviceSpec => [ [ "int", "int", "SDL_AudioSpec" ], "int" ] ) :
-                ()
-        ),
-        SDL_GetAudioDeviceStatus  => [ ["SDL_AudioDeviceID"], "SDL_AudioStatus" ],
-        SDL_GetAudioDriver        => [ ["int"],               "string" ],
-        SDL_GetAudioStatus        => [ [],                    "SDL_AudioStatus" ],
-        SDL_GetCurrentAudioDriver => [ [],                    "string" ],
-        SDL_GetNumAudioDevices    => [ ["int"],               "int" ],
-        SDL_GetNumAudioDrivers    => [ [],                    "int" ],
-        SDL_GetQueuedAudioSize    => [ ["SDL_AudioDeviceID"], "uint32" ],
-
-       #SDL_LoadWAV_RW            => [
-       #                               ["SDL_RWops", "int", "SDL_AudioSpec", "uint8**", "uint32 *"],
-       #                               "SDL_AudioSpec",
-       #                             ],
-        SDL_LockAudio       => [ [] ],
-        SDL_LockAudioDevice => [ ["SDL_AudioDeviceID"] ],
-        SDL_MixAudio        => [ [ "uint8 *", "uint8 *", "uint32", "int" ] ],
-        SDL_MixAudioFormat  => [ [ "uint8 *", "uint8 *", "SDL_AudioFormat", "uint32", "int" ] ],
-        SDL_NewAudioStream  => [
-            [ "SDL_AudioFormat", "uint8", "int", "SDL_AudioFormat", "uint8", "int", ],
-            "SDL_AudioStream",
-        ],
-        SDL_OpenAudio => [
-            [ 'SDL_AudioSpec', 'SDL_AudioSpec' ],
-            'int' => sub ( $inner, $desired, $obtained = () ) {
-                deprecate <<'END';
-SDL_OpenAudio( ... ) remains for compatibility with SDL 1.2. The new, more
-powerful, and preferred way to do this is SDL_OpenAudioDevice( ... );
-END
-                $inner->( $desired, $obtained );
-            }
-        ],
-        SDL_OpenAudioDevice =>
-            [ [ "string", "int", "SDL_AudioSpec", "SDL_AudioSpec", "int" ], "SDL_AudioDeviceID", ],
-        SDL_PauseAudio        => [ ["int"] ],
-        SDL_PauseAudioDevice  => [ [ "SDL_AudioDeviceID", "int" ] ],
-        SDL_QueueAudio        => [ [ "SDL_AudioDeviceID", "opaque*", "uint32" ], "int" ],
-        SDL_UnlockAudio       => [ [] ],
-        SDL_UnlockAudioDevice => [ ["SDL_AudioDeviceID"] ],
     };
 
     # Everything below this line will be rewritten!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -697,16 +725,7 @@ END
     push @{ $EXPORT_TAGS{'surface'} }, 'SDL_FreeSurface';
     ffi->attach( SDL_FreeSurface => ['SDL_Surface'] );
     ffi->attach( SDL_SaveBMP_RW  => [ 'SDL_Surface', 'SDL_RWops', 'int' ], 'int' );
-    attach future => {
-        SDL_ComposeCustomBlendMode => [
-            [   'SDL_BlendFactor',    'SDL_BlendFactor',
-                'SDL_BlendOperation', 'SDL_BlendFactor',
-                'SDL_BlendFactor',    'SDL_BlendOperation'
-            ],
-            'SDL_BlendMode'
-        ],
-    };
-    ffi->attach( SDL_RWFromFile => [ 'string', 'string' ], 'SDL_RWops' );
+    ffi->attach( SDL_RWFromFile  => [ 'string', 'string' ], 'SDL_RWops' );
 
     sub SDL_SaveBMP ( $surface, $file ) {
         SDL_SaveBMP_RW( $surface, SDL_RWFromFile( $file, 'wb' ), 1 );
@@ -815,6 +834,7 @@ END
     ffi->attach( SDL_GetDefaultCursor   => []      => 'SDL_Cursor' );
     ffi->attach( SDL_FreeCursor         => []      => 'SDL_Cursor' );
     ffi->attach( SDL_ShowCursor         => ['int'] => 'int' );
+    attach generic => { SDL_HasIntersection => [ [ 'SDL_Rect', 'SDL_Rect' ], 'SDL_bool' ] };
     #
     # XXX - From SDL_stding.h
     # Define a four character code as a Uint32
@@ -836,22 +856,6 @@ END
     package SDL2::assert_data {
         use SDL2::Utils;
         has;
-    };
-
-    package SDL2::atomic_t {
-        use SDL2::Utils;
-        has value => 'int';
-    };
-
-    package SDL2::Finger {
-        use SDL2::Utils;
-        ffi->type( 'sint64' => 'SDL_TouchID' );
-        ffi->type( 'sint64' => 'SDL_FingerID' );
-        has
-            id       => 'SDL_FingerID',
-            x        => 'float',
-            y        => 'float',
-            pressure => 'float';
     };
 
     package SDL2::_GameController {
@@ -1027,16 +1031,6 @@ END
     };
 
     package SDL2::VideoBootStrap {
-        use SDL2::Utils;
-        has;
-    };
-
-    package SDL2::SpinLock {
-        use SDL2::Utils;
-        has;
-    };
-
-    package SDL2::AtomicLock {
         use SDL2::Utils;
         has;
     };
@@ -1230,6 +1224,1382 @@ If C<flags> is C<0>, it returns a mask of all initialized subsystems, otherwise
 it returns the initialization status of the specified subsystems.
 
 The return value does not include C<SDL_INIT_NOPARACHUTE>.
+
+=head1 Atomic Operations
+
+B<IMPORTANT>:
+
+If you are not an expert in concurrent lockless programming, you should only be
+using the atomic lock and reference counting functions in this file. In all
+other cases you should be protecting your data structures with full mutexes.
+
+The list of "safe" functions to use are:
+
+=over
+
+=item L<< C<SDL_AtomicLock( ... )>|/C<SDL_AtomicLock( ... )> >>
+
+=item L<< C<SDL_AtomicUnlock( ... )>|/C<SDL_AtomicUnlock( ... )> >>
+
+=item L<< C<SDL_AtomicIncRef( ... )>|/C<SDL_AtomicIncRef( ... )> >>
+
+=item L<< C<SDL_AtomicDecRef( ... )>|/C<SDL_AtomicDecRef( ... )> >>
+
+=back
+
+B<Seriously, here be dragons!>
+
+You can find out a little more about lockless programming and the subtle issues
+that can arise here:
+L<http://msdn.microsoft.com/en-us/library/ee418650%28v=vs.85%29.aspx>
+
+There's also lots of good information here:
+
+=over
+
+=item L<http://www.1024cores.net/home/lock-free-algorithms>
+
+=item L<http://preshing.com/>
+
+=back
+
+These operations may or may not actually be implemented using processor
+specific atomic operations. When possible they are implemented as true
+processor specific atomic operations. When that is not possible the are
+implemented using locks that *do* use the available atomic operations.
+
+All of the atomic operations that modify memory are full memory barriers.
+
+=head2 C<SDL_SpinLock>
+
+SDL AtomicLock.
+
+The atomic locks are efficient spinlocks using CPU instructions, but are
+vulnerable to starvation and can spin forever if a thread holding a lock has
+been terminated.  For this reason you should minimize the code executed inside
+an atomic lock and never do expensive things like API or system calls while
+holding them.
+
+The atomic locks are not safe to lock recursively.
+
+=head2 C<SDL_AtomicTryLock( ... )>
+
+Try to lock a spin lock by setting it to a non-zero value.
+
+    SDL_AtomicTryLock( 1 );
+
+B<Please note that spinlocks are dangerous if you don't know what you're doing.
+Please be careful using any sort of spinlock!>
+
+Expected parameters:
+
+=over
+
+=item C<lock> - a pointer to a lock variable
+
+=back
+
+Returns C<SDL_TRUE> if the lock succeeded, C<SDL_FALSE> if the lock is already
+held.
+
+=head2 C<SDL_AtomicLock( ... )>
+
+Lock a spin lock by setting it to a non-zero value.
+
+    SDL_AtomicLock( 1 );
+
+B<Please note that spinlocks are dangerous if you don't know what you're doing.
+Please be careful using any sort of spinlock!>
+
+Expected parameters:
+
+=over
+
+=item C<lock> - a pointer to a lock variable
+
+=back
+
+Returns C<SDL_TRUE> if the lock succeeded, C<SDL_FALSE> if the lock is already
+held.
+
+=head2 C<SDL_AtomicUnlock( ... )>
+
+Unlock a spin lock by setting it to C<0>.
+
+    SDL_AtomicUnlock( 1 );
+
+B<Please note that spinlocks are dangerous if you don't know what you're doing.
+Please be careful using any sort of spinlock!>
+
+Expected parameters:
+
+=over
+
+=item C<lock> - a pointer to a lock variable
+
+=back
+
+Always returns immediately.
+
+=head1 Memory Barriers
+
+Memory barriers are designed to prevent reads and writes from being reordered
+by the compiler and being seen out of order on multi-core CPUs.
+
+A typical pattern would be for thread A to write some data and a flag, and for
+thread B to read the flag and get the data. In this case you would insert a
+release barrier between writing the data and the flag, guaranteeing that the
+data write completes no later than the flag is written, and you would insert an
+acquire barrier between reading the flag and reading the data, to ensure that
+all the reads associated with the flag have completed.
+
+In this pattern you should always see a release barrier paired with an acquire
+barrier and you should gate the data reads/writes with a single flag variable.
+
+For more information on these semantics, take a look at the blog post:
+L<http://preshing.com/20120913/acquire-and-release-semantics>
+
+=head2 C<SDL_AtomicCAS( ... )>
+
+Set an atomic variable to a new value if it is currently an old value.
+
+    my $atomic = SDL2::atomic_t->new( { value => 100 } );
+    SDL_AtomicCAS( $atomic, 100, 2 );
+
+B<Note: If you don't know what this function is for, you shouldn't use it!>
+
+Expected parameters include:
+
+=over
+
+=item C<a> - a pointer to an L<SDL2::atomic_t> to be modified
+
+=item C<oldval> - the old value
+
+=item C<newval> - the new value
+
+=back
+
+Returns C<SDL_TRUE> if the atomic variable was set, C<SDL_FALSE> otherwise.
+
+=head2 C<SDL_AtomicSet( ... )>
+
+Set an atomic variable to a value.
+
+    my $atomic = SDL2::atomic_t->new({ value => 1 });
+    my $prev = SDL_AtomicSet( $atomic, 100 );
+
+This function also acts as a full memory barrier.
+
+B<Note: If you don't know what this function is for, you shouldn't use it!>
+
+Expected parameters include:
+
+=over
+
+=item C<a> - a pointer to an L<SDL2::atomic_t> structure to be modified
+
+=item C<v> - the desired value
+
+=back
+
+Returns the previous value of the atomic variable.
+
+=head2 C<SDL_AtomicGet( ... )>
+
+Get the value of an atomic variable.
+
+    my $atomic = SDL2::atomic_t->new({ value => 1 });
+    my $value = SDL_AtomicSet( $atomic );
+
+B<Note: If you don't know what this function is for, you shouldn't use it!>
+
+Expected parameters include:
+
+=over
+
+=item C<a> - a pointer to an L<SDL2::atomic_t> variable
+
+=back
+
+Returns the current value of an atomic variable.
+
+=head2 C<SDL_AtomicAdd( ... )>
+
+Add to an atomic variable.
+
+    my $atomic = SDL2::atomic_t->new({ value => 1 });
+    my $value = SDL_AtomicAdd( $atomic, 4 );
+
+This function also acts as a full memory barrier.
+
+B<Note: If you don't know what this function is for, you shouldn't use it!>
+
+=over
+
+=item C<a> - a pointer to an L<SDL2::atomic_t> variable to be modified
+
+=item C<v> - the desired value to add
+
+=back
+
+Returns the previous value of the atomic variable.
+
+=head2 C<SDL_AtomicIncRef( ... )>
+
+Increment an atomic variable.
+
+    my $atomic = SDL2::atomic_t->new({ value => 1 });
+    my $value = SDL_AtomicIncRef( $atomic );
+
+Use may be used as a reference counter.
+
+B<Note: If you don't know what this function is for, you shouldn't use it!>
+
+=over
+
+=item C<a> - a pointer to an L<SDL2::atomic_t> variable to increment
+
+=back
+
+Returns the previous value of the atomic variable.
+
+=head2 C<SDL_AtomicDecRef( ... )>
+
+Decrement an atomic variable.
+
+    my $atomic = SDL2::atomic_t->new({ value => 1 });
+    my $ok = SDL_AtomicDecRef( $atomic );
+
+Use may be used as a reference counter.
+
+B<Note: If you don't know what this function is for, you shouldn't use it!>
+
+=over
+
+=item C<a> - a pointer to an L<SDL2::atomic_t> variable to decrement
+
+=back
+
+Returns C<SDL_TRUE> if the variable reached zero after decrementing,
+C<SDL_FALSE> otherwise.
+
+=head1 Raw Audio Mixing
+
+These functions provide raw access to the audio mixing buffer for the SDL
+library.
+
+=head2 C<SDL_AudioCallback>
+
+This function is called when the audio device needs more data.
+
+Parameters to expect include:
+
+=over
+
+=item C<userdata> - an application-specific parameter saved in the L<SDL2::AudioSpec> structure.
+
+=item C<stream> - a pointer to the audio data buffer
+
+=item C<len> - the length of that buffer in bytes
+
+=back
+
+Once the callback returns, the buffer will no longer be valid. Sterio samples
+are stored in a C<LRLRLR> ordering.
+
+You may choose to avoid callbacks and use L<< C<SDL_QueueAudio( ...
+)>|/C<SDL_QueueAudio( ... )> >> instead, if you like. Just open your audio
+device as a NULL callback.
+
+=head2 C<SDL_AudioDeviceID>
+
+SDL Audio Device IDs.
+
+A successful call to L<< C<SDL_OpenAudio( ... )>|/C<SDL_OpenAudio( ... )> >> is
+always device id 1, and legacy SDL audio APIs assume you want this device ID.
+L<< C<SDL_OpenAudioDevice( ... )>|/C<SDL_OpenAudioDevice( ... )> >> calls
+always returns devices >= 2 on success. The legacy calls are good both for
+backwards compatibility and when you don't care about multiple, specific, or
+capture devices.
+
+=head2 C<SDL_GetNumAudioDrivers( )>
+
+Returns the number of audio drivers.
+
+    my $i = SDL_GetNumAudioDrivers( );
+
+=head2 C<SDL_GetAudioDriver( ... )>
+
+Returns the list of built in audio drivers, in the order that they were
+normally initialized by default.
+
+    for my $i (0 .. SDL_GetNumAudioDrivers() ) {
+        CORE::say SDL_GetAudioDriver( $i );
+    }
+
+Expected parameters include:
+
+=over
+
+=item C<index> - index of the desired audio driver
+
+=back
+
+Returns the name of the driver.
+
+=head2 C<SDL_AudioInit( ... )>
+
+    SDL_AudioInit( 'alsa' );
+
+This function is used internally, and should not be used unless you have a
+specific need to specify the audio driver you want to use. You should normally
+use L<< C<SDL_Init( ... )>|/C<SDL_Init( ... )> >> or L<< C<SDL_InitSubSystem(
+... )>|/C<SDL_InitSubSystem( ... )> >>.
+
+Expected parameters include:
+
+=over
+
+=item C<driver_name> - name of the driver to initialize
+
+=back
+
+Returns C<SDL_TRUE> on success.
+
+=head2 C<SDL_AudioQuit( )>
+
+    SDL_AudioQuit( )
+
+This function is used internally, and should not be used unless you have a
+specific need to specify the audio driver you want to use.
+
+=head2 C<SDL_GetCurrentAudioDriver( )>
+
+Get the name of the current audio driver.
+
+    my $driver = SDL_GetCurrentAudioDriver( );
+
+The returned string points to internal static memory and thus never becomes
+invalid, even if you quit the audio subsystem and initialize a new driver
+(although such a case would return a different static string from another call
+to this function, of course). As such, you should not modify or free the
+returned string.
+
+Returns the name of the current audio driver or NULL if no driver has been
+initialized.
+
+=head2 C<SDL_OpenAudio( ... )>
+
+This function is a legacy means of opening the audio device.
+
+    my $ret = SDL_OpenAudio( $desired, $obtained );
+
+This function remains for compatibility with SDL 1.2, but also because it's
+slightly easier to use than the new functions in SDL 2.0. The new, more
+powerful, and preferred way to do this is SDL_OpenAudioDevice().
+
+This function is roughly equivalent to:
+
+    SDL_OpenAudioDevice( (), 0, $desired, $obtained, SDL_AUDIO_ALLOW_ANY_CHANGE );
+
+With two notable exceptions:
+
+=over
+
+=item - If `obtained` is NULL, we use `desired` (and allow no changes), which means desired will be modified to have the correct values for silence, etc, and SDL will convert any differences between your app's specific request and the hardware behind the scenes.
+
+=item - The return value is always success or failure, and not a device ID, which means you can only have one device open at a time with this function.
+
+=back
+
+Expected parameters include:
+
+=over
+
+=item C<desired> - an L<SDL2::AudioSpec> structure representing the desired output format. Please refer to the SDL_OpenAudioDevice documentation for details on how to prepare this structure.
+
+=item C<obtained> - an L<SDL2::AudioSpec> structure filled in with the actual parameters, or NULL.
+
+=back
+
+This function opens the audio device with the desired parameters, nd returns
+C<0> if successful, placing the actual hardware parameters in the structure
+pointed to by C<obtained>.
+
+If C<obtained> is NULL, the audio data passed to the callback function will be
+guaranteed to be in the requested format, and will be automatically converted
+to the actual hardware audio format if necessary. If C<obtained> is NULL,
+C<desired> will have fields modified.
+
+This function returns a negative error code on failure to open the audio device
+or failure to set up the audio thread; call C<SDL_GetError( )> for more
+information.
+
+=head2 C<SDL_GetNumAudioDevices( ... )>
+
+Get the number of built-in audio devices.
+
+This function is only valid after successfully initializing the audio
+subsystem.
+
+Note that audio capture support is not implemented as of SDL 2.0.4, so the
+C<iscapture> parameter is for future expansion and should always be zero for
+now.
+
+This function will return -1 if an explicit list of devices can't be
+determined. Returning -1 is not an error. For example, if SDL is set up to talk
+to a remote audio server, it can't list every one available on the Internet,
+but it will still allow a specific host to be specified in L<<
+C<SDL_OpenAudioDevice( ... )>|/C<SDL_OpenAudioDevice( ... )> >>.
+
+In many common cases, when this function returns a value <= 0, it can still
+successfully open the default device (NULL for first argument of L<<
+C<SDL_OpenAudioDevice( ... )>|/C<SDL_OpenAudioDevice( ... )> >>).
+
+This function may trigger a complete redetect of available hardware.
+
+Expected parameters include:
+
+=over
+
+=item C<iscapture> - zero to request playback devices, non-zero to request recording devices
+
+=back
+
+Returns the number of available devices exposed by the current driver or C<-1>
+if an explicit list of devices can't be determined. A return value of C<-1>
+does not necessarily mean an error condition.
+
+=head2 C<SDL_GetAudioDeviceName( ... )>
+
+    my $name = SDL_GetAudioDeviceName( 0, 1 );
+
+Get the human-readable name of a specific audio device.
+
+This function is only valid after successfully initializing the audio
+subsystem. The values returned by this function reflect the latest call to L<<
+C<SDL_GetNumAudioDevices( )>|/C<SDL_GetNumAudioDevices( )> >>; re-call that
+function to redetect available hardware.
+
+The string returned by this function is UTF-8 encoded, read-only, and managed
+internally. You are not to free it. If you need to keep the string for any
+length of time, you should make your own copy of it, as it will be invalid next
+time any of several other SDL functions are called.
+
+Expected parameters include:
+
+=over
+
+=item C<index> - the index of the audio device; valid values range from C<0> to C<SDL_GetNumAudioDevices( ) - 1>
+
+=item C<iscapture> - non-zero to query the list of recording devices, zero to query the list of output devices
+
+=back
+
+Returns the name of the audio device at the requested index, or NULL on error.
+
+=head2 C<SDL_GetAudioDeviceSpec( ... )>
+
+Get the preferred audio format of a specific audio device.
+
+This function is only valid after a successfully initializing the audio
+subsystem. The values returned by this function reflect the latest call to
+SDL_GetNumAudioDevices(); re-call that function to redetect available hardware.
+
+C<spec> will be filled with the sample rate, sample format, and channel count.
+All other values in the structure are filled with 0. When the supported struct
+members are 0, SDL was unable to get the property from the backend.
+
+Expected parameters include:
+
+=over
+
+=item C<index> - the index of the audio device; valid values range from C<0> to C<SDL_GetNumAudioDevices() - 1>
+
+=item C<iscapture> - non-zero to query the list of recording devices, zero to query the list of output devices.
+
+=item C<spec> - the C<SDL2::AudioSpec> to be initialized by this function
+
+=back
+
+Returns C<0> on success, nonzero on error.
+
+=head2 C<SDL_OpenAudioDevice( ... )>
+
+Open a specific audio device.
+
+C<SDL_OpenAudio( ... )>, unlike this function, always acts on device ID 1. As
+such, this function will never return a 1 so as not to conflict with the legacy
+function.
+
+Please note that SDL 2.0 before 2.0.5 did not support recording; as such, this
+function would fail if `iscapture` was not zero. Starting with SDL 2.0.5,
+recording is implemented and this value can be non-zero.
+
+Passing in a C<device> name of NULL requests the most reasonable default (and
+is equivalent to what SDL_OpenAudio() does to choose a device). The C<device>
+name is a UTF-8 string reported by C<SDL_GetAudioDeviceName()>, but some
+drivers allow arbitrary and driver-specific strings, such as a hostname/IP
+address for a remote audio server, or a filename in the diskaudio driver.
+
+When filling in the desired audio spec structure:
+
+=over
+
+=item - C<< $desired->freq >> should be the frequency in sample-frames-per-second (Hz).
+
+=item - C<< $desired->format >> should be the audio format (`AUDIO_S16SYS`, etc).
+
+=item - C<< $desired->samples >> is the desired size of the audio buffer, in _sample frames_ (with stereo output, two samples--left and right--would make a single sample frame).
+
+This number should be a power of two, and may be adjusted by the audio driver
+to a value more suitable for the hardware.  Good values seem to range between
+512 and 8096 inclusive, depending on the application and CPU speed.  Smaller
+values reduce latency, but can lead to underflow if the application is doing
+heavy processing and cannot fill the audio buffer in time. Note that the number
+of sample frames is directly related to time by the following formula: C<ms =
+(sampleframes*1000)/freq>
+
+=item - C<< $desired->size >> is the size in _bytes_ of the audio buffer, and is
+calculated by C<SDL_OpenAudioDevice()>. You don't initialize this.
+
+=item - C<< $desired->silence >> is the value used to set the buffer to silence, and is calculated by SDL_OpenAudioDevice(). You don't initialize this.
+
+=item - C<< $desired->callback >> should be set to a function that will be called when the audio device is ready for more data.
+
+It is passed a pointer to the audio buffer, and the length in bytes of the
+audio buffer.
+
+This function usually runs in a separate thread, and so you should protect data
+structures that it accesses by calling C<SDL_LockAudioDevice()> and
+C<SDL_UnlockAudioDevice()> in your code. Alternately, you may pass a NULL
+pointer here, and call C<SDL_QueueAudio()> with some frequency, to queue more
+audio samples to be played (or for capture devices, call C<SDL_DequeueAudio()>
+with some frequency, to obtain audio samples).
+
+=item - C<< $desired->userdata >> is passed as the first parameter to your callback function. If you passed a NULL callback, this value is ignored.
+
+=back
+
+C<allowed_changes> can have the following flags OR'd together:
+
+=over
+
+=item C<SDL_AUDIO_ALLOW_FREQUENCY_CHANGE>
+
+=item C<SDL_AUDIO_ALLOW_FORMAT_CHANGE>
+
+=item C<SDL_AUDIO_ALLOW_CHANNELS_CHANGE>
+
+=item C<SDL_AUDIO_ALLOW_ANY_CHANGE>
+
+=back
+
+These flags specify how SDL should behave when a device cannot offer a specific
+feature. If the application requests a feature that the hardware doesn't offer,
+SDL will always try to get the closest equivalent.
+
+For example, if you ask for float32 audio format, but the sound card only
+supports int16, SDL will set the hardware to int16. If you had set
+C<SDL_AUDIO_ALLOW_FORMAT_CHANGE>, SDL will change the format in the C<obtained>
+structure. If that flag was *not* set, SDL will prepare to convert your
+callback's float32 audio to int16 before feeding it to the hardware and will
+keep the originally requested format in the C<obtained> structure.
+
+If your application can only handle one specific data format, pass a zero for
+C<allowed_changes> and let SDL transparently handle any differences.
+
+An opened audio device starts out paused, and should be enabled for playing by
+calling C<SDL_PauseAudioDevice($devid, 0)> when you are ready for your audio
+callback function to be called. Since the audio driver may modify the requested
+size of the audio buffer, you should allocate any local mixing buffers after
+you open the audio device.
+
+The audio callback runs in a separate thread in most cases; you can prevent
+race conditions between your callback and other threads without fully pausing
+playback with C<SDL_LockAudioDevice()>. For more information about the
+callback, see L<SDL2::AudioSpec>
+
+Expected parameters include:
+
+=over
+
+=item C<device> - a UTF-8 string reported by C<SDL_GetAudioDeviceName()> or a driver-specific name as appropriate. NULL requests the most reasonable default device
+
+=item C<iscapture> - non-zero to specify a device should be opened for recording, not playback
+
+=item C<desired> - an L<SDL2::AudioSpec> structure representing the desired output format; see C<SDL_OpenAudio()> for more information
+
+=item C<obtained> - an SDL_AudioSpec structure filled in with the actual output format; see C<SDL_OpenAudio()> for more information
+
+=item C<allowed_changes> - C<0>, or one or more flags OR'd together
+
+=back
+
+Returns a valid device ID that is > 0 on success or 0 on failure; call
+C<SDL_GetError( )> for more information.
+
+For compatibility with SDL 1.2, this will never return C<1>, since SDL reserves
+that ID for the legacy C<SDL_OpenAudio( )> function.
+
+=head2 C<SDL_GetAudioStatus( )>
+
+Get the current audio status for the current device.
+
+    my $status = SDL_GetAudioStatus( );
+
+Returns a L<< C<SDL_AudioStatus>|SDL2::Enum/C<:audioStatus> >> value.
+
+=head2 C<SDL_GetAudioDeviceStatus( ... )>
+
+Get the current audio status for the current device.
+
+    my $status = SDL_GetAudioStatus( 4 );
+
+Expected parameters include:
+
+=over
+
+=item C<dev> - Device id
+
+=back
+
+Returns a L<< C<SDL_AudioStatus>|SDL2::Enum/C<:audioStatus> >> value.
+
+=head2 C<SDL_PauseAudio( ... )>
+
+Pause the audio callback processing for the current device.
+
+    SDL_PauseAudio( 1 );
+
+This should be called with a parameter of C<0> after opening the audio device
+to start playing sound.  This is so you can safely initialize data for your
+callback function after opening the audio device. Silence will be written to
+the audio device during the pause.
+
+Expected parameters include:
+
+=over
+
+=item C<pause_on> - a boolean value
+
+=back
+
+=head2 C<SDL_PauseAudioDevice( ... )>
+
+Pause the audio callback processing for the given device.
+
+    SDL_PauseAudioDevice( 1 );
+
+This should be called with a parameter of C<0> after opening the audio device
+to start playing sound.  This is so you can safely initialize data for your
+callback function after opening the audio device. Silence will be written to
+the audio device during the pause.
+
+Expected parameters include:
+
+=over
+
+=item C<dev> - a device id
+
+=item C<pause_on> - a boolean value
+
+=back
+
+=head2 C<SDL_LoadWAV_RW( ... )>
+
+Load the audio data of a WAVE file into memory.
+
+    SDL_LoadWAV_RW(SDL_RWFromFile("sample.wav", "rb"), 1, $spec, $buf, $len);
+
+Loading a WAVE file requires C<src>, C<spec>, C<audio_buf> and C<audio_len> to
+be valid pointers. The entire data portion of the file is then loaded into
+memory and decoded if necessary.
+
+If C<freesrc> is non-zero, the data source gets automatically closed and freed
+before the function returns.
+
+Supported formats are RIFF WAVE files with the formats PCM (8, 16, 24, and 32
+bits), IEEE Float (32 bits), Microsoft ADPCM and IMA ADPCM (4 bits), and A-law
+and mu-law (8 bits). Other formats are currently unsupported and cause an
+error.
+
+If this function succeeds, the pointer returned by it is equal to C<spec> and
+the pointer to the audio data allocated by the function is written to
+C<audio_buf> and its length in bytes to C<audio_len>. The L<SDL2::AudioSpec>
+members C<freq>, C<channels>, and C<format> are set to the values of the audio
+data in the buffer. The C<samples> member is set to a sane default and all
+others are set to zero.
+
+It's necessary to use C<SDL_FreeWAV( )> to free the audio data returned in
+C<audio_buf> when it is no longer used.
+
+Because of the specification of the .WAV format, there are many problematic
+files in the wild that cause issues with strict decoders. To provide
+compatibility with these files, this decoder is lenient in regards to the
+truncation of the file, the fact chunk, and the size of the RIFF chunk. The
+hints C<SDL_HINT_WAVE_RIFF_CHUNK_SIZE>, C<SDL_HINT_WAVE_TRUNCATION>, and
+C<SDL_HINT_WAVE_FACT_CHUNK> can be used to tune the behavior of the loading
+process.
+
+Any file that is invalid (due to truncation, corruption, or wrong values in the
+headers), too big, or unsupported causes an error. Additionally, any critical
+I/O error from the data source will terminate the loading process with an
+error. The function returns NULL on error and in all cases (with the exception
+of `src` being NULL), an appropriate error message will be set.
+
+It is required that the data source supports seeking.
+
+Note that the C<SDL_LoadWAV( ... )> macro does this same thing for you, but in
+a less messy way:
+
+    SDL_LoadWAV("sample.wav", $spec, $buf, $len);
+
+Expected parameters include:
+
+=over
+
+=item C<src> - The data source for the WAVE data
+
+=item C<freesrc> - If non-zero, SDL will _always_ free the data source
+
+=item C<spec> - An L<SDL2::AudioSpec> that will be filled in with the wave file's format details
+
+=item C<audio_buf> - A pointer filled with the audio data, allocated by the function
+
+=item C<audio_len> - A pointer filled with the length of the audio data buffer in bytes
+
+=back
+
+This function, if successfully called, returns C<spec>, which will be filled
+with the audio data format of the wave source data. C<audio_buf> will be filled
+with a pointer to an allocated buffer containing the audio data, and
+C<audio_len> is filled with the length of that audio buffer in bytes.
+
+This function returns NULL if the .WAV file cannot be opened, uses an unknown
+data format, or is corrupt; call C<SDL_GetError( )> for more information.
+
+When the application is done with the data returned in C<audio_buf>, it should
+call C<SDL_FreeWAV( )> to dispose of it.
+
+=head2 C<SDL_LoadWAV( ... )>
+
+Loads a WAV from a file.
+
+    SDL_LoadWAV("sample.wav", $spec, $buf, $len);
+
+Expected parameters include:
+
+=over
+
+=item C<src> - The data source for the WAVE data
+
+=item C<spec> - An L<SDL2::AudioSpec> that will be filled in with the wave file's format details
+
+=item C<audio_buf> - A pointer filled with the audio data, allocated by the function
+
+=item C<audio_len> - A pointer filled with the length of the audio data buffer in bytes
+
+=back
+
+This is a wrapper for L<< C<SDL_LoadWAV_RW( ... )>|/C<SDL_LoadWAV_RW( ... )> >>
+and returns the same data.
+
+=head2 C<SDL_FreeWAV( ... )>
+
+Free data previously allocated with L<< C<SDL_LoadWAV( ... )>|/C<SDL_LoadWAV(
+... )> >> or L<< C<SDL_LoadWAV_RW( ... )>|/C<SDL_LoadWAV_RW( ... )> >>.
+
+    SDL_FreeWAV( $data );
+
+After a WAVE file has been opened with L<< C<SDL_LoadWAV( ...
+)>|/C<SDL_LoadWAV( ... )> >> or L<< C<SDL_LoadWAV_RW( ... )>|/C<SDL_LoadWAV_RW(
+... )> >>, its data can eventually be freed with C<SDL_FreeWAV( ... )>. It is
+safe to call this function with a NULL pointer.
+
+Expected parameters include:
+
+=over
+
+=item C<audio_buf> - a pointer to the buffer created by L<< C<SDL_LoadWAV( ... )>|/C<SDL_LoadWAV( ... )> >> or L<< C<SDL_LoadWAV_RW( ... )>|/C<SDL_LoadWAV_RW( ... )> >>
+
+=back
+
+=head2 C<SDL_BuildAudioCVT( ... )>
+
+Initialize an L<SDL2::AudioCVT> structure for conversion.
+
+
+
+Before an L<SDL2::AudioCVT> structure can be used to convert audio data it must
+be initialized with source and destination information.
+
+This function will zero out every field of the L<SDL2::AudioCVT>, so it must be
+called before the application fills in the final buffer information.
+
+Once this function has returned successfully, and reported that a conversion is
+necessary, the application fills in the rest of the fields in
+L<SDL2::AudioCVT>, now that it knows how large a buffer it needs to allocate,
+and then can call C<SDL_ConvertAudio( ... )> to complete the conversion.
+
+Expected parameters include:
+
+=over
+
+=item C<cvt> - an L<SDL2::AudioCVT> structure filled in with audio conversion information
+
+=item C<src_format> - the source format of the audio data; for more info see L<SDL2::AudioFormat>
+
+=item C<src_channels> - the number of channels in the source
+
+=item C<src_rate> - the frequency (sample-frames-per-second) of the source
+
+=item C<dst_format> - the destination format of the audio data; for more info see L<SDL2::AudioFormat>
+
+=item C<dst_channels> the number of channels in the destination
+
+=item C<dst_rate> - the frequency (sample-frames-per-second) of the destination
+
+=back
+
+Returns C<1> if the audio filter is prepared, C<0> if no conversion is needed,
+or a negative error code on failure; call L<< C<SDL_GetError(
+)>|/C<SDL_GetError( )> >> for more information.
+
+=head2 C<SDL_ConvertAudio( ... )>
+
+Convert audio data to a desired audio format.
+
+This function does the actual audio data conversion, after the application has
+called C<SDL_BuildAudioCVT( )> to prepare the conversion information and then
+filled in the buffer details.
+
+Once the application has initialized the C<cvt> structure using
+C<SDL_BuildAudioCVT( )>, allocated an audio buffer and filled it with audio
+data in the source format, this function will convert the buffer, in-place, to
+the desired format.
+
+The data conversion may go through several passes; any given pass may possibly
+temporarily increase the size of the data. For example, SDL might expand 16-bit
+data to 32 bits before resampling to a lower frequency, shrinking the data size
+after having grown it briefly. Since the supplied buffer will be both the
+source and destination, converting as necessary in-place, the application must
+allocate a buffer that will fully contain the data during its largest
+conversion pass. After C<SDL_BuildAudioCVT( )> returns, the application should
+set the C<< cvt->len >> field to the size, in bytes, of the source data, and
+allocate a buffer that is C<< cvt->len * cvt->len_mult >> bytes long for the
+C<buf> field.
+
+The source data should be copied into this buffer before the call to
+C<SDL_ConvertAudio( )>. Upon successful return, this buffer will contain the
+converted audio, and C<< cvt->len_cvt >> will be the size of the converted
+data, in bytes. Any bytes in the buffer past `cvt->len_cvt` are undefined once
+this function returns.
+
+=over
+
+=item C<cvt> - an L<SDL2::AudioCVT> structure that was previously set up by C<SDL_BuildAudioCVT( )>
+
+=back
+
+Returns C<0> if the conversion was completed successfully or a negative error
+code on failure; call L<< C<SDL_GetError( )>|/C<SDL_GetError( )> >> for more
+information.
+
+=head2 C<SDL_NewAudioStream( ... )>
+
+Create a new audio stream.
+
+Expected parameters include:
+
+=over
+
+=item C<src_format> - The format of the source audio
+
+=item C<src_channels> - The number of channels of the source audio
+
+=item C<src_rate> - The sampling rate of the source audio
+
+=item C<dst_format> - The format of the desired audio output
+
+=item C<dst_channels> - The number of channels of the desired audio output
+
+=item C<dst_rate> - The sampling rate of the desired audio output
+
+=back
+
+Returns C<0> on success, or C<-1> on error.
+
+=head2 C<SDL_AudioStreamPut( ... )>
+
+Add data to be converted/resampled to the stream.
+
+Expected parameters include:
+
+=over
+
+=item C<stream> - The stream the audio data is being added to
+
+=item C<buf> - A pointer to the audio data to add
+
+=item C<len> - The number of bytes to write to the stream
+
+=back
+
+Returns C<0> on success, or C<-1> on error.
+
+=head2 C<SDL_AudioStreamGet( ... )>
+
+Get converted/resampled data from the stream.
+
+Expected parameters include:
+
+=over
+
+=item C<stream> - The stream the audio is being requested from
+
+=item C<buf> - A buffer to fill with audio data
+
+=item C<len> - The maximum number of bytes to fill
+
+=back
+
+Returns the number of bytes read from the stream, or C<-1> on error.
+
+=head2 C<SDL_AudioStreamAvailable( ... )>
+
+Get the number of converted/resampled bytes available.
+
+    my $samples = SDL_AudioStreamAvailable( $stream );
+
+The stream may be buffering data behind the scenes until it has enough to
+resample correctly, so this number might be lower than what you expect, or even
+be zero. Add more data or flush the stream if you need the data now.
+
+Expected parameters include:
+
+=over
+
+=item C<stream> - The stream being queried
+
+=back
+
+Returns the number of samples.
+
+=head2 C<SDL_AudioStreamFlush( ... )>
+
+Tell the stream that you're done sending data, and anything being buffered
+should be converted/resampled and made available immediately.
+
+It is legal to add more data to a stream after flushing, but there will be
+audio gaps in the output. Generally this is intended to signal the end of
+input, so the complete output becomes available.
+
+Expected parameters include:
+
+=over
+
+=item C<stream> - An L<SDL2::AudioStream>
+
+=back
+
+Returns the number of samples.
+
+=head2 C<SDL_AudioStreamClear( ... )>
+
+Clear any pending data in the stream without converting it.
+
+Expected parameters include:
+
+=over
+
+=item C<stream> - The stream being cleared
+
+=back
+
+=head2 C<SDL_FreeAudioStream( ... )>
+
+Free an audio stream.
+
+Expected parameters include:
+
+=over
+
+=item C<stream> - The stream being freed
+
+=back
+
+=head2 C<SDL_MixAudio( ... )>
+
+This function is a legacy means of mixing audio.
+
+This function is equivalent to calling
+
+    SDL_MixAudioFormat( $dst, $src, $format, $len, $volume );
+
+where C<format> is the obtained format of the audio device from the legacy
+C<SDL_OpenAudio( ... )> function.
+
+Expected parameters include:
+
+=over
+
+=item C<dst> - the destination for the mixed audio
+
+=item C<src> - the source audio buffer to be mixed
+
+=item C<len> - the length of the audio buffer in bytes
+
+=item C<volume> - ranges from C<0 - 128>, and should be set to C<SDL_MIX_MAXVOLUME> for full audio volume
+
+=back
+
+=head2 C<SDL_MixAudioFormat( ... )>
+
+Mix audio data in a specified format.
+
+This takes an audio buffer C<src> of C<len> bytes of C<format> data and mixes
+it into C<dst>, performing addition, volume adjustment, and overflow clipping.
+The buffer pointed to by C<dst> must also be C<len> bytes of C<format> data.
+
+This is provided for convenience -- you can mix your own audio data.
+
+Do not use this function for mixing together more than two streams of sample
+data. The output from repeated application of this function may be distorted by
+clipping, because there is no accumulator with greater range than the input
+(not to mention this being an inefficient way of doing it).
+
+It is a common misconception that this function is required to write audio data
+to an output stream in an audio callback. While you can do that,
+C<SDL_MixAudioFormat( ... )> is really only needed when you're mixing a single
+audio stream with a volume adjustment.
+
+Expected parameters include:
+
+=over
+
+=item C<dst> - the destination for the mixed audio
+
+=item C<src> - the source audio buffer to be mixed
+
+=item C<format> - the SDL_AudioFormat structure representing the desired audio format
+
+=item C<len> - the length of the audio buffer in bytes
+
+=item C<volume> - ranges from C<0 - 128>, and should be set to C<SDL_MIX_MAXVOLUME> for full audio volume
+
+=back
+
+=head2 C<SDL_QueueAudio( ... )>
+
+Queue more audio on non-callback devices.
+
+If you are looking to retrieve queued audio from a non-callback capture device,
+you want C<SDL_DequeueAudio( ... )> instead. C<SDL_QueueAudio( ... )> will
+return C<-1> to signify an error if you use it with capture devices.
+
+SDL offers two ways to feed audio to the device: you can either supply a
+callback that SDL triggers with some frequency to obtain more audio (pull
+method), or you can supply no callback, and then SDL will expect you to supply
+data at regular intervals (push method) with this function.
+
+There are no limits on the amount of data you can queue, short of exhaustion of
+address space. Queued data will drain to the device as necessary without
+further intervention from you. If the device needs audio but there is not
+enough queued, it will play silence to make up the difference. This means you
+will have skips in your audio playback if you aren't routinely queueing
+sufficient data.
+
+This function copies the supplied data, so you are safe to free it when the
+function returns. This function is thread-safe, but queueing to the same device
+from two threads at once does not promise which buffer will be queued first.
+
+You may not queue audio on a device that is using an application-supplied
+callback; doing so returns an error. You have to use the audio callback or
+queue audio with this function, but not both.
+
+You should not call C<SDL_LockAudio( ... )> on the device before queueing; SDL
+handles locking internally for this function.
+
+Expected parameters include:
+
+=over
+
+=item C<dev> - the device ID to which we will queue audio
+
+=item C<data> - the data to queue to the device for later playback
+
+=item C<len> - the number of bytes (not samples!) to which C<data> points
+
+=back
+
+Returns C<0> on success or a negative error code on failure; call
+C<SDL_GetError( )> for more information.
+
+=head2 C<SDL_DequeueAudio( ... )>
+
+Dequeue more audio on non-callback devices.
+
+If you are looking to queue audio for output on a non-callback playback device,
+you want C<SDL_QueueAudio( ... )> instead. C<SDL_DequeueAudio( ... )> will
+always return C<0> if you use it with playback devices.
+
+SDL offers two ways to retrieve audio from a capture device: you can either
+supply a callback that SDL triggers with some frequency as the device records
+more audio data, (push method), or you can supply no callback, and then SDL
+will expect you to retrieve data at regular intervals (pull method) with this
+function.
+
+There are no limits on the amount of data you can queue, short of exhaustion of
+address space. Data from the device will keep queuing as necessary without
+further intervention from you. This means you will eventually run out of memory
+if you aren't routinely dequeueing data.
+
+Capture devices will not queue data when paused; if you are expecting to not
+need captured audio for some length of time, use C<SDL_PauseAudioDevice( )> to
+stop the capture device from queueing more data. This can be useful during,
+say, level loading times. When unpaused, capture devices will start queueing
+data from that point, having flushed any capturable data available while
+paused.
+
+This function is thread-safe, but dequeueing from the same device from two
+threads at once does not promise which thread will dequeue data first.
+
+You may not dequeue audio from a device that is using an application-supplied
+callback; doing so returns an error. You have to use the audio callback, or
+dequeue audio with this function, but not both.
+
+You should not call C<SDL_LockAudio( ... )> on the device before dequeueing;
+SDL handles locking internally for this function.
+
+Expected parameters include:
+
+=over
+
+=item C<dev> - the device ID from which we will dequeue audio
+
+=item C<data> - a pointer into where audio data should be copied
+
+=item C<len> - the number of bytes (not samples!) to which (data) points
+
+=back
+
+Returns the number of bytes dequeued, which could be less than requested; call
+C<SDL_GetError( )> for more information.
+
+=head2 C<SDL_GetQueuedAudioSize( ... )>
+
+Get the number of bytes of still-queued audio.
+
+For playback devices: this is the number of bytes that have been queued for
+playback with C<SDL_QueueAudio( )>, but have not yet been sent to the hardware.
+
+Once we've sent it to the hardware, this function can not decide the exact byte
+boundary of what has been played. It's possible that we just gave the hardware
+several kilobytes right before you called this function, but it hasn't played
+any of it yet, or maybe half of it, etc.
+
+For capture devices, this is the number of bytes that have been captured by the
+device and are waiting for you to dequeue. This number may grow at any time, so
+this only informs of the lower-bound of available data.
+
+You may not queue or dequeue audio on a device that is using an
+application-supplied callback; calling this function on such a device always
+returns C<0>. You have to use the audio callback or queue audio, but not both.
+
+You should not call C<SDL_LockAudio( )> on the device before querying; SDL
+handles locking internally for this function.
+
+Expected parameters:
+
+=over
+
+=item C<dev> - the device ID of which we will query queued audio size
+
+=back
+
+Returns the number of bytes (not samples!) of queued audio.
+
+=head2 C<SDL_ClearQueuedAudio( ... )>
+
+Drop any queued audio data waiting to be sent to the hardware.
+
+Immediately after this call, C<SDL_GetQueuedAudioSize( )> will return C<0>. For
+output devices, the hardware will start playing silence if more audio isn't
+queued. For capture devices, the hardware will start filling the empty queue
+with new data if the capture device isn't paused.
+
+This will not prevent playback of queued audio that's already been sent to the
+hardware, as we can not undo that, so expect there to be some fraction of a
+second of audio that might still be heard. This can be useful if you want to,
+say, drop any pending music or any unprocessed microphone input during a level
+change in your game.
+
+You may not queue or dequeue audio on a device that is using an
+application-supplied callback; calling this function on such a device always
+returns 0. You have to use the audio callback or queue audio, but not both.
+
+You should not call C<SDL_LockAudio( )> on the device before clearing the
+queue; SDL handles locking internally for this function.
+
+Expected parameters include:
+
+=over
+
+=item C<dev> - the device ID of which to clear the audio queue
+
+=back
+
+This function always succeeds and thus returns void.
+
+=head2 C<SDL_CloseAudio( )>
+
+
+=head2 C<SDL_CloseAudioDevice( ... )>
+
+Expected parameters include:
+
+=over
+
+=item C<dev> - device id
+
+=back
+
+=head1 Audio lock functions
+
+The lock manipulated by these functions protects the callback function. During
+a L<< C<SDL_LockAudio( )>|/C<SDL_LockAudio( )> >>/L<< <SDL_UnlockAudio(
+)>|/<SDL_UnlockAudio( )> >> pair, you can be guaranteed that the callback
+function is not running. Do not call these from the callback function or you
+will cause deadlock.
+
+=head2 C<SDL_LockAudio( )>
+
+
+
+=head2 C<SDL_LockAudioDevice( ... )>
+
+Expected parameters include:
+
+=over
+
+=item C<dev> - device id
+
+=back
+
+=head2 C<SDL_UnlockAudio( )>
+
+
+
+=head2 C<SDL_UnlockAudioDevice( ... )>
+
+Expected parameters include:
+
+=over
+
+=item C<dev> - device id
+
+=back
+
+=head1 Blend mode for renderers
+
+The functions C<SDL_SetRenderDrawBlendMode( ... )> and
+C<SDL_SetTextureBlendMode( ... )> accept the L<SDL2::BlendMode> returned by
+this function if the renderer supports it.
+
+=head2 C<SDL_ComposeCustomBlendMode( ... )>
+
+Compose a custom blend mode for renderers.
+
+A blend mode controls how the pixels from a drawing operation (source) get
+combined with the pixels from the render target (destination). First, the
+components of the source and destination pixels get multiplied with their blend
+factors. Then, the blend operation takes the two products and calculates the
+result that will get stored in the render target.
+
+Expressed in pseudocode, it would look like this:
+
+    $dstRGB = colorOperation( $srcRGB * $srcColorFactor, $dstRGB * $dstColorFactor );
+    $dstA   = alphaOperation( $srcA * $srcAlphaFactor, $dstA * $dstAlphaFactor );
+
+Where the functions C<colorOperation( $src, $dst)> and C<alphaOperation( $src,
+$dst )> can return one of the following:
+
+=over
+
+=item - C<$src + $dst>
+
+=item - C<$src - $dst>
+
+=item - C<$dst - $src>
+
+=item - C<min($src, $dst)>
+
+=item - C<max($src, $dst)>
+
+=back
+
+The red, green, and blue components are always multiplied with the first,
+second, and third components of the C<SDL_BlendFactor>, respectively. The
+fourth component is not used.
+
+The alpha component is always multiplied with the fourth component of the
+C<SDL_BlendFactor>. The other components are not used in the alpha calculation.
+
+Support for these blend modes varies for each renderer. To check if a specific
+C<SDL_BlendMode> is supported, create a renderer and pass it to either
+C<SDL_SetRenderDrawBlendMode> or C<SDL_SetTextureBlendMode>. They will return
+with an error if the blend mode is not supported.
+
+This list describes the support of custom blend modes for each renderer in SDL
+2.0.6. All renderers support the four blend modes listed in the
+C<SDL_BlendMode> enumeration.
+
+=over
+
+=item B<direct3d>: Supports C<SDL_BLENDOPERATION_ADD> with all factors.
+
+=item B<direct3d11>: Supports all operations with all factors. However, some factors produce unexpected results with C<SDL_BLENDOPERATION_MINIMUM> and C<SDL_BLENDOPERATION_MAXIMUM>.
+
+=item B<opengl>: Supports the C<SDL_BLENDOPERATION_ADD> operation with all factors. OpenGL versions 1.1, 1.2, and 1.3 do not work correctly with SDL 2.0.6.
+
+=item B<opengles>: Supports the C<SDL_BLENDOPERATION_ADD> operation with all factors. Color and alpha factors need to be the same. OpenGL ES 1 implementation specific: May also support C<SDL_BLENDOPERATION_SUBTRACT> and C<SDL_BLENDOPERATION_REV_SUBTRACT>. May support color and alpha operations being different from each other. May support color and alpha factors being different from each other.
+
+=item B<opengles2>: Supports the C<SDL_BLENDOPERATION_ADD>, C<SDL_BLENDOPERATION_SUBTRACT>, C<SDL_BLENDOPERATION_REV_SUBTRACT> operations with all factors.
+
+=item B<psp>: No custom blend mode support.
+
+=item B<software>: No custom blend mode support.
+
+=back
+
+Some renderers do not provide an alpha component for the default render target.
+The C<SDL_BLENDFACTOR_DST_ALPHA> and C<SDL_BLENDFACTOR_ONE_MINUS_DST_ALPHA>
+factors do not have an effect in this case.
+
+Expected parameters include:
+
+=over
+
+=item C<srcColorFactor> - the SDL_BlendFactor applied to the red, green, and blue components of the source pixels
+
+=item C<dstColorFactor> - the SDL_BlendFactor applied to the red, green, and blue components of the destination pixels
+
+=item C<colorOperation> - the SDL_BlendOperation used to combine the red, green, and blue components of the source and destination pixels
+
+=item C<srcAlphaFactor> - the C<SDL_BlendFactor> applied to the alpha component of the source pixels
+
+=item C<dstAlphaFactor> - the C<SDL_BlendFactor> applied to the alpha component of the destination pixels
+
+=item C<alphaOperation> - the C<SDL_BlendOperation> used to combine the alpha component of the source and destination pixels
+
+=back
+
+Returns an C<SDL_BlendMode> that represents the chosen factors and operations.
+
+
+
 
 =head1 Configuration Variables
 
@@ -5936,7 +7306,9 @@ AVAudioSessionCategoryPlayback VoIP OpenGLES opengl opengles opengles2 spammy
 popup tooltip taskbar subwindow high-dpi subpixel borderless draggable viewport
 user-resizable resizable srcA srcC GiB dstrect rect subrectangle pseudocode ms
 verystrict resampler eglSwapBuffers backbuffer scancode unhandled lifespan wgl
-glX framerate deadzones vice-versa kmsdrm jp CAMetalLayer
+glX framerate deadzones vice-versa kmsdrm jp CAMetalLayer lockless spinlocks
+spinlock redetect dequeueing dequeue capturable unpaused src iscapture nd
+diskaudio underflow dequeued
 
 =end stopwords
 

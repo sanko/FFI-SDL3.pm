@@ -36,6 +36,8 @@ Sanko Robinson E<lt>sanko@cpan.orgE<gt>
 
 =begin stopwords
 
+struct enum
+
 =end stopwords
 
 =cut

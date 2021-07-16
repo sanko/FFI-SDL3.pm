@@ -37,6 +37,8 @@ Sanko Robinson E<lt>sanko@cpan.orgE<gt>
 
 =begin stopwords
 
+binarization
+
 =end stopwords
 
 =cut
