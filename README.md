@@ -1542,6 +1542,127 @@ Expected parameters include:
 
 - `ptr` - The pointer, returned from [`SDL_SIMDAlloc( ... )`](#sdl_simdalloc) or [`SDL_SIMDRealloc( ... )`](#sdl_simdrealloc), to deallocate. NULL is a legal no-op.
 
+# Error Handling
+
+Functions in this category provide simple error message routines for SDL. [`SDL_GetError( )`](#sdl_geterror) can be called for almost all SDL
+functions to determine what problems are occurring. Check the wiki page of each
+specific SDL function to see whether [`SDL_GetError( )`](#sdl_geterror) is meaningful for them or not. These functions may be imported with the
+`:error` tag.
+
+The SDL error messages are in English.
+
+## `SDL_SetError( ... )`
+
+Set the SDL error message for the current thread.
+
+Calling this function will replace any previous error message that was set.
+
+This function always returns `-1`, since SDL frequently uses `-1` to signify
+an failing result, leading to this idiom:
+
+        if ($error_code) {
+                return SDL_SetError( 'This operation has failed: %d', $error_code );
+        }
+
+Expected parameters:
+
+- `fmt`
+
+    a `printf( )`-style message format string
+
+- `@params`
+
+    additional parameters matching % tokens in the `fmt` string, if any
+
+## `SDL_GetError( )`
+
+Retrieve a message about the last error that occurred on the current thread.
+
+        warn SDL_GetError( );
+
+It is possible for multiple errors to occur before calling `SDL_GetError( )`.
+Only the last error is returned.
+
+The message is only applicable when an SDL function has signaled an error. You
+must check the return values of SDL function calls to determine when to
+appropriately call `SDL_GetError( )`. You should **not** use the results of
+`SDL_GetError( )` to decide if an error has occurred! Sometimes SDL will set
+an error string even when reporting success.
+
+SDL will **not** clear the error string for successful API calls. You **must**
+check return values for failure cases before you can assume the error string
+applies.
+
+Error strings are set per-thread, so an error set in a different thread will
+not interfere with the current thread's operation.
+
+The returned string is internally allocated and must not be freed by the
+application.
+
+Returns a message with information about the specific error that occurred, or
+an empty string if there hasn't been an error message set since the last call
+to [`SDL_ClearError( )`](#sdl_clearerror). The message is only
+applicable when an SDL function has signaled an error. You must check the
+return values of SDL function calls to determine when to appropriately call
+`SDL_GetError( )`.
+
+## `SDL_GetErrorMsg( ... )`
+
+Get the last error message that was set for the current thread.
+
+        my $x;
+        warn SDL_GetErrorMsg($x, 300);
+
+This allows the caller to copy the error string into a provided buffer, but
+otherwise operates exactly the same as [`SDL_GetError( )`](#sdl_geterror).
+
+- `errstr`
+
+    A buffer to fill with the last error message that was set for the current
+    thread
+
+- `maxlen`
+
+    The size of the buffer pointed to by the errstr parameter
+
+Returns the pointer passed in as the `errstr` parameter.
+
+## `SDL_ClearError( )`
+
+Clear any previous error message for this thread.
+
+    SDL_ClearError( );
+
+## `SDL_Error( ... )`
+
+Set the current error to a member of the [`<SDL_errorcode`](https://metacpan.org/pod/SDL2%3A%3AEnum#errorcode) enum.
+
+    SDL_Error( SDL_EFWRITE );
+
+Unconditionally returns `-1`.
+
+# Event loop
+
+## `SDL_PumpEvents( )`
+
+Pump the event loop, gathering events from the input devices.
+
+    SDL_PumpEvents( );
+
+This function updates the event queue and internal input device state.
+
+**WARNING**: This should only be run in the thread that initialized the
+video subsystem, and for extra safety, you should consider only doing those
+things on the main thread in any case.
+
+`SDL_PumpEvents( )` gathers all the pending input information from devices and
+places it in the event queue. Without calls to `SDL_PumpEvents( )` no events
+would ever be placed on the queue. Often the need for calls to
+`SDL_PumpEvents( )` is hidden from the user since [`SDL_PollEvent( )`](#sdl_pollevent) and
+[`SDL_WaitEvent( )`](#sdl_waitevent) implicitly call `SDL_PumpEvents( )`. However, if you are not
+polling or waiting for events (e.g. you are filtering them), then you must
+call `SDL_PumpEvents( )` to force an event queue update.
+
 # Configuration Variables
 
 This category contains functions to set and get configuration hints, as well as
@@ -1697,95 +1818,6 @@ Clear all hints.
         SDL_ClearHints( );
 
 This function is automatically called during [`SDL_Quit( )`](#sdl_quit).
-
-# Error Handling
-
-Functions in this category provide simple error message routines for SDL. [`SDL_GetError( )`](#sdl_geterror) can be called for almost all SDL
-functions to determine what problems are occurring. Check the wiki page of each
-specific SDL function to see whether [`SDL_GetError( )`](#sdl_geterror) is meaningful for them or not. These functions may be imported with the
-`:error` tag.
-
-The SDL error messages are in English.
-
-## `SDL_SetError( ... )`
-
-Set the SDL error message for the current thread.
-
-Calling this function will replace any previous error message that was set.
-
-This function always returns `-1`, since SDL frequently uses `-1` to signify
-an failing result, leading to this idiom:
-
-        if ($error_code) {
-                return SDL_SetError( 'This operation has failed: %d', $error_code );
-        }
-
-Expected parameters:
-
-- `fmt`
-
-    a `printf( )`-style message format string
-
-- `@params`
-
-    additional parameters matching % tokens in the `fmt` string, if any
-
-## `SDL_GetError( )`
-
-Retrieve a message about the last error that occurred on the current thread.
-
-        warn SDL_GetError( );
-
-It is possible for multiple errors to occur before calling `SDL_GetError( )`.
-Only the last error is returned.
-
-The message is only applicable when an SDL function has signaled an error. You
-must check the return values of SDL function calls to determine when to
-appropriately call `SDL_GetError( )`. You should **not** use the results of
-`SDL_GetError( )` to decide if an error has occurred! Sometimes SDL will set
-an error string even when reporting success.
-
-SDL will **not** clear the error string for successful API calls. You **must**
-check return values for failure cases before you can assume the error string
-applies.
-
-Error strings are set per-thread, so an error set in a different thread will
-not interfere with the current thread's operation.
-
-The returned string is internally allocated and must not be freed by the
-application.
-
-Returns a message with information about the specific error that occurred, or
-an empty string if there hasn't been an error message set since the last call
-to [`SDL_ClearError( )`](#sdl_clearerror). The message is only
-applicable when an SDL function has signaled an error. You must check the
-return values of SDL function calls to determine when to appropriately call
-`SDL_GetError( )`.
-
-## `SDL_GetErrorMsg( ... )`
-
-Get the last error message that was set for the current thread.
-
-        my $x;
-        warn SDL_GetErrorMsg($x, 300);
-
-This allows the caller to copy the error string into a provided buffer, but
-otherwise operates exactly the same as [`SDL_GetError( )`](#sdl_geterror).
-
-- `errstr`
-
-    A buffer to fill with the last error message that was set for the current
-    thread
-
-- `maxlen`
-
-    The size of the buffer pointed to by the errstr parameter
-
-Returns the pointer passed in as the `errstr` parameter.
-
-## `SDL_ClearError( )`
-
-Clear any previous error message for this thread.
 
 # Log Handling
 

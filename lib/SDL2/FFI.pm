@@ -193,7 +193,23 @@ END
         SDL_SIMDAlloc           => [ ['int'],             'opaque' ],
         SDL_SIMDRealloc         => [ [ 'opaque', 'int' ], 'opaque' ],
         SDL_SIMDFree            => [ ['opaque'] ],
-        };
+        },
+        error => {
+        SDL_SetError => [
+            ['string'] => 'int' =>
+                sub ( $inner, $fmt, @params ) { $inner->( sprintf( $fmt, @params ) ); }
+        ],
+        SDL_GetError    => [ [] => 'string' ],
+        SDL_GetErrorMsg => [
+            [ 'string', 'int' ] => 'string' => sub ( $inner, $errstr, $maxlen = length $errstr ) {
+                $_[1] = ' ' x $maxlen if !defined $_[1] || length $errstr != $maxlen;
+                $inner->( $_[1], $maxlen );
+            }
+        ],
+        SDL_ClearError => [ [] => 'void' ],
+        SDL_Error      => [ ['SDL_errorcode'], 'int' ]
+        },
+        events => { SDL_PumpEvents => [ [] ] };
     #
     ffi->type( '(opaque,string,string,string)->void' => 'SDL_HintCallback' );
     attach hints => {
@@ -221,21 +237,7 @@ END
             }
         ],
         SDL_ClearHints => [ [] => 'void' ],
-        },
-        error => {
-        SDL_SetError => [
-            ['string'] => 'int' =>
-                sub ( $inner, $fmt, @params ) { $inner->( sprintf( $fmt, @params ) ); }
-        ],
-        SDL_GetError    => [ [] => 'string' ],
-        SDL_GetErrorMsg => [
-            [ 'string', 'int' ] => 'string' => sub ( $inner, $errstr, $maxlen = length $errstr ) {
-                $_[1] = ' ' x $maxlen if !defined $_[1] || length $errstr != $maxlen;
-                $inner->( $_[1], $maxlen );
-            }
-        ],
-        SDL_ClearError => [ [] => 'void' ]
-        };
+    };
     ffi->type( '(opaque,int,int,string)->void' => 'SDL_LogOutputFunction' );
     attach log => {
         SDL_LogSetAllPriority  => [ ['SDL_LogPriority'] ],
@@ -2931,10 +2933,139 @@ Expected parameters include:
 
 =back
 
+=head1 Error Handling
 
+Functions in this category provide simple error message routines for SDL. L<<
+C<SDL_GetError( )>|/C<SDL_GetError( )> >> can be called for almost all SDL
+functions to determine what problems are occurring. Check the wiki page of each
+specific SDL function to see whether L<< C<SDL_GetError( )>|/C<SDL_GetError( )>
+>> is meaningful for them or not. These functions may be imported with the
+C<:error> tag.
 
+The SDL error messages are in English.
 
+=head2 C<SDL_SetError( ... )>
 
+Set the SDL error message for the current thread.
+
+Calling this function will replace any previous error message that was set.
+
+This function always returns C<-1>, since SDL frequently uses C<-1> to signify
+an failing result, leading to this idiom:
+
+	if ($error_code) {
+		return SDL_SetError( 'This operation has failed: %d', $error_code );
+	}
+
+Expected parameters:
+
+=over
+
+=item C<fmt>
+
+a C<printf( )>-style message format string
+
+=item C<@params>
+
+additional parameters matching % tokens in the C<fmt> string, if any
+
+=back
+
+=head2 C<SDL_GetError( )>
+
+Retrieve a message about the last error that occurred on the current thread.
+
+	warn SDL_GetError( );
+
+It is possible for multiple errors to occur before calling C<SDL_GetError( )>.
+Only the last error is returned.
+
+The message is only applicable when an SDL function has signaled an error. You
+must check the return values of SDL function calls to determine when to
+appropriately call C<SDL_GetError( )>. You should B<not> use the results of
+C<SDL_GetError( )> to decide if an error has occurred! Sometimes SDL will set
+an error string even when reporting success.
+
+SDL will B<not> clear the error string for successful API calls. You B<must>
+check return values for failure cases before you can assume the error string
+applies.
+
+Error strings are set per-thread, so an error set in a different thread will
+not interfere with the current thread's operation.
+
+The returned string is internally allocated and must not be freed by the
+application.
+
+Returns a message with information about the specific error that occurred, or
+an empty string if there hasn't been an error message set since the last call
+to L<< C<SDL_ClearError( )>|/C<SDL_ClearError( )> >>. The message is only
+applicable when an SDL function has signaled an error. You must check the
+return values of SDL function calls to determine when to appropriately call
+C<SDL_GetError( )>.
+
+=head2 C<SDL_GetErrorMsg( ... )>
+
+Get the last error message that was set for the current thread.
+
+	my $x;
+	warn SDL_GetErrorMsg($x, 300);
+
+This allows the caller to copy the error string into a provided buffer, but
+otherwise operates exactly the same as L<< C<SDL_GetError( )>|/C<SDL_GetError(
+)> >>.
+
+=over
+
+=item C<errstr>
+
+A buffer to fill with the last error message that was set for the current
+thread
+
+=item C<maxlen>
+
+The size of the buffer pointed to by the errstr parameter
+
+=back
+
+Returns the pointer passed in as the C<errstr> parameter.
+
+=head2 C<SDL_ClearError( )>
+
+Clear any previous error message for this thread.
+
+    SDL_ClearError( );
+
+=head2 C<SDL_Error( ... )>
+
+Set the current error to a member of the L<<
+C<<SDL_errorcode>|SDL2::Enum/C<:errorcode> >> enum.
+
+    SDL_Error( SDL_EFWRITE );
+
+Unconditionally returns C<-1>.
+
+=head1 Event loop
+
+=head2 C<SDL_PumpEvents( )>
+
+Pump the event loop, gathering events from the input devices.
+
+    SDL_PumpEvents( );
+
+This function updates the event queue and internal input device state.
+
+B<WARNING>: This should only be run in the thread that initialized the video
+subsystem, and for extra safety, you should consider only doing those things on
+the main thread in any case.
+
+C<SDL_PumpEvents( )> gathers all the pending input information from devices and
+places it in the event queue. Without calls to C<SDL_PumpEvents( )> no events
+would ever be placed on the queue. Often the need for calls to
+C<SDL_PumpEvents( )> is hidden from the user since L<< C<SDL_PollEvent(
+)>|/C<SDL_PollEvent( )> >> and L<< C<SDL_WaitEvent( )>|/C<SDL_WaitEvent( )> >>
+implicitly call C<SDL_PumpEvents( )>. However, if you are not polling or
+waiting for events (e.g. you are filtering them), then you must call
+C<SDL_PumpEvents( )> to force an event queue update.
 
 
 
@@ -3158,106 +3289,6 @@ Clear all hints.
 
 This function is automatically called during L<< C<SDL_Quit( )>|/C<SDL_Quit( )>
 >>.
-
-=head1 Error Handling
-
-Functions in this category provide simple error message routines for SDL. L<<
-C<SDL_GetError( )>|/C<SDL_GetError( )> >> can be called for almost all SDL
-functions to determine what problems are occurring. Check the wiki page of each
-specific SDL function to see whether L<< C<SDL_GetError( )>|/C<SDL_GetError( )>
->> is meaningful for them or not. These functions may be imported with the
-C<:error> tag.
-
-The SDL error messages are in English.
-
-=head2 C<SDL_SetError( ... )>
-
-Set the SDL error message for the current thread.
-
-Calling this function will replace any previous error message that was set.
-
-This function always returns C<-1>, since SDL frequently uses C<-1> to signify
-an failing result, leading to this idiom:
-
-	if ($error_code) {
-		return SDL_SetError( 'This operation has failed: %d', $error_code );
-	}
-
-Expected parameters:
-
-=over
-
-=item C<fmt>
-
-a C<printf( )>-style message format string
-
-=item C<@params>
-
-additional parameters matching % tokens in the C<fmt> string, if any
-
-=back
-
-=head2 C<SDL_GetError( )>
-
-Retrieve a message about the last error that occurred on the current thread.
-
-	warn SDL_GetError( );
-
-It is possible for multiple errors to occur before calling C<SDL_GetError( )>.
-Only the last error is returned.
-
-The message is only applicable when an SDL function has signaled an error. You
-must check the return values of SDL function calls to determine when to
-appropriately call C<SDL_GetError( )>. You should B<not> use the results of
-C<SDL_GetError( )> to decide if an error has occurred! Sometimes SDL will set
-an error string even when reporting success.
-
-SDL will B<not> clear the error string for successful API calls. You B<must>
-check return values for failure cases before you can assume the error string
-applies.
-
-Error strings are set per-thread, so an error set in a different thread will
-not interfere with the current thread's operation.
-
-The returned string is internally allocated and must not be freed by the
-application.
-
-Returns a message with information about the specific error that occurred, or
-an empty string if there hasn't been an error message set since the last call
-to L<< C<SDL_ClearError( )>|/C<SDL_ClearError( )> >>. The message is only
-applicable when an SDL function has signaled an error. You must check the
-return values of SDL function calls to determine when to appropriately call
-C<SDL_GetError( )>.
-
-=head2 C<SDL_GetErrorMsg( ... )>
-
-Get the last error message that was set for the current thread.
-
-	my $x;
-	warn SDL_GetErrorMsg($x, 300);
-
-This allows the caller to copy the error string into a provided buffer, but
-otherwise operates exactly the same as L<< C<SDL_GetError( )>|/C<SDL_GetError(
-)> >>.
-
-=over
-
-=item C<errstr>
-
-A buffer to fill with the last error message that was set for the current
-thread
-
-=item C<maxlen>
-
-The size of the buffer pointed to by the errstr parameter
-
-=back
-
-Returns the pointer passed in as the C<errstr> parameter.
-
-=head2 C<SDL_ClearError( )>
-
-Clear any previous error message for this thread.
 
 =head1 Log Handling
 
