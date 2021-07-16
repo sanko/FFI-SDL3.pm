@@ -165,16 +165,35 @@ END
             'SDL_BlendMode'
         ],
     };
-    attach clipboard => {
+    attach
+        clipboard => {
         SDL_SetClipboardText => [ ['string'], 'int' ],
         SDL_GetClipboardText => [ [],         'string' ],
         SDL_HasClipboardText => [ [],         'SDL_bool' ]
-    };
-
-    # define atomic => [
-    #        [SDL_AtomicIncRef => sub ($a) { SDL_AtomicAdd($a, 1) }],
-    #        [SDL_AtomicDecRef => sub ($a) { SDL_AtomicAdd($a, -1) }]
-    #    ];
+        },
+        cpuinfo => {
+        SDL_GetCPUCount         => [ [],                  'int' ],
+        SDL_GetCPUCacheLineSize => [ [],                  'int' ],
+        SDL_HasRDTSC            => [ [],                  'SDL_bool' ],
+        SDL_HasAltiVec          => [ [],                  'SDL_bool' ],
+        SDL_HasMMX              => [ [],                  'SDL_bool' ],
+        SDL_Has3DNow            => [ [],                  'SDL_bool' ],
+        SDL_HasSSE              => [ [],                  'SDL_bool' ],
+        SDL_HasSSE2             => [ [],                  'SDL_bool' ],
+        SDL_HasSSE3             => [ [],                  'SDL_bool' ],
+        SDL_HasSSE41            => [ [],                  'SDL_bool' ],
+        SDL_HasSSE42            => [ [],                  'SDL_bool' ],
+        SDL_HasAVX              => [ [],                  'SDL_bool' ],
+        SDL_HasAVX2             => [ [],                  'SDL_bool' ],
+        SDL_HasAVX512F          => [ [],                  'SDL_bool' ],
+        SDL_HasARMSIMD          => [ [],                  'SDL_bool' ],
+        SDL_HasNEON             => [ [],                  'SDL_bool' ],
+        SDL_GetSystemRAM        => [ [],                  'int' ],
+        SDL_SIMDGetAlignment    => [ [],                  'int' ],
+        SDL_SIMDAlloc           => [ ['int'],             'opaque' ],
+        SDL_SIMDRealloc         => [ [ 'opaque', 'int' ], 'opaque' ],
+        SDL_SIMDFree            => [ ['opaque'] ],
+        };
     #
     ffi->type( '(opaque,string,string,string)->void' => 'SDL_HintCallback' );
     attach hints => {
@@ -739,23 +758,6 @@ END
     ffi->attach( SDL_CreateRGBSurface =>
             [ 'uint32', 'int', 'int', 'int', 'uint32', 'uint32', 'uint32', 'uint32' ] =>
             'SDL_Surface' );
-
-    # https://wiki.libsdl.org/CategoryCPU
-    ffi->attach( SDL_GetCPUCacheLineSize => []                 => 'int' );
-    ffi->attach( SDL_GetCPUCount         => []                 => 'int' );
-    ffi->attach( SDL_GetSystemRAM        => []                 => 'int' );
-    ffi->attach( SDL_Has3DNow            => []                 => 'bool' );
-    ffi->attach( SDL_HasAVX              => []                 => 'bool' );
-    ffi->attach( SDL_HasAVX2             => []                 => 'bool' );
-    ffi->attach( SDL_HasAltiVec          => []                 => 'bool' );
-    ffi->attach( SDL_HasMMX              => []                 => 'bool' );
-    ffi->attach( SDL_HasRDTSC            => []                 => 'bool' );
-    ffi->attach( SDL_HasSSE              => []                 => 'bool' );
-    ffi->attach( SDL_HasSSE2             => []                 => 'bool' );
-    ffi->attach( SDL_HasSSE3             => []                 => 'bool' );
-    ffi->attach( SDL_HasSSE41            => []                 => 'bool' );
-    ffi->attach( SDL_HasSSE42            => []                 => 'bool' );
-    ffi->attach( SDL_GetPowerInfo        => [ 'int*', 'int*' ] => 'int' );
 
     # https://wiki.libsdl.org/CategoryStandard
     ffi->attach( SDL_acos => ['double'] => 'double' );
@@ -2645,6 +2647,330 @@ Query whether the clipboard exists and contains a non-empty text string.
     }
 
 Returns C<SDL_TRUE> if the clipboard has text, or C<SDL_FALSE> if it does not.
+
+=head1 CPU Feature Detection
+
+These functions may be imported with the C<:cpuinfo> tag.
+
+=head2 C<SDL_GetCPUCount( )>
+
+Get the number of CPU cores available.
+
+    my $cores = SDL_GetCPUCount( );
+
+Returns the total number of logical CPU cores. On CPUs that include
+technologies such as hyperthreading, the number of logical cores may be more
+than the number of physical cores.
+
+=head2 C<SDL_GetCPUCacheLineSize( )>
+
+Determine the L1 cache line size of the CPU.
+
+    my $cache = SDL_GetCPUCacheLineSize( );
+
+This is useful for determining multi-threaded structure padding or SIMD
+prefetch sizes.
+
+Returns the L1 cache line size of the CPU, in bytes.
+
+=head2 C<SDL_HasRDTSC( )>
+
+Determine whether the CPU has the RDTSC instruction.
+
+    my $rdtsc = SDL_HasRDTSC( );
+
+This always returns false on CPUs that aren't using Intel instruction sets.
+
+Returns C<SDL_TRUE> if the CPU has the RDTSC instruction or C<SDL_FALSE> if
+not.
+
+=head2 C<SDL_HasAltiVec( )>
+
+Determine whether the CPU has AltiVec features.
+
+    my $altiVec = SDL_HasAltiVec( );
+
+This always returns false on CPUs that aren't using PowerPC instruction sets.
+
+Returns C<SDL_TRUE> if the CPU has AltiVec features or C<SDL_FALSE> if not.
+
+=head2 C<SDL_HasMMX( )>
+
+Determine whether the CPU has MMX features.
+
+    my $mmx = SDL_HasMMX( );
+
+This always returns false on CPUs that aren't using Intel instruction sets.
+
+Returns C<SDL_TRUE> if the CPU has MMX features or C<SDL_FALSE> if not.
+
+=head2 C<SDL_Has3DNow( )>
+
+Determine whether the CPU has 3DNow! features.
+
+    my $_3dnow = SDL_Has3DNow( );
+
+This always returns false on CPUs that aren't using AMD instruction sets.
+
+Returns C<SDL_TRUE> if the CPU has 3DNow! features or C<SDL_FALSE> if not.
+
+=head2 C<SDL_HasSSE( )>
+
+Determine whether the CPU has SSE features.
+
+    my $sse = SDL_HasSSE( );
+
+This always returns false on CPUs that aren't using Intel instruction sets.
+
+Returns C<SDL_TRUE> if the CPU has SSE features or C<SDL_FALSE> if not.
+
+=head2 C<SDL_HasSSE2( )>
+
+Determine whether the CPU has SSE2 features.
+
+    my $sse2 = SDL_HasSSE2( );
+
+This always returns false on CPUs that aren't using Intel instruction sets.
+
+Returns C<SDL_TRUE> if the CPU has SSE2 features or C<SDL_FALSE> if not.
+
+=head2 C<SDL_HasSSE3( )>
+
+Determine whether the CPU has SSE3 features.
+
+    my $sse3 = SDL_HasSSE3( );
+
+This always returns false on CPUs that aren't using Intel instruction sets.
+
+Returns C<SDL_TRUE> if the CPU has SSE3 features or C<SDL_FALSE> if not.
+
+=head2 C<SDL_HasSSE41( )>
+
+Determine whether the CPU has SSE4.1 features.
+
+    my $sse41 = SDL_HasSSE41( );
+
+This always returns false on CPUs that aren't using Intel instruction sets.
+
+Returns C<SDL_TRUE> if the CPU has SSE4.1 features or C<SDL_FALSE> if not.
+
+=head2 C<SDL_HasSSE42( )>
+
+Determine whether the CPU has SSE4.2 features.
+
+    my $sse42 = SDL_HasSSE42( );
+
+This always returns false on CPUs that aren't using Intel instruction sets.
+
+Returns C<SDL_TRUE> if the CPU has SSE4.2 features or C<SDL_FALSE> if not.
+
+=head2 C<SDL_HasAVX( )>
+
+Determine whether the CPU has AVX features.
+
+    my $avx = SDL_HasAVX( );
+
+This always returns false on CPUs that aren't using Intel instruction sets.
+
+Returns C<SDL_TRUE> if the CPU has AVX features or C<SDL_FALSE> if not.
+
+=head2 C<SDL_HasAVX2( )>
+
+Determine whether the CPU has AVX2 features.
+
+    my $avx2 = SDL_HasAVX2( );
+
+This always returns false on CPUs that aren't using Intel instruction sets.
+
+Returns C<SDL_TRUE> if the CPU has AVX2 features or C<SDL_FALSE> if not.
+
+=head2 C<SDL_HasAVX512F( )>
+
+Determine whether the CPU has AVX-512F (foundation) features.
+
+    my $avx512 = SDL_HasAVX512F( );
+
+This always returns false on CPUs that aren't using Intel instruction sets.
+
+Returns C<SDL_TRUE> if the CPU has AVX-512F features or C<SDL_FALSE> if not.
+
+=head2 C<SDL_HasARMSIMD( )>
+
+Determine whether the CPU has ARM SIMD (ARMv6) features.
+
+    my $arm6 = SDL_HasARMSIMD( );
+
+This is different from ARM NEON, which is a different instruction set.
+
+This always returns false on CPUs that aren't using ARM instruction sets.
+
+Returns C<SDL_TRUE> if the CPU has ARM SIMD features or C<SDL_FALSE> if not.
+
+=head2 C<SDL_HasNEON( )>
+
+Determine whether the CPU has NEON (ARM SIMD) features.
+
+    my $neon = SDL_HasNEON( );
+
+This always returns false on CPUs that aren't using ARM instruction sets.
+
+Returns C<SDL_TRUE> if the CPU has ARM NEON features or C<SDL_FALSE> if not.
+
+=head2 C<SDL_GetSystemRAM( )>
+
+Get the amount of RAM configured in the system.
+
+    my $mb = SDL_GetSystemRAM( );
+
+Returns the amount of RAM configured in the system in MB.
+
+=head2 C<SDL_SIMDGetAlignment( )>
+
+Report the alignment this system needs for SIMD allocations.
+
+    my $size = SDL_SIMDGetAlignment( );
+
+This will return the minimum number of bytes to which a pointer must be aligned
+to be compatible with SIMD instructions on the current machine. For example, if
+the machine supports SSE only, it will return 16, but if it supports AVX-512F,
+it'll return 64 (etc). This only reports values for instruction sets SDL knows
+about, so if your SDL build doesn't have L<< C<SDL_HasAVX512F(
+)>|/C<SDL_HasAVX512F( )> >>, then it might return 16 for the SSE support it
+sees and not 64 for the AVX-512 instructions that exist but SDL doesn't know
+about. Plan accordingly.
+
+Returns alignment in bytes needed for available, known SIMD instructions.
+
+=head2 C<SDL_SIMDAlloc( ... )>
+
+Allocate memory in a SIMD-friendly way.
+
+    my $ptr = SDL_SIMDAlloc( 1024 * 64 );
+
+This will allocate a block of memory that is suitable for use with SIMD
+instructions. Specifically, it will be properly aligned and padded for the
+system's supported vector instructions.
+
+The memory returned will be padded such that it is safe to read or write an
+incomplete vector at the end of the memory block. This can be useful so you
+don't have to drop back to a scalar fallback at the end of your SIMD processing
+loop to deal with the final elements without overflowing the allocated buffer.
+
+You must free this memory with L<< C<SDL_FreeSIMD( )>|/C<SDL_FreeSIMD( )> >>,
+not L<< C<SDL_free( ... )>|/C<SDL_free( ... )> >> C<undef>, variable scope
+tricks, etc.
+
+Note that SDL will only deal with SIMD instruction sets it is aware of; for
+example, SDL 2.0.8 knows that SSE wants 16-byte vectors (L<< C<SDL_HasSSE(
+)>|/C<SDL_HasSSE( )> >>), and AVX2 wants 32 bytes (L<< C<SDL_HasAVX2(
+)>|/C<SDL_HasAVX2( )> >>), but doesn't know that AVX-512 wants 64. To be clear:
+if you can't decide to use an instruction set with an C<SDL_Has*( )> function,
+don't use that instruction set with memory allocated through here.
+
+C<SDL_AllocSIMD( 0 )> will return a non-NULL pointer, assuming the system isn't
+out of memory, but you are not allowed to dereference it (because you only own
+zero bytes of that buffer).
+
+Expected parameters include:
+
+=over
+
+=item C<len> - The length, in bytes, of the block to allocate. The actual allocated block might be larger due to padding, etc.
+
+=back
+
+Returns a pointer to newly-allocated block, NULL if out of memory.
+
+=head2 C<SDL_SIMDRealloc( ... )>
+
+Reallocate memory obtained from L<< C<SDL_SIMDAlloc( ... )>|/C<SDL_SIMDAlloc(
+... )> >>.
+
+    $ptr = SDL_SIMDRealloc( $ptr, 1024 * 32 );
+
+It is not valid to use this function on a pointer from anything but L<<
+C<SDL_SIMDAlloc( ... )>|/C<SDL_SIMDAlloc( ... )> >>. It can't be used on
+pointers from malloc, realloc, SDL_malloc, memalign, new, etc.
+
+Expected parameters include:
+
+=over
+
+=item C<mem> - The pointer obtained from L<< C<SDL_SIMDAlloc( ... )>|/C<SDL_SIMDAlloc( ... )> >>. This function also accepts NULL, at which point this function is the same as calling L<< C<SDL_SIMDAlloc( ... )>|/C<SDL_SIMDAlloc( ... )> >> with a NULL pointer.
+
+=item C<len> - The length, in bytes, of the block to allocated. The actual allocated block might be larger due to padding, etc. Passing C<0> will return a non-NULL pointer, assuming the system isn't out of memory.
+
+=back
+
+Returns a pointer to newly-reallocated block, NULL if out of memory.
+
+=head2 C<SDL_SIMDFree( )>
+
+Deallocate memory obtained from L<< C<SDL_SIMDAlloc( ... )>|/C<SDL_SIMDAlloc(
+... )> >>.
+
+    SDL_SIMDFree( $ptr );
+
+It is not valid to use this function on a pointer from anything but L<<
+C<SDL_SIMDAlloc( ... )>|/C<SDL_SIMDAlloc( ... )> >> or L<< C<SDL_SIMDRealloc(
+... )>|/C<SDL_SIMDRealloc( ... )> >>. It can't be used on pointers from malloc,
+realloc, SDL_malloc, memalign, new, etc.
+
+However, C<SDL_SIMDFree( undef )> is a legal no-op.
+
+The memory pointed to by C<ptr> is no longer valid for access upon return, and
+may be returned to the system or reused by a future allocation. The pointer
+passed to this function is no longer safe to dereference once this function
+returns, and should be discarded.
+
+Expected parameters include:
+
+=over
+
+=item C<ptr> - The pointer, returned from L<< C<SDL_SIMDAlloc( ... )>|/C<SDL_SIMDAlloc( ... )> >> or L<< C<SDL_SIMDRealloc( ... )>|/C<SDL_SIMDRealloc( ... )> >>, to deallocate. NULL is a legal no-op.
+
+=back
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -7358,7 +7684,8 @@ user-resizable resizable srcA srcC GiB dstrect rect subrectangle pseudocode ms
 verystrict resampler eglSwapBuffers backbuffer scancode unhandled lifespan wgl
 glX framerate deadzones vice-versa kmsdrm jp CAMetalLayer lockless spinlocks
 spinlock redetect dequeueing dequeue capturable unpaused src iscapture nd
-diskaudio underflow dequeued
+diskaudio underflow dequeued realloc memalign (ARMv6) deallocate hyperthreading
+prefetch 3DNow PowerPC
 
 =end stopwords
 
