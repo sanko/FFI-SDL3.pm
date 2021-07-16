@@ -1237,6 +1237,45 @@ Expected parameters include:
 
 Returns an `SDL_BlendMode` that represents the chosen factors and operations.
 
+# Clipboard
+
+Functions in this section expose the clipboard. SDL's video subsystem must be
+initialized to get or modify clipboard text.
+
+## `SDL_SetClipboardText( ... )`
+
+Put UTF-8 text into the clipboard.
+
+    SDL_SetClipboardText( 'Hello, world!' );
+
+- `text` - the text to store in the clipboard
+
+Returns `0` on success or a negative error code on failure; call
+`SDL_GetError( )` for more information.
+
+## `SDL_GetClipboardText( )`
+
+Get UTF-8 text from the clipboard, which must be freed with `SDL_free( )`.
+
+    my $clipboard = SDL_GetClipboardText( );
+
+This functions returns NULL if there was not enough memory left for a copy of
+the clipboard's content.
+
+Returns the clipboard text on success or NULL on failure; call `SDL_GetError(
+)` for more information. Caller must call `SDL_free( )` on the returned
+pointer when done with it.
+
+## `SDL_HasClipboardText( )`
+
+Query whether the clipboard exists and contains a non-empty text string.
+
+    if ( SDL_HasClipboardText( ) ) {
+        ...
+    }
+
+Returns `SDL_TRUE` if the clipboard has text, or `SDL_FALSE` if it does not.
+
 # Configuration Variables
 
 This category contains functions to set and get configuration hints, as well as

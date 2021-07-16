@@ -7,7 +7,7 @@ package SDL2::Enum {
     use SDL2::Utils;
 
     # Basics
-    enum SDL_bool => [ [ SDL_FALSE => !1 ], [ SDL_TRUE => 1 ] ];
+    enum SDL_bool => [ [ SDL_FALSE => !1 ], [ SDL_TRUE => !!1 ] ];
 
     # https://github.com/libsdl-org/SDL/blob/main/include/SDL.h
     define init => [
