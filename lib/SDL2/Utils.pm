@@ -4,7 +4,7 @@ package SDL2::Utils {
     use strictures 2;
     use experimental 'signatures';
     use base 'Exporter::Tiny';
-    our @EXPORT = qw[attach define deprecate has enum ffi];
+    our @EXPORT = qw[attach define deprecate has enum ffi is];
     use Alien::libsdl2;
     use FFI::CheckLib;
     use FFI::Platypus 1.46;
@@ -13,11 +13,13 @@ package SDL2::Utils {
     use FFI::C::Def;
     use FFI::C::ArrayDef;
     use FFI::C::StructDef;
+    use FFI::C::UnionDef;
     use FFI::Platypus::Closure;
 
     sub deprecate ($str) {
         warnings::warn( 'deprecated', $str ) if warnings::enabled('deprecated');
     }
+    ddx( Alien::libsdl2->dynamic_libs );
 
     sub ffi () {
         CORE::state $ffi;
@@ -28,6 +30,7 @@ package SDL2::Utils {
                 lib          => [ Alien::libsdl2->dynamic_libs ]
             );
             FFI::C->ffi($ffi);
+            $ffi->bundle;
         }
         $ffi;
     }
@@ -75,11 +78,20 @@ package SDL2::Utils {
                 #warn sprintf 'ffi->attach( %s => %s);', $func,
                 #    Data::Dump::dump( @{ $args{$tag}{$func} } )
                 #    if ref $args{$tag}{$func}[1] && ref $args{$tag}{$func}[1] eq 'ARRAY';
-                ffi->attach( [ $func => $package . '::' . $func ] => @{ $args{$tag}{$func} } );
-                push @{ $SDL2::FFI::EXPORT_TAGS{$tag} }, $func;
+                my $perl = $func;
+                $perl =~ s[^Bundle_][];
+                ffi->attach( [ $func => $package . '::' . $perl ] => @{ $args{$tag}{$func} } );
+                push @{ $SDL2::FFI::EXPORT_TAGS{$tag} }, $perl;
             }
         }
     }
+    my %is;
+
+    sub is ($is) {
+        my ($package) = caller;
+        $is{$package} = $is;
+    }
+    sub get_is ($package) { $is{$package} // '' }
 
     sub has (%args) {    # Should be hash-like
         my ($package) = caller;
@@ -92,13 +104,14 @@ package SDL2::Utils {
         #   -f sub ($package) { $package =~ m[::(.+)]; './lib/SDL2/' . $1 . '.pod' }
         #        ->($class) ? '' : ' (undocumented)'
         #);
-        FFI::C::StructDef->new(
+        my @args = (
             ffi,
             name     => $type,       # C type
             class    => $package,    # package
             nullable => 1,
             members  => \@_          # Keep order rather than use %args
         );
+        get_is($package) eq 'Union' ? FFI::C::UnionDef->new(@args) : FFI::C::StructDef->new(@args);
     }
 
     sub define (%args) {

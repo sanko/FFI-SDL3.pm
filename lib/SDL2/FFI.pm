@@ -48,7 +48,6 @@ package SDL2::FFI 0.06 {
     use SDL2::RWops;
     use SDL2::Sensor;
     use SDL2::WindowShapeMode;
-    use SDL2::Finger;
     #
     use Data::Dump;
 
@@ -722,24 +721,66 @@ END
         SDL_RenderGetMetalLayer          => [ ['SDL_Renderer'],                      'opaque' ],
         SDL_RenderGetMetalCommandEncoder => [ ['SDL_Renderer'],                      'opaque' ]
     };
-
-    #ffi->type( '(uint32, opaque)->uint32' => 'SDL_TimerCallback' );
-    ffi->type( '(uint32,opaque)->uint32' => 'SDL_TimerCallback' );
-    ffi->type( 'int'                     => 'SDL_TimerID' );
+    ffi->type( '(opaque, int, string)->int' => 'my_closure_type' );
+    ffi->type( '(uint32,opaque)->uint32'    => 'SDL_TimerCallback' );
+    ffi->type( 'int'                        => 'SDL_TimerID' );
+    my %_timers;
     attach timer => {
         SDL_GetTicks                => [ [], 'uint32' ],
         SDL_GetPerformanceCounter   => [ [], 'uint64' ],
         SDL_GetPerformanceFrequency => [ [], 'uint64' ],
         SDL_Delay                   => [ ['uint32'] ],
-        SDL_AddTimer                => [
-            [ 'uint32', 'SDL_TimerCallback', 'opaque' ] => 'SDL_TimerID' =>
-                sub ( $xsub, $interval, $callback, $userdata = () ) {
-                my $cb = FFI::Platypus::Closure->new($callback);
-                $cb->sticky;
-                $xsub->( $interval, $cb, $userdata );
+        Bundle_SDL_AddTimer         => [
+            [ 'uint32', 'SDL_TimerCallback', 'opaque' ],
+            'SDL_TimerID',
+            sub ( $inner, $delay, $code, $params = () ) {
+
+                #my $cb = ref $code eq 'CODE' ? ffi->closure($code) : $code;
+                my $cb = ffi->closure(
+                    sub {
+                        my ( $delay, $etc ) = @_;
+                        my $retval = $code->( $delay, $params );
+                        $retval;
+                    }
+                );
+
+                #$cb->sticky;
+                my $id = $inner->( $delay, $cb, undef );
+                $_timers{$id} = $cb;    # Store reference
+
+                #warn 'added: ' . $id;
+                return $id;
             }
         ],
-        SDL_RemoveTimer => [ ['uint32'] => 'bool' ],
+
+        #SDL_AddTimer => [[ 'uint32', 'SDL_TimerCallback', 'opaque*' ], 'uint32'        => sub
+        #	( $inner, $time, $code, $args =() )
+        #		{
+        #
+        #                 my $cb    = ffi->closure(
+        #					$code
+        #                    #sub {
+        #                    #    my ( $delay, $etc ) = @_;
+        #					#	my $retval = $code->( $delay, $args );
+        #                    #     $retval;
+        #                    #}
+        #                );
+        #				$cb->sticky;
+        #                my $id = $inner->( $time, $cb);
+        #                $_timers{$id} = $cb;    #Timer->new(cb => $cb, id => $id );
+        #                return $id;
+        #            }],
+        Bundle_SDL_RemoveTimer => [
+            ['SDL_TimerID'] => 'SDL_bool' => sub ( $inner, $id ) {
+
+                #warn 'remove: ' . $id;
+                my $retval = $inner->($id);
+
+                #$_timers{$id}->unstick;
+                delete $_timers{$id};
+                return $retval;
+            }
+        ]
     };
 
     # Everything below this line will be rewritten!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -785,7 +826,7 @@ END
         ],
     ];
     attach future => {
-        SDL_FillRect => [ [ 'SDL_Surface', 'opaque', 'uint32' ], 'int' ],
+        SDL_FillRect => [ [ 'SDL_Surface', 'opaque*', 'uint32' ], 'int' ],
         SDL_MapRGB   => [
             [ 'SDL_PixelFormat', 'uint8', 'uint8', 'uint8' ] => 'uint32' =>
                 sub ( $inner, $format, $r, $g, $b ) {
@@ -796,25 +837,50 @@ END
     };
     ffi->type( '(opaque, opaque)->int' => 'SDL_EventFilter' );
     attach events => {
-        SDL_PeepEvents =>
-            [ [ 'SDL_Event', 'int', 'SDL_EventAction', 'uint32', 'uint32' ] => 'int' ],
-        SDL_HasEvent         => [ ['uint32']             => 'bool' ],
-        SDL_HasEvents        => [ [ 'uint32', 'uint32' ] => 'bool' ],
-        SDL_FlushEvent       => [ ['uint32'] ],
-        SDL_FlushEvents      => [ [ 'uint32', 'uint32' ] ],
-        SDL_PollEvent        => [ ['SDL_Event']          => 'int' ],
-        SDL_WaitEvent        => [ ['SDL_Event']          => 'int' ],
-        SDL_WaitEventTimeout => [ [ 'SDL_Event', 'int' ] => 'int' ],
-        SDL_PushEvent        => [ ['SDL_Event']          => 'int' ],
-        SDL_SetEventFilter   => [ [ 'SDL_EventFilter', 'opaque' ] ],
-        SDL_GetEventFilter   => [ [ 'SDL_EventFilter', 'opaque' ] => 'bool' ],
-        SDL_AddEventWatch    => [ [ 'SDL_EventFilter', 'opaque' ] ],
-        SDL_DelEventWatch    => [ [ 'SDL_EventFilter', 'opaque' ] ],
-        SDL_FilterEvents     => [ [ 'SDL_EventFilter', 'opaque' ] ]
+        SDL_PeepEvents => [
+            [ 'SDL_Event', 'int', 'SDL_EventAction', 'uint32', 'uint32' ] => 'int' =>
+                sub ( $inner, @etc ) { SDL_Yield(); $inner->(@etc) }
+        ],
+        SDL_HasEvent =>
+            [ ['uint32'] => 'bool' => sub ( $inner, @etc ) { SDL_Yield(); $inner->(@etc) } ],
+        SDL_HasEvents => [
+            [ 'uint32', 'uint32' ] => 'bool' => sub ( $inner, @etc ) { SDL_Yield(); $inner->(@etc) }
+        ],
+        SDL_FlushEvent  => [ ['uint32'] => sub ( $inner, @etc ) { SDL_Yield(); $inner->(@etc) } ],
+        SDL_FlushEvents =>
+            [ [ 'uint32', 'uint32' ] => sub ( $inner, @etc ) { SDL_Yield(); $inner->(@etc) } ],
+        SDL_PollEvent =>
+            [ ['SDL_Event'] => 'int' => sub ( $inner, @etc ) { SDL_Yield(); $inner->(@etc) } ],
+        SDL_WaitEvent =>
+            [ ['SDL_Event'] => 'int' => sub ( $inner, @etc ) { SDL_Yield(); $inner->(@etc) } ],
+        SDL_WaitEventTimeout => [
+            [ 'SDL_Event', 'int' ] => 'int' => sub ( $inner, @etc ) { SDL_Yield(); $inner->(@etc) }
+        ],
+        SDL_PushEvent =>
+            [ ['SDL_Event'] => 'int' => sub ( $inner, @etc ) { SDL_Yield(); $inner->(@etc) } ],
+        SDL_SetEventFilter => [
+            [ 'SDL_EventFilter', 'opaque' ] => sub ( $inner, @etc ) { SDL_Yield(); $inner->(@etc) }
+        ],
+        SDL_GetEventFilter => [
+            [ 'SDL_EventFilter', 'opaque' ] => 'bool' =>
+                sub ( $inner, @etc ) { SDL_Yield(); $inner->(@etc) }
+        ],
+        SDL_AddEventWatch => [
+            [ 'SDL_EventFilter', 'opaque' ] => sub ( $inner, @etc ) { SDL_Yield(); $inner->(@etc) }
+        ],
+        SDL_DelEventWatch => [
+            [ 'SDL_EventFilter', 'opaque' ] => sub ( $inner, @etc ) { SDL_Yield(); $inner->(@etc) }
+        ],
+        SDL_FilterEvents => [
+            [ 'SDL_EventFilter', 'opaque' ] => sub ( $inner, @etc ) { SDL_Yield(); $inner->(@etc) }
+        ],
+        #
+        SDL_EventState => [
+            [ 'uint32', 'int' ], 'uint8' => sub ( $inner, @etc ) { SDL_Yield(); $inner->(@etc) }
+        ]
     };
     #
     #
-    ffi->attach( SDL_EventState => [ 'uint32', 'int' ] => 'uint8' );
     sub SDL_GetEventState ($type) { SDL_EventState( $type, SDL_QUERY ) }
     ffi->attach( SDL_RegisterEvents => ['int'] => 'uint32' );
 
@@ -1043,6 +1109,12 @@ END
         use SDL2::Utils;
         has;
     };
+
+    # bundled code testing
+    my $holder;
+    attach
+        debug  => { Bundle_SDL_PrintEvent => [ ['SDL_Event'] ], },
+        events => { Bundle_SDL_Yield      => [ [] ], };
 
     #warn SDL2::SDLK_UP();
     #warn SDL2::SDLK_DOWN();

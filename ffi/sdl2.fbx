@@ -1,0 +1,24 @@
+use strict;
+use warnings;
+use Alien::libsdl2;
+use Config;
+
+my $cflags  = `perl -MExtUtils::Embed -e ccopts -e ldopts`;
+ warn $cflags;
+ warn $Config{libpth};
+
+my $args = {
+  alien   => ['Alien::libsdl2'],
+  cflags  => [
+  '-rdynamic',
+  $cflags,
+  '-I' . $Config{archlibexp} . '/CORE/',
+  '-L' . $Config{archlibexp} . '/CORE/',
+   ],
+  source  => ['ffi/*.c'],
+  libs    => [Alien::libsdl2->dynamic_libs], #.  '  ' . Alien::libsdl2->libs,
+  verbose => 2
+};
+use Data::Dump;
+ddx $args;
+$args;
