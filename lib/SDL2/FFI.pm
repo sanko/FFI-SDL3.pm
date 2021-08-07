@@ -726,6 +726,7 @@ END
     ffi->type( '(uint32,opaque)->uint32'    => 'SDL_TimerCallback' );
     ffi->type( 'int'                        => 'SDL_TimerID' );
     my %_timers;
+    END { %_timers = () }
     attach timer => {
         SDL_GetTicks                => [ [], 'uint32' ],
         SDL_GetPerformanceCounter   => [ [], 'uint64' ],

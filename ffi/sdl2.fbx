@@ -3,20 +3,20 @@ use warnings;
 use Alien::libsdl2;
 use Config;
 
-my $cflags  = `perl -MExtUtils::Embed -e ccopts -e ldopts`;
- warn $cflags;
- warn $Config{libpth};
+#my $cflags  = `perl -MExtUtils::Embed -e ccopts -e ldopts`;
 
 my $args = {
   alien   => ['Alien::libsdl2'],
   cflags  => [
-  '-rdynamic',
-  $cflags,
+  Alien::libsdl2->cflags,
+  #'-rdynamic',
+  #$cflags,
+  '-I' . Alien::libsdl2->dist_dir . '/include/SDL2/',
   '-I' . $Config{archlibexp} . '/CORE/',
-  '-L' . $Config{archlibexp} . '/CORE/',
+  #'-L' . $Config{archlibexp} . '/CORE/',
    ],
   source  => ['ffi/*.c'],
-  libs    => [Alien::libsdl2->dynamic_libs], #.  '  ' . Alien::libsdl2->libs,
+  libs    => [Alien::libsdl2->libs], #.  '  ' . Alien::libsdl2->libs,
   verbose => 2
 };
 use Data::Dump;
