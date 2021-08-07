@@ -53,6 +53,7 @@ Sanko Robinson E<lt>sanko@cpan.orgE<gt>
 
 =begin stopwords
 
+touchpad
 
 =end stopwords
 

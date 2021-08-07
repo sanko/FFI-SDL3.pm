@@ -19,7 +19,7 @@ package SDL2::Utils {
     sub deprecate ($str) {
         warnings::warn( 'deprecated', $str ) if warnings::enabled('deprecated');
     }
-    ddx( Alien::libsdl2->dynamic_libs );
+    #ddx( Alien::libsdl2->dynamic_libs );
 
     sub ffi () {
         CORE::state $ffi;

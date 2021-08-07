@@ -1,7 +1,7 @@
 //#define PERL_NO_GET_CONTEXT 1
-#include <SDL2/SDL.h>
-#include <SDL2/SDL_events.h>
-#include <SDL2/SDL_stdinc.h>
+#include <SDL.h>
+#include <SDL_events.h>
+#include <SDL_stdinc.h>
 #include <ffi_platypus_bundle.h>
 
 #include <EXTERN.h> /* from the Perl distribution     */
@@ -427,7 +427,6 @@ Uint32 c_callback(Uint32 interval, void *param) {
 }
 
 SDL_TimerID Bundle_SDL_AddTimer(int delay, SDL_TimerCallback cb, void *params) {
-
   return SDL_AddTimer(delay, c_callback, cb);
 }
 

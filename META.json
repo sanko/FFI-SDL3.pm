@@ -28,6 +28,7 @@
    "prereqs" : {
       "configure" : {
          "requires" : {
+            "Alien::libsdl2" : "1.03",
             "Devel::CheckBin" : "0",
             "Module::Build::Tiny" : "0.039"
          }
@@ -43,11 +44,11 @@
       },
       "runtime" : {
          "requires" : {
-            "Alien::libsdl2" : "1.02",
+            "Alien::libsdl2" : "1.03",
             "Data::Dump" : "0",
             "Exporter::Tiny" : "0",
             "FFI::C" : "0",
-            "FFI::Platypus" : "1.46",
+            "FFI::Platypus" : "1.55",
             "File::ShareDir" : "0",
             "File::Spec::Functions" : "0",
             "perl" : "5.02000",
@@ -57,7 +58,8 @@
       "test" : {
          "requires" : {
             "Test2::V0" : "0",
-            "Test::More" : "0.98"
+            "Test::More" : "0.98",
+            "Test::NeedsDisplay" : "1.07"
          }
       }
    },

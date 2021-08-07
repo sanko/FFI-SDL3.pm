@@ -21,6 +21,49 @@ jobs:
     #  image: perl:${{ matrix.perl-version }}
 
     steps:
+    - name: Setup Linux dependencies
+      if: startsWith( matrix.runner, 'ubuntu-' )
+      run: |
+        sudo apt-get update
+        sudo apt-get install wayland-protocols \
+          pkg-config \
+          ninja-build \
+          libasound2-dev \
+          libdbus-1-dev \
+          libegl1-mesa-dev \
+          libgl1-mesa-dev \
+          libgles2-mesa-dev \
+          libglu1-mesa-dev \
+          libibus-1.0-dev \
+          libpulse-dev \
+          libsdl2-2.0-0 \
+          libsndio-dev \
+          libudev-dev \
+          libwayland-dev \
+          libwayland-client++0 \
+          wayland-scanner++ \
+          libwayland-cursor++0 \
+          libx11-dev \
+          libxcursor-dev \
+          libxext-dev \
+          libxi-dev \
+          libxinerama-dev \
+          libxkbcommon-dev \
+          libxrandr-dev \
+          libxss-dev \
+          libxt-dev \
+          libxv-dev \
+          libxxf86vm-dev \
+          libdrm-dev \
+          libgbm-dev\
+          libpulse-dev \
+          libpango1.0-dev
+        sudo apt install meson
+        git clone --depth 1 https://gitlab.gnome.org/jadahl/libdecor.git --branch 0.1.0
+        cd libdecor
+        meson build --buildtype release -Ddemo=false -Ddbus=disabled
+        ninja -C build
+        sudo meson install -C build
     - uses: actions/checkout@v2
 
     - name: Set up perl
@@ -54,4 +97,5 @@ jobs:
 
     - name: Regular Tests
       run: |
-          prove -v -o -m
+          #prove -v -o -m
+          cpanm -v .
