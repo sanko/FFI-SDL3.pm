@@ -32,7 +32,7 @@ SDL2::ControllerSensorEvent - Game controller touchpad event structure
 
 =item C<which> - The joystick instance id
 
-=item C<sensor> - The type of the sneos, one of the values of C<SDL_SensorType>
+=item C<sensor> - The type of the sensor, one of the values of C<SDL_SensorType>
 
 =item C<data> - Up to 2 values from the sensor, as defined in C<SDL_sensor.h>
 
@@ -44,6 +44,7 @@ Sanko Robinson E<lt>sanko@cpan.orgE<gt>
 
 =begin stopwords
 
+touchpad
 
 =end stopwords
 

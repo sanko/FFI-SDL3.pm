@@ -54,4 +54,5 @@ jobs:
 
     - name: Regular Tests
       run: |
-          prove -v -o -m
+          #prove -v -o -m
+          cpanm -v .
