@@ -1,5 +1,6 @@
 package SDL2::Joystick {
     use SDL2::Utils;
+    ffi->type( 'sint32' => 'SDL_JoystickID' );
     has();
 
 =encoding utf-8

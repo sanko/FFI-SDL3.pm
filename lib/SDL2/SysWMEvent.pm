@@ -1,10 +1,13 @@
 package SDL2::SysWMEvent {
     use SDL2::Utils;
     use SDL2::SysWMmsg;
+    ffi()->type( 'opaque' => 'SysWMmsg_X' );
     has
         type      => 'uint32',
         timestamp => 'uint32',
-        msg       => 'opaque';    # SDL_SysWMmsg;
+        msg       => 'SysWMmsg_X';
+
+    #'SDL_SysWMmsg';
 
 =encoding utf-8
 

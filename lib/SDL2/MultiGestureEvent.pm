@@ -3,7 +3,7 @@ package SDL2::MultiGestureEvent {
     has
         type       => 'uint32',
         timestamp  => 'uint32',
-        touchId    => 'opaque',    # SDL_TouchID
+        touchId    => 'SDL_TouchID',
         dTheta     => 'float',
         dDist      => 'float',
         x          => 'float',
@@ -23,7 +23,7 @@ SDL2::MultiGestureEvent - Multiple finger gesture event structure
     # TODO: I need to whip up a quick example
 
 =head1 DESCRIPTION
- 
+
 
 =head1 Fields
 

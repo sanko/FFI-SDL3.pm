@@ -1,4 +1,4 @@
-package SDL2::Keysym {
+package SDL2::Keysym {    # SDL_keyboard.h
     use SDL2::Utils;
     ffi->type( 'sint32' => 'SDL_Keycode' );
     has

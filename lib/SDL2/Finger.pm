@@ -1,6 +1,5 @@
 package SDL2::Finger {
     use SDL2::Utils;
-    ffi->type( 'sint64' => 'SDL_TouchID' );
     ffi->type( 'sint64' => 'SDL_FingerID' );
     has
         id       => 'SDL_FingerID',

@@ -1,21 +1,17 @@
-package SDL2::JoyAxisEvent {
+package SDL2::ControllerSensorEvent {
     use SDL2::Utils;
     has
         type      => 'uint32',
         timestamp => 'uint32',
         which     => 'SDL_JoystickID',
-        axis      => 'uint8',
-        padding1  => 'uint8',
-        padding2  => 'uint8',
-        padding3  => 'uint8',
-        value     => 'sint16',
-        padding4  => 'uint16';
+        sensor    => 'sint32',
+        data      => 'float[3]';
 
 =encoding utf-8
 
 =head1 NAME
 
-SDL2::JoyAxisEvent - Joystick axis motion event structure
+SDL2::ControllerSensorEvent - Game controller touchpad event structure
 
 =head1 SYNOPSIS
 
@@ -25,27 +21,20 @@ SDL2::JoyAxisEvent - Joystick axis motion event structure
 =head1 DESCRIPTION
 
 
+
 =head1 Fields
 
 =over
 
-=item C<type> - C<SDL_JOYAXISMOTION>
+=item C<type> - C<SDL_CONTROLLERSENSORUPDATE>
 
 =item C<timestamp> - In milliseconds, populated using L<< C<SDL_GetTicks( )>|SDL2::FFI/C<SDL_GetTicks( )> >>
 
 =item C<which> - The joystick instance id
 
-=item C<axis> - The joystick axis index
+=item C<sensor> - The type of the sneos, one of the values of C<SDL_SensorType>
 
-=item C<padding1>
-
-=item C<padding2>
-
-=item C<padding3>
-
-=item C<value> - The axis value (range: C<-32768> to C<32767>)
-
-=item C<padding4>
+=item C<data> - Up to 2 values from the sensor, as defined in C<SDL_sensor.h>
 
 =back
 

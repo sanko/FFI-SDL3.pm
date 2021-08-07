@@ -1,6 +1,6 @@
 package SDL2::Event {
     use SDL2::Utils;
-    use FFI::C::UnionDef;
+    is 'Union';
     use SDL2::CommonEvent;
     use SDL2::DisplayEvent;
     use SDL2::KeyboardEvent;
@@ -15,6 +15,8 @@ package SDL2::Event {
     use SDL2::ControllerAxisEvent;
     use SDL2::ControllerButtonEvent;
     use SDL2::ControllerDeviceEvent;
+    use SDL2::ControllerTouchpadEvent;
+    use SDL2::ControllerSensorEvent;
     use SDL2::AudioDeviceEvent;
     use SDL2::TouchFingerEvent;
     use SDL2::TextEditingEvent;
@@ -27,40 +29,37 @@ package SDL2::Event {
     use SDL2::UserEvent;
     use SDL2::SysWMEvent;
     use SDL2::WindowEvent;
-    FFI::C::UnionDef->new( ffi,
-        name    => 'SDL_Event',
-        class   => 'SDL2::Event',
-        members => [
-            type     => 'uint32',
-            common   => 'SDL_CommonEvent',
-            display  => 'SDL_DisplayEvent',
-            window   => 'SDL_WindowEvent',
-            key      => 'SDL_KeyboardEvent',
-            edit     => 'SDL_TextEditingEvent',
-            text     => 'SDL_TextInputEvent',
-            motion   => 'SDL_MouseMotionEvent',
-            button   => 'SDL_MouseButtonEvent',
-            wheel    => 'SDL_MouseWheelEvent',
-            jaxis    => 'SDL_JoyAxisEvent',
-            jball    => 'SDL_JoyBallEvent',
-            jhat     => 'SDL_JoyHatEvent',
-            jbutton  => 'SDL_JoyButtonEvent',
-            jdevice  => 'SDL_JoyDeviceEvent',
-            caxis    => 'SDL_ControllerAxisEvent',
-            cbutton  => 'SDL_ControllerButtonEvent',
-            cdevice  => 'SDL_ControllerDeviceEvent',
-            adevice  => 'SDL_AudioDeviceEvent',
-            sensor   => 'SDL_SensorEvent',
-            quit     => 'SDL_QuitEvent',
-            user     => 'SDL_UserEvent',
-            syswm    => 'SDL_SysWMEvent',
-            tfinger  => 'SDL_TouchFingerEvent',
-            mgesture => 'SDL_MultiGestureEvent',
-            dgesture => 'SDL_DollarGestureEvent',
-            drop     => 'SDL_DropEvent',
-            padding  => 'uint8[56]'
-        ]
-    );
+    has
+        type      => 'uint32',
+        common    => 'SDL_CommonEvent',
+        display   => 'SDL_DisplayEvent',
+        window    => 'SDL_WindowEvent',
+        key       => 'SDL_KeyboardEvent',
+        edit      => 'SDL_TextEditingEvent',
+        text      => 'SDL_TextInputEvent',
+        motion    => 'SDL_MouseMotionEvent',
+        button    => 'SDL_MouseButtonEvent',
+        wheel     => 'SDL_MouseWheelEvent',
+        jaxis     => 'SDL_JoyAxisEvent',
+        jball     => 'SDL_JoyBallEvent',
+        jhat      => 'SDL_JoyHatEvent',
+        jbutton   => 'SDL_JoyButtonEvent',
+        jdevice   => 'SDL_JoyDeviceEvent',
+        caxis     => 'SDL_ControllerAxisEvent',
+        cbutton   => 'SDL_ControllerButtonEvent',
+        cdevice   => 'SDL_ControllerDeviceEvent',
+        ctouchpad => 'SDL_ControllerTouchpadEvent',
+        csensor   => 'SDL_ControllerSensorEvent',
+        adevice   => 'SDL_AudioDeviceEvent',
+        sensor    => 'SDL_SensorEvent',
+        quit      => 'SDL_QuitEvent',
+        user      => 'SDL_UserEvent',
+        syswm     => 'SDL_SysWMEvent',                # broken?
+        tfinger   => 'SDL_TouchFingerEvent',
+        mgesture  => 'SDL_MultiGestureEvent',
+        dgesture  => 'SDL_DollarGestureEvent',
+        drop      => 'SDL_DropEvent',
+        padding   => 'uint8[56]';
 
 =encoding utf-8
 

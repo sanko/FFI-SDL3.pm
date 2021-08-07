@@ -3,7 +3,7 @@ package SDL2::JoyBallEvent {
     has
         type      => 'uint32',
         timestamp => 'uint32',
-        which     => 'opaque',    # SDL_JoystickID
+        which     => 'SDL_JoystickID',
         ball      => 'uint8',
         padding1  => 'uint8',
         padding2  => 'uint8',
@@ -23,7 +23,7 @@ SDL2::JoyBallEvent - Joystick trackball motion event structure
     # TODO: I need to whip up a quick example
 
 =head1 DESCRIPTION
- 
+
 
 =head1 Fields
 

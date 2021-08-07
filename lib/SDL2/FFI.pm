@@ -19,6 +19,8 @@ package SDL2::FFI 0.06 {
     #
     use SDL2::version;
     use SDL2::Enum;
+    use SDL2::Finger;
+    use SDL2::Joystick;
     use SDL2::Event;                               # Includes all known events
     use SDL2::Point;
     use SDL2::FPoint;
@@ -33,7 +35,6 @@ package SDL2::FFI 0.06 {
     use SDL2::GameControllerButtonBind;
     use SDL2::HapticDirection;
     use SDL2::HapticEffect;
-    use SDL2::Joystick;
     use SDL2::JoystickGUID;
     use SDL2::Keysym;
     use SDL2::Locale;
@@ -953,11 +954,6 @@ END
         has;
     };
 
-    package SDL2::JoystickID {
-        use SDL2::Utils;
-        has;
-    };
-
     package SDL2::_JoyStick {
         use SDL2::Utils;
         has;
@@ -966,11 +962,6 @@ END
 
 #SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, ("R.E.L.I.V.E. " + BuildString()).c_str(), msg, nullptr);
         SDL_ShowSimpleMessageBox => [ [ 'uint32', 'string', 'string', 'SDL_Window' ], 'int' ]
-    };
-
-    package SDL2::ControllerTouchpadEvent {
-        use SDL2::Utils;
-        has;
     };
 
     package SDL2::Mixer {

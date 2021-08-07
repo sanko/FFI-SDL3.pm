@@ -3,7 +3,7 @@ package SDL2::ControllerButtonEvent {
     has
         type      => 'uint32',
         timestamp => 'uint32',
-        which     => 'opaque',    # SDL_JoystickID
+        which     => 'SDL_JoystickID',
         button    => 'uint8',
         state     => 'uint8',
         padding1  => 'uint8',
@@ -21,7 +21,7 @@ SDL2::ControllerButtonEvent - Game controller button event structure
     # TODO: I need to whip up a quick example
 
 =head1 DESCRIPTION
- 
+
 
 =head1 Fields
 

@@ -1,9 +1,9 @@
 package SDL2::Window {
     use SDL2::Utils;
     has
-        magic                 => 'opaque',
+        magic                 => 'uint8',
         id                    => 'uint32',
-        title                 => 'opaque',         # char *
+        title                 => 'opaque',            # char *
         icon                  => 'SDL_Surface',
         x                     => 'int',
         y                     => 'int',
@@ -16,23 +16,23 @@ package SDL2::Window {
         flags                 => 'uint32',
         last_fullscreen_flags => 'uint32',
         windowed              => 'SDL_Rect',
-        fullscreen_mode       => 'opaque',         # SDL_DisplayMode
+        fullscreen_mode       => 'SDL_DisplayMode',
         opacity               => 'float',
         brightness            => 'float',
-        gamma                 => 'uint16[255]',    # uint16*
-        saved_gamma           => 'uint16[255]',    # uint16*
-        surface               => 'opaque',         # SDL_Surface*
-        surface_valid         => 'bool',
-        is_hiding             => 'bool',
-        is_destroying         => 'bool',
-        is_dropping           => 'bool',
-        shaper                => 'opaque',         # SDL_WindowShaper
-        hit_test              => 'opaque',         # SDL_HitTest
-        hit_test_data         => 'opaque',         # void*
-        data                  => 'opaque',         # SDL_WindowUserData*
-        driverdata            => 'opaque',         # void*
-        prev                  => 'opaque',         # SDL_Window*
-        next                  => 'opaque'          # SDL_Window*
+        gamma                 => 'opaque',            # uint16*
+        saved_gamma           => 'opaque',            # uint16*
+        surface               => 'SDL_Surface',
+        surface_valid         => 'SDL_bool',
+        is_hiding             => 'SDL_bool',
+        is_destroying         => 'SDL_bool',
+        is_dropping           => 'SDL_bool',
+        shaper                => 'opaque',            # SDL_WindowShaper
+        hit_test              => 'opaque',            # SDL_HitTest
+        hit_test_data         => 'opaque',            # void*
+        data                  => 'opaque',            # SDL_WindowUserData*
+        driverdata            => 'opaque',            # void*
+        prev                  => 'opaque',            # SDL_Window*
+        next                  => 'opaque'             # SDL_Window*
         ;
 
 =encoding utf-8

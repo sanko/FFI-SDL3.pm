@@ -1432,6 +1432,24 @@ package SDL2::Enum {
             SDL_ADDEVENT
             SDL_PEEKEVENT
             SDL_GETEVENT]
+        ],
+        SDL_SYSWM_TYPE => [
+        qw[
+            SDL_SYSWM_UNKNOWN
+            SDL_SYSWM_WINDOWS
+            SDL_SYSWM_X11
+            SDL_SYSWM_DIRECTFB
+            SDL_SYSWM_COCOA
+            SDL_SYSWM_UIKIT
+            SDL_SYSWM_WAYLAND
+            SDL_SYSWM_MIR
+            SDL_SYSWM_WINRT
+            SDL_SYSWM_ANDROID
+            SDL_SYSWM_VIVANTE
+            SDL_SYSWM_OS2
+            SDL_SYSWM_HAIKU
+            SDL_SYSWM_KMSDRM
+        ]
         ];
 
 =encoding utf-8

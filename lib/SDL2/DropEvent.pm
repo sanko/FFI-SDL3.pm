@@ -3,7 +3,7 @@ package SDL2::DropEvent {
     has
         type      => 'uint32',
         timestamp => 'uint32',
-        file      => 'char[1024]',    # char *
+        file      => 'string(1024)',    #'char[1024]',    # char *
         windowID  => 'uint32';
 
 =encoding utf-8
@@ -18,7 +18,7 @@ SDL2::DropEvent - File drop event structure
     # TODO: I need to whip up a quick example
 
 =head1 DESCRIPTION
- 
+
 A SDL2::DropEvent structure is generated to request a file open by the system.
 This event is enabled by default, you can disable it with L<< C<SDL_EventState(
 ... )>|SDL::FFI/C<SDL_EventState( ... )> >>.

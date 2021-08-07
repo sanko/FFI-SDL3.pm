@@ -3,7 +3,7 @@ package SDL2::WindowEvent {
     has
         type      => 'uint32',
         timestamp => 'uint32',
-        display   => 'uint32',
+        windowID  => 'uint32',
         event     => 'uint8',
         padding1  => 'uint8',
         padding2  => 'uint8',
@@ -23,7 +23,7 @@ SDL2::WindowEvent - Window state change event data
     # TODO: I need to whip up a quick example
 
 =head1 DESCRIPTION
- 
+
 
 =head1 Fields
 
@@ -33,7 +33,7 @@ SDL2::WindowEvent - Window state change event data
 
 =item C<timestamp> - In milliseconds, populated using L<< C<SDL_GetTicks( )>|SDL2::FFI/C<SDL_GetTicks( )> >>
 
-=item C<display> - The associated display index
+=item C<windowID> - The associated window
 
 =item C<event>
 

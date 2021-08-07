@@ -3,7 +3,7 @@ package SDL2::JoyHatEvent {
     has
         type      => 'uint32',
         timestamp => 'uint32',
-        which     => 'opaque',    # SDL_JoystickID
+        which     => 'SDL_JoystickID',
         hat       => 'uint8',
         value     => 'uint8',
         padding1  => 'uint8',
@@ -21,7 +21,7 @@ SDL2::JoyHatEvent - Joystick hat position change event structure
     # TODO: I need to whip up a quick example
 
 =head1 DESCRIPTION
- 
+
 
 =head1 Fields
 

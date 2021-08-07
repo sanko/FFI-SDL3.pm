@@ -1,10 +1,11 @@
 package SDL2::TouchFingerEvent {
     use SDL2::Utils;
+    ffi->type( 'sint64' => 'SDL_TouchID' );
     has
         type      => 'uint32',
         timestamp => 'uint32',
-        touchId   => 'opaque',    # SDL_TouchID
-        fingerId  => 'opaque',    # SDL_FingerID
+        touchId   => 'SDL_TouchID',
+        fingerId  => 'SDL_FingerID',
         x         => 'float',
         y         => 'float',
         dx        => 'float',
@@ -24,7 +25,7 @@ SDL2::TouchFingerEvent - Touch finger event structure
     # TODO: I need to whip up a quick example
 
 =head1 DESCRIPTION
- 
+
 
 =head1 Fields
 
@@ -36,7 +37,7 @@ SDL2::TouchFingerEvent - Touch finger event structure
 
 =item C<touchId> - The touch device id
 
-=item C<fingerId> - 
+=item C<fingerId> -
 
 =item C<x> - Normalized in the range C<0..1>
 

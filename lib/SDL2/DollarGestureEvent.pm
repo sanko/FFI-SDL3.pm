@@ -1,10 +1,11 @@
 package SDL2::DollarGestureEvent {
     use SDL2::Utils;
+    ffi->type( 'sint64' => 'SDL_GestureID' );
     has
         type       => 'uint32',
         timestamp  => 'uint32',
-        touchId    => 'opaque',    # SDL_TouchID
-        gestureId  => 'opaque',    # SDL_GestureID
+        touchId    => 'SDL_TouchID',
+        gestureId  => 'SDL_GestureID',
         numFingers => 'uint32',
         error      => 'float',
         x          => 'float',
@@ -22,7 +23,7 @@ SDL2::DollarGestureEvent - Dollar gesture event structure
     # TODO: I need to whip up a quick example
 
 =head1 DESCRIPTION
- 
+
 
 =head1 Fields
 
