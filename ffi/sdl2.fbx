@@ -11,7 +11,7 @@ my $args = {
   Alien::libsdl2->cflags,
   #'-rdynamic',
   #$cflags,
-  '-I' . Alien::libsdl2->dist_dir . '/include/SDL2/',
+  '-I' . Alien::libsdl2->dist_dir . '/include/SDL/',
   '-I' . $Config{archlibexp} . '/CORE/',
   #'-L' . $Config{archlibexp} . '/CORE/',
    ],
