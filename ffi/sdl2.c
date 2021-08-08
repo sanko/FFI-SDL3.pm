@@ -1,5 +1,5 @@
 //#define PERL_NO_GET_CONTEXT 1
-#include <SDL.h>
+#include <SDL/SDL.h>
 #include <SDL_events.h>
 #include <SDL_stdinc.h>
 #include <ffi_platypus_bundle.h>
@@ -15,6 +15,24 @@
 SDL_bool done = SDL_FALSE;
 Uint32 _interval = 0;
 void *_param = 0;
+
+/**
+ * Function prototype for the timer callback function.
+ *
+ * The callback function is passed the current timer interval and returns
+ * the next timer interval. If the returned value is the same as the one
+ * passed in, the periodic alarm continues, otherwise a new alarm is
+ * scheduled. If the callback returns 0, the periodic alarm is cancelled.
+ */
+typedef Uint32 (SDLCALL * SDL_TimerCallback) (Uint32 interval, void *param);
+
+/**
+ * Definition of the timer ID type.
+ */
+typedef int SDL_TimerID;
+
+
+
 SDL_TimerCallback cb;
 SDL_mutex *lock;
 SDL_cond *cond;
