@@ -1,5 +1,5 @@
 //#define PERL_NO_GET_CONTEXT 1
-#include <SDL/SDL.h>
+#include <SDL.h>
 #include <SDL_events.h>
 #include <SDL_stdinc.h>
 #include <ffi_platypus_bundle.h>
