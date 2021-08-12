@@ -2,10 +2,12 @@ requires 'perl', '5.02000';
 requires 'strictures', 2;
 requires 'FFI::Platypus', '1.55';
 requires 'FFI::C';
-requires 'File::ShareDir';
 requires 'File::Spec::Functions';
 requires 'Exporter::Tiny';
-requires 'Alien::libsdl2', '1.03';
+requires 'Alien::libsdl2', '1.06';
+requires 'FFI::Build', '1.04';
+requires 'Path::Tiny';
+requires 'File::Share';
 
 requires 'Data::Dump';
 
@@ -18,7 +20,7 @@ on test => sub {
 on configure => sub {
     requires 'Devel::CheckBin';
     requires 'Module::Build::Tiny', '0.039';
-    requires 'Alien::libsdl2', '1.03';
+    requires 'Alien::libsdl2', '1.06';
 };
 
 on development => sub {

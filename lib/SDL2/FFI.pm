@@ -736,8 +736,6 @@ END
             [ 'uint32', 'SDL_TimerCallback', 'opaque' ],
             'SDL_TimerID',
             sub ( $inner, $delay, $code, $params = () ) {
-
-                #my $cb = ref $code eq 'CODE' ? ffi->closure($code) : $code;
                 my $cb = ffi->closure(
                     sub {
                         my ( $delay, $etc ) = @_;
@@ -745,45 +743,26 @@ END
                         $retval;
                     }
                 );
-
-                #$cb->sticky;
                 my $id = $inner->( $delay, $cb, undef );
                 $_timers{$id} = $cb;    # Store reference
-
-                #warn 'added: ' . $id;
                 return $id;
             }
         ],
-
-        #SDL_AddTimer => [[ 'uint32', 'SDL_TimerCallback', 'opaque*' ], 'uint32'        => sub
-        #	( $inner, $time, $code, $args =() )
-        #		{
-        #
-        #                 my $cb    = ffi->closure(
-        #					$code
-        #                    #sub {
-        #                    #    my ( $delay, $etc ) = @_;
-        #					#	my $retval = $code->( $delay, $args );
-        #                    #     $retval;
-        #                    #}
-        #                );
-        #				$cb->sticky;
-        #                my $id = $inner->( $time, $cb);
-        #                $_timers{$id} = $cb;    #Timer->new(cb => $cb, id => $id );
-        #                return $id;
-        #            }],
         Bundle_SDL_RemoveTimer => [
             ['SDL_TimerID'] => 'SDL_bool' => sub ( $inner, $id ) {
-
-                #warn 'remove: ' . $id;
                 my $retval = $inner->($id);
-
-                #$_timers{$id}->unstick;
                 delete $_timers{$id};
                 return $retval;
             }
         ]
-    };
+        },
+        touch => {
+        SDL_GetNumTouchDevices => [ [],                       'int' ],
+        SDL_GetTouchDevice     => [ ['int'],                  'SDL_TouchID' ],
+        SDL_GetTouchDeviceType => [ ['SDL_TouchID'],          'SDL_TouchDeviceType' ],
+        SDL_GetNumTouchFingers => [ ['SDL_TouchID'],          'int' ],
+        SDL_GetTouchFinger     => [ [ 'SDL_TouchID', 'int' ], 'SDL_Finger' ]
+        };
 
     # Everything below this line will be rewritten!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     #
@@ -7640,6 +7619,92 @@ Expected parameters include:
 =back
 
 Returns true if the timer is removed or false if the timer wasn't found.
+
+=head1 Touch Event Handling
+
+This section contains functions for handling the SDL touch event routines. They
+may be imported with the C<:touch> tag.
+
+=head2 C<SDL_GetNumTouchDevices( )>
+
+Get the number of registered touch devices.
+
+    my $count = SDL_GetNumTouchDevices();
+
+On some platforms SDL first sees the touch device if it was actually used.
+Therefore C<SDL_GetNumTouchDevices( )> may return C<0> although devices are
+available. After using all devices at least once the number will be correct.
+
+=head2 C<SDL_GetTouchDevice( ... )>
+
+Get the touch ID with the given index.
+
+    my $tID = SDL_GetTouchDevice( 0 );
+
+Expected parameters include:
+
+=over
+
+=item C<index> - the touch device index
+
+=back
+
+Returns the touch ID with the given index on success or C<0> if the index is
+invalid; call L<< C<SDL_GetError( )>|/C<SDL_GetError( )> >> for more
+information.
+
+=head2 C<SDL_GetTouchDeviceType( ... )>
+
+Get the type of the given touch device.
+
+	my $type = SDL_GetTouchDeviceType( 0 );
+
+Expected parameters include:
+
+=over
+
+=item C<touchID> - the touch device ID
+
+=back
+
+Returns the C<SDL_TouchDeviceType>.
+
+=head2 C<SDL_GetNumTouchFingers( ... )>
+
+Get the number of active fingers for a given touch device.
+
+	my $fingers = SDL_GetNumTouchFingers( 0 );
+
+Expected parameters include:
+
+=over
+
+=item C<touchID> - the touch device ID
+
+=back
+
+Returns the number of active fingers for a given touch device on success or
+C<0> on failure; call L<< C<SDL_GetError( )>|/C<SDL_GetError( )> >> for more
+information.
+
+=head2 C<SDL_GetTouchFinger( ... )>
+
+Get the finger object for specified touch device ID and finger index.
+
+	my $finger = SDL_GetTouchFinger( 0, 1 );
+
+Expected parameters include:
+
+=over
+
+=item C<touchID> - the ID of the requested touch device
+
+=item C<index> - the index of the requested finger
+
+=back
+
+Returns an L<SDL2::Finger> object on success or C<undef> if no object at the
+given ID and index could be found.
 
 =head1 Raw Audio Mixing
 

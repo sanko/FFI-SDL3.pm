@@ -6505,6 +6505,15 @@ Which audio format changes are allowed when opening a device.
 
 =back
 
+
+
+
+
+
+
+
+
+
 =head1 Development
 
 SDL2 is still in early development: the majority of SDL's functions have yet to

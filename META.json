@@ -28,7 +28,7 @@
    "prereqs" : {
       "configure" : {
          "requires" : {
-            "Alien::libsdl2" : "1.03",
+            "Alien::libsdl2" : "1.06",
             "Devel::CheckBin" : "0",
             "Module::Build::Tiny" : "0.039"
          }
@@ -44,13 +44,15 @@
       },
       "runtime" : {
          "requires" : {
-            "Alien::libsdl2" : "1.03",
+            "Alien::libsdl2" : "1.06",
             "Data::Dump" : "0",
             "Exporter::Tiny" : "0",
+            "FFI::Build" : "1.04",
             "FFI::C" : "0",
             "FFI::Platypus" : "1.55",
-            "File::ShareDir" : "0",
+            "File::Share" : "0",
             "File::Spec::Functions" : "0",
+            "Path::Tiny" : "0",
             "perl" : "5.02000",
             "strictures" : "2"
          }
@@ -78,5 +80,5 @@
    "version" : "0.06",
    "x_authority" : "cpan:SANKO",
    "x_serialization_backend" : "JSON::PP version 4.06",
-   "x_static_install" : 1
+   "x_static_install" : 0
 }

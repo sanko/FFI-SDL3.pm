@@ -1,12 +1,11 @@
 use strict;
 use warnings;
 use Test2::V0;
-use lib '../lib', 'lib';
+use lib -d '../t' ? './lib' : 't/lib';
 use SDL2::FFI qw[:all];
 use Test::NeedsDisplay;
 #
 plan tests => 2;
-
 END { SDL_Quit() }
 bail_out 'Error initializing SDL: ' . SDL_GetError()
     unless SDL_Init( SDL_INIT_VIDEO | SDL_INIT_TIMER ) == 0;

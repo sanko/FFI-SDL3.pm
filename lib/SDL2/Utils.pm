@@ -15,22 +15,47 @@ package SDL2::Utils {
     use FFI::C::StructDef;
     use FFI::C::UnionDef;
     use FFI::Platypus::Closure;
+    use File::Spec::Functions qw[catdir canonpath rel2abs];
+    use Path::Tiny qw[path];
+    use File::Share qw[dist_dir];
 
     sub deprecate ($str) {
         warnings::warn( 'deprecated', $str ) if warnings::enabled('deprecated');
     }
-    #ddx( Alien::libsdl2->dynamic_libs );
 
+    #ddx( Alien::libsdl2->dynamic_libs );
     sub ffi () {
         CORE::state $ffi;
         if ( !defined $ffi ) {
+            use FFI::Build;
+            use FFI::Build::File::C;
+            my $lib = undef;
+            if (1) {
+                my $root = path(__FILE__)->absolute->parent(2);
+                my $dir  = eval { dist_dir('SDL2-FFI') };
+                $dir //= $root->child('share');
+                #warn $dir;
+                my $build = FFI::Build->new(
+                    'bundle',
+                    dir     => $dir,
+                    alien   => ['Alien::libsdl2'],
+                    source  => ["ffi/*.c"],
+                    libs    => [ Alien::libsdl2->libs_static() ],
+                    verbose => 2
+                );
+                $lib
+                    = -f $build->file->path &&
+                    -f $root->child('ffi/sdl2.c') &&
+                    [ stat $build->file->path ]->[9]
+                    >= [ stat( $root->child('ffi/sdl2.c') ) ]->[9] ? $build->file : $build->build;
+            }
             $ffi = FFI::Platypus->new(
-                api          => 1,
+                api          => 2,
                 experimental => 2,
-                lib          => [ Alien::libsdl2->dynamic_libs ]
+                lib          => [ Alien::libsdl2->dynamic_libs, $lib ]
             );
             FFI::C->ffi($ffi);
-            $ffi->bundle;
+            $lib // $ffi->bundle;
         }
         $ffi;
     }

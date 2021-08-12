@@ -47,3 +47,13 @@ eg/SDL_WasInt.pl
 .pls_cache/
 SDL2.code-workspace
 .tmp/
+
+SciTE.session
+eg/fbx.json
+eg/knocking_6.wav
+eg/libffi.so
+eg/play_sound.pl
+eg/sound25.mp3
+eg/threads.pl
+eg/trash.pl
+ffi/lib*

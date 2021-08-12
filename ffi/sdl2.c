@@ -1,13 +1,11 @@
 //#define PERL_NO_GET_CONTEXT 1
-#include <SDL.h>
+#include "SDL.h"
 #include <SDL_events.h>
 #include <SDL_stdinc.h>
 #include <ffi_platypus_bundle.h>
-
-#include <EXTERN.h> /* from the Perl distribution     */
-#include <XSUB.h>
-#include <perl.h> /* from the Perl distribution     */
-
+//#include <EXTERN.h> /* from the Perl distribution     */
+//#include <XSUB.h>
+//#include <perl.h> /* from the Perl distribution     */
 // char buffer[512];
 
 /* Very cheap system to prevent accessing perl context concurrently in multiple
@@ -29,7 +27,7 @@ void ffi_pl_bundle_fini(const char *package) {
   SDL_DestroyMutex(lock);
   SDL_DestroyCond(cond);
 }
-
+/*
 void ffi_pl_bundle_constant(const char *package, ffi_platypus_constant_t *c) {
   // printf("%s\n", package);
   // build info
@@ -85,7 +83,7 @@ void ffi_pl_bundle_constant(const char *package, ffi_platypus_constant_t *c) {
 #endif
   );
 }
-
+*/
 static const char *DisplayOrientationName(int orientation) {
   switch (orientation) {
 #define CASE(X)                                                                \

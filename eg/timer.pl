@@ -4,14 +4,17 @@ use SDL2::FFI qw[:all];
 sub DEFAULT_RESOLUTION() {1}
 my $ticks = 0;
 
-sub ticktock {
-    my ( $interval, $param ) = @_;
-    ++$ticks;
-    $interval;
+package No {
+    use Moo;
+    use Types::Standard qw[Int];
+    has _meh => ( is => 'rw', isa => Int, default => 0 );
+    sub meh { warn $_[0]->_meh( $_[0]->_meh + 1 ) }
 }
+my $zip;
 
 sub callback {
     my ( $interval, $param ) = @_;
+    $zip->meh;    # if $zip;
     SDL_Log( "Timer %d : param = %d\n", $interval, $param );
     $interval;
 }
@@ -39,6 +42,7 @@ if ($ticks) {
     SDL_Log( "Timer resolution: desired = %d ms, actual = %f ms\n",
         $desired, ( 10 * 1000 ) / $ticks );
 }
+$zip = No->new;
 
 # Test multiple timers
 SDL_Log("Testing multiple timers...\n");
@@ -83,3 +87,9 @@ SDL_Log(
 );
 SDL_Quit();
 exit;
+
+sub ticktock {
+    my ( $interval, $param ) = @_;
+    ++$ticks;
+    $interval;
+}

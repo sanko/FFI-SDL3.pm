@@ -5051,6 +5051,75 @@ Expected parameters include:
 
 Returns true if the timer is removed or false if the timer wasn't found.
 
+# Touch Event Handling
+
+This section contains functions for handling the SDL touch event routines. They
+may be imported with the `:touch` tag.
+
+## `SDL_GetNumTouchDevices( )`
+
+Get the number of registered touch devices.
+
+    my $count = SDL_GetNumTouchDevices();
+
+On some platforms SDL first sees the touch device if it was actually used.
+Therefore `SDL_GetNumTouchDevices( )` may return `0` although devices are
+available. After using all devices at least once the number will be correct.
+
+## `SDL_GetTouchDevice( ... )`
+
+Get the touch ID with the given index.
+
+    my $tID = SDL_GetTouchDevice( 0 );
+
+Expected parameters include:
+
+- `index` - the touch device index
+
+Returns the touch ID with the given index on success or `0` if the index is
+invalid; call [`SDL_GetError( )`](#sdl_geterror) for more
+information.
+
+## `SDL_GetTouchDeviceType( ... )`
+
+Get the type of the given touch device.
+
+        my $type = SDL_GetTouchDeviceType( 0 );
+
+Expected parameters include:
+
+- `touchID` - the touch device ID
+
+Returns the `SDL_TouchDeviceType`.
+
+## `SDL_GetNumTouchFingers( ... )`
+
+Get the number of active fingers for a given touch device.
+
+        my $fingers = SDL_GetNumTouchFingers( 0 );
+
+Expected parameters include:
+
+- `touchID` - the touch device ID
+
+Returns the number of active fingers for a given touch device on success or
+`0` on failure; call [`SDL_GetError( )`](#sdl_geterror) for more
+information.
+
+## `SDL_GetTouchFinger( ... )`
+
+Get the finger object for specified touch device ID and finger index.
+
+        my $finger = SDL_GetTouchFinger( 0, 1 );
+
+Expected parameters include:
+
+- `touchID` - the ID of the requested touch device
+- `index` - the index of the requested finger
+
+Returns an [SDL2::Finger](https://metacpan.org/pod/SDL2%3A%3AFinger) object on success or `undef` if no object at the
+given ID and index could be found.
+
 # Raw Audio Mixing
 
 These methods provide access to the raw audio mixing buffer for the SDL
