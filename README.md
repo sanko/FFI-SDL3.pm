@@ -5120,6 +5120,8 @@ Expected parameters include:
 Returns an [SDL2::Finger](https://metacpan.org/pod/SDL2%3A%3AFinger) object on success or `undef` if no object at the
 given ID and index could be found.
 
+# Video Driver
+
 # Raw Audio Mixing
 
 These methods provide access to the raw audio mixing buffer for the SDL

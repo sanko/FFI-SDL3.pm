@@ -1,4 +1,3 @@
-
 package SDL2::FPoint {
     use SDL2::Utils;
     has x => 'float', y => 'float';

@@ -1,5 +1,4 @@
 package SDL2::Cond {
-
     use SDL2::Utils;
     has();
 

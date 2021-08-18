@@ -4,7 +4,7 @@ package SDL2::Utils {
     use strictures 2;
     use experimental 'signatures';
     use base 'Exporter::Tiny';
-    our @EXPORT = qw[attach define deprecate has enum ffi is];
+    our @EXPORT = qw[attach bigendian define deprecate has enum ffi is ver];
     use Alien::libsdl2;
     use FFI::CheckLib;
     use FFI::Platypus 1.46;
@@ -18,9 +18,18 @@ package SDL2::Utils {
     use File::Spec::Functions qw[catdir canonpath rel2abs];
     use Path::Tiny qw[path];
     use File::Share qw[dist_dir];
+    use Config;
+    sub bigendian () { CORE::state $bigendian //= ( $Config{byteorder} != 4321 ); $bigendian }
 
     sub deprecate ($str) {
         warnings::warn( 'deprecated', $str ) if warnings::enabled('deprecated');
+    }
+
+    sub ver() {
+        CORE::state $ver;
+        $ver // ffi()->function( SDL_GetVersion => ['SDL_version'] )
+            ->call( $ver = SDL2::version->new() );
+        $ver;
     }
 
     #ddx( Alien::libsdl2->dynamic_libs );
@@ -31,23 +40,31 @@ package SDL2::Utils {
             use FFI::Build::File::C;
             my $lib = undef;
             if (1) {
-                my $root = path(__FILE__)->absolute->parent(2);
+                my $root = path(__FILE__)->absolute->parent(3)->realpath;
                 my $dir  = eval { dist_dir('SDL2-FFI') };
-                $dir //= $root->child('share');
-                #warn $dir;
+                $dir //= $root->child('share')->realpath;
                 my $build = FFI::Build->new(
                     'bundle',
                     dir     => $dir,
                     alien   => ['Alien::libsdl2'],
-                    source  => ["ffi/*.c"],
+                    source  => [ $root->child('ffi/sdl2.c') ],
                     libs    => [ Alien::libsdl2->libs_static() ],
                     verbose => 2
                 );
-                $lib
-                    = -f $build->file->path &&
-                    -f $root->child('ffi/sdl2.c') &&
-                    [ stat $build->file->path ]->[9]
-                    >= [ stat( $root->child('ffi/sdl2.c') ) ]->[9] ? $build->file : $build->build;
+                $lib = (
+                    ( !-f $build->file->path ) || (
+                        (
+                            [ stat $build->file->path ]->[9]
+                            < [ stat $root->child('ffi/sdl2.c') ]->[9]
+                        )
+                    )
+                ) ? $build->build : $build->file->path;
+
+                #$lib
+                #    = -f $build->file->path && -f $root->child('ffi/sdl2.c') &&
+                #    [ stat $build->file->path ]->[9]
+                #    >= [ stat( $root->child('ffi/sdl2.c') ) ]->[9] ? $build->file : $build->build;
+                #    warn $lib;
             }
             $ffi = FFI::Platypus->new(
                 api          => 2,
@@ -55,10 +72,12 @@ package SDL2::Utils {
                 lib          => [ Alien::libsdl2->dynamic_libs, $lib ]
             );
             FFI::C->ffi($ffi);
-            $lib // $ffi->bundle;
+
+            #$lib // $ffi->bundle;
         }
         $ffi;
     }
+    ffi();    # auto-init
 
     sub enum (%args) {
         my ($package) = caller();
@@ -74,7 +93,7 @@ package SDL2::Utils {
             #my $enum =
             #FFI::C->enum( $tag => $args{$tag}, { package => $package } );
             #ffi->load_custom_type('::Enum', $tag => { package => $package } => [$args{$tag}] );
-            FFI::C->enum( $tag => $args{$tag}, { package => $package } );
+            FFI::C->enum( $tag => $args{$tag}, { rev => 'int', package => $package } );
 
             #ffi->load_custom_type(
             #    '::Enum',
@@ -131,10 +150,11 @@ package SDL2::Utils {
         #);
         my @args = (
             ffi,
-            name     => $type,       # C type
-            class    => $package,    # package
-            nullable => 1,
-            members  => \@_          # Keep order rather than use %args
+            name        => $type,       # C type
+            class       => $package,    # package
+            nullable    => 1,
+            trim_string => 1,
+            members     => \@_          # Keep order rather than use %args
         );
         get_is($package) eq 'Union' ? FFI::C::UnionDef->new(@args) : FFI::C::StructDef->new(@args);
     }

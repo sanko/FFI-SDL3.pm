@@ -1,6 +1,8 @@
 package SDL2::AudioStream {
     use SDL2::Utils;
-    has();
+    ffi->type( 'opaque', 'SDL_AudioStream' );
+
+    #has();
 
 =encoding utf-8
 
@@ -28,12 +30,15 @@ The benefits of L<SDL2::AudioStream> vs L<SDL2::AudioCVT>:
 
 =head1 Fields
 
-=over
+The contents of this structure are opaque to the outside world.
 
-=item C<value>
+=head1 LICENSE
 
-=back
+Copyright (C) Sanko Robinson.
 
+This library is free software; you can redistribute it and/or modify it under
+the terms found in the Artistic License 2. Other copyrights, terms, and
+conditions may apply to data transmitted through this module.
 
 =head1 AUTHOR
 

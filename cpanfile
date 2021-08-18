@@ -8,6 +8,8 @@ requires 'Alien::libsdl2', '1.06';
 requires 'FFI::Build', '1.04';
 requires 'Path::Tiny';
 requires 'File::Share';
+requires 'Try::Tiny';
+recommends 'B::Deparse';
 
 requires 'Data::Dump';
 

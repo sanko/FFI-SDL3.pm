@@ -43,6 +43,9 @@
          }
       },
       "runtime" : {
+         "recommends" : {
+            "B::Deparse" : "0"
+         },
          "requires" : {
             "Alien::libsdl2" : "1.06",
             "Data::Dump" : "0",
@@ -53,6 +56,7 @@
             "File::Share" : "0",
             "File::Spec::Functions" : "0",
             "Path::Tiny" : "0",
+            "Try::Tiny" : "0",
             "perl" : "5.02000",
             "strictures" : "2"
          }

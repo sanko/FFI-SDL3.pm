@@ -1,4 +1,4 @@
-ignore = **/*.bak **/_*.pm
+ignore = **/*.bak **/_*.pm blib/**/*
 
 [PerlTidy]
 select = **/*.{pl,pm,t}
@@ -12,3 +12,9 @@ argv = -anl -baao --check-syntax --closing-side-comments-balanced -nce -dnl --de
 
 [PodTidy]
 select = lib/**/*.{pm,pod}
+
+[PodChecker]
+select = **/*.{pl,pm,pod}
+
+;[Test::Vars]
+;select = **/*.{pl,pl.in,pm,t}

@@ -6,19 +6,50 @@ package SDL2::FFI 0.06 {
     use experimental 'signatures';
     use base 'Exporter::Tiny';
     use SDL2::Utils;
-    use Config;
-    sub bigendian () { CORE::state $bigendian //= ( $Config{byteorder} != 4321 ); $bigendian }
+
     our %EXPORT_TAGS;
+
+	CORE::state $SDL_ASSERT_LEVEL = 2;
+	sub SDL_ASSERT_LEVEL{ $SDL_ASSERT_LEVEL //= 2; $SDL_ASSERT_LEVEL; }
+
+    sub _exporter_validate_opts {
+        my $class = shift;
+        my ($globals) = @_;
+
+		if ($globals->{'assert=0'}) { $SDL_ASSERT_LEVEL = 0 }
+		elsif ($globals->{'assert=1'}) { $SDL_ASSERT_LEVEL = 1 }
+		elsif ($globals->{'assert=2'}) { $SDL_ASSERT_LEVEL = 2 }
+		elsif ($globals->{'assert=3'}) { $SDL_ASSERT_LEVEL = 3 }
+
+        #...;   # do stuff here
+        use Data::Dump;
+        ddx $globals;
+        $class->SUPER::_exporter_validate_opts(@_);
+    }
 
     # I need these first
     attach version => { SDL_GetVersion => [ ['SDL_version'] ] };
     #
-    SDL_GetVersion( my $ver = SDL2::version->new() );
+    SDL_GetVersion( our $ver = SDL2::version->new() );
     my $platform = $^O;                            # https://perldoc.perl.org/perlport#PLATFORMS
     my $Windows  = !!( $platform eq 'MSWin32' );
     #
-    use SDL2::version;
     use SDL2::Enum;
+    use SDL2::assert;                              # Enable with use var like C<use SDL2 -assert=3;>
+    use SDL2::atomic;
+	use SDL2::audio;
+
+
+
+
+
+
+
+    use SDL2::version;
+
+
+	use SDL2::DisplayMode;
+
     use SDL2::Finger;
     use SDL2::Joystick;
     use SDL2::Event;                               # Includes all known events
@@ -26,9 +57,9 @@ package SDL2::FFI 0.06 {
     use SDL2::FPoint;
     use SDL2::FRect;
     use SDL2::Rect;
-    use SDL2::DisplayMode;
     use SDL2::Surface;
     use SDL2::Window;
+    use SDL2::video;
     use SDL2::WindowShaper;
     use SDL2::Texture;
     use SDL2::Renderer;
@@ -61,101 +92,9 @@ package SDL2::FFI 0.06 {
         SDL_QuitSubSystem => [ ['uint32'] ],
         SDL_WasInit       => [ ['uint32'] => 'uint32' ]
     };
-    use SDL2::atomic_t;
-    ffi->type( 'int' => 'SDL_SpinLock' );
-    attach atomic => {
-        SDL_AtomicTryLock                => [ ['SDL_SpinLock'], 'SDL_bool' ],
-        SDL_AtomicLock                   => [ ['SDL_SpinLock'], 'SDL_bool' ],
-        SDL_AtomicUnlock                 => [ ['SDL_SpinLock'] ],
-        SDL_MemoryBarrierReleaseFunction => [ [] ],                 # Undocumented
-        SDL_MemoryBarrierAcquireFunction => [ [] ],                 # Undocumented
-        SDL_AtomicCAS                    => [ [ 'SDL_atomic_t', 'int', 'int' ], 'SDL_bool' ],
-        SDL_AtomicSet                    => [ [ 'SDL_atomic_t', 'int' ], 'int' ],
-        SDL_AtomicAdd                    => [ [ 'SDL_atomic_t', 'int' ], 'int' ],
-
-        # Will likely not need these:
-        #SDL_AtomicCASPtr =>  [ ['SDL_atomic_t*', 'int*', 'int*'], 'SDL_bool'],
-        #SDL_AtomicSetPtr =>  [ ['SDL_AtomicSetPtr*', 'int*' ], 'int *'],
-        #SDL_AtomicGetPtr =>  [ ['SDL_AtomicSetPtr*' ], 'int *'],
-    };
-    define atomic => [
-        [ SDL_AtomicIncRef => sub ($a) { SDL_AtomicAdd( $a, 1 ) } ],
-        [ SDL_AtomicDecRef => sub ($a) { SDL_AtomicAdd( $a, -1 ) } ]
-    ];
     #
-    use SDL2::AudioStream;
-    use SDL2::AudioCVT;
-    use SDL2::AudioSpec;
-    ffi->type( 'uint16'                => 'SDL_AudioFormat' );
-    ffi->type( 'uint32'                => 'SDL_AudioDeviceID' );
-    ffi->type( '(opaque,uint16)->void' => 'SDL_AudioFilter' );
-    attach audio => {
-        SDL_GetNumAudioDrivers    => [ ['int'],    'int' ],
-        SDL_GetAudioDriver        => [ ['int'],    'string' ],
-        SDL_AudioInit             => [ ['string'], 'int' ],
-        SDL_AudioQuit             => [ [] ],
-        SDL_GetCurrentAudioDriver => [ [], 'string' ],
-        SDL_OpenAudio             => [
-            [ 'SDL_AudioSpec', 'SDL_AudioSpec' ],
-            'int' => sub ( $inner, $desired, $obtained = () ) {
-                deprecate <<'END';
-SDL_OpenAudio( ... ) remains for compatibility with SDL 1.2. The new, more
-powerful, and preferred way to do this is SDL_OpenAudioDevice( ... );
-END
-                $inner->( $desired, $obtained );
-            }
-        ],
-        SDL_GetNumAudioDevices => [ ['int'],          'int' ],
-        SDL_GetAudioDeviceName => [ [ 'int', 'int' ], 'string' ], (
-            $ver->patch >= 15 ?
-                ( SDL_GetAudioDeviceSpec => [ [ 'int', 'int', 'SDL_AudioSpec' ], 'int' ] ) :
-                ()
-        ),
-        SDL_OpenAudioDevice =>
-            [ [ "string", "int", "SDL_AudioSpec", "SDL_AudioSpec", "int" ], "SDL_AudioDeviceID", ],
-        SDL_GetAudioStatus       => [ [],                    'SDL_AudioStatus' ],
-        SDL_GetAudioDeviceStatus => [ ['SDL_AudioDeviceID'], 'SDL_AudioStatus' ],
-        SDL_PauseAudio           => [ ['int'] ],
-        SDL_PauseAudioDevice     => [ [ 'SDL_AudioDeviceID', 'int' ] ],
-        SDL_LoadWAV_RW           =>
-            [ [ 'SDL_RWops', 'int', 'SDL_AudioSpec', 'opaque', 'uint32*' ], 'SDL_AudioSpec' ],
-        SDL_FreeWAV       => [ ['uint8*'] ],
-        SDL_BuildAudioCVT => [
-            [   'SDL_AudioCVT',    'SDL_AudioFormat', 'uint8', 'int',
-                'SDL_AudioFormat', 'uint8',           'int',
-            ],
-            'int'
-        ],
-        SDL_ConvertAudio   => [ ['SDL_AudioCVT'], 'int' ],
-        SDL_NewAudioStream => [
-            [ 'SDL_AudioFormat', 'uint8', 'int', 'SDL_AudioFormat', 'uint8', 'int' ],
-            'SDL_AudioStream',
-        ],
-        SDL_AudioStreamPut       => [ [ 'SDL_AudioStream', 'opaque*', 'int' ], 'int' ],
-        SDL_AudioStreamGet       => [ [ 'SDL_AudioStream', 'opaque*', 'int' ], 'int' ],
-        SDL_AudioStreamAvailable => [ ['SDL_AudioStream'], 'int' ],
-        SDL_AudioStreamFlush     => [ ['SDL_AudioStream'], 'int' ],
-        SDL_AudioStreamClear     => [ ['SDL_AudioStream'] ],
-        SDL_FreeAudioStream      => [ ['SDL_AudioStream'] ],
-        SDL_MixAudio             => [ [ 'uint8*', 'uint8*', 'uint32', 'int' ] ],
-        SDL_MixAudioFormat       => [ [ 'uint8*', 'uint8*', 'SDL_AudioFormat', 'uint32', 'int' ] ],
-        SDL_QueueAudio           => [ [ 'SDL_AudioDeviceID', 'opaque*', 'uint32' ], 'int' ],
-        SDL_DequeueAudio         => [ [ 'SDL_AudioDeviceID', 'opaque*', 'uint32' ], 'uint32' ],
-        SDL_GetQueuedAudioSize   => [ ['SDL_AudioDeviceID'], 'uint32' ],
-        SDL_ClearQueuedAudio     => [ ['SDL_AudioDeviceID'] ],
-        SDL_LockAudio            => [ [] ],
-        SDL_LockAudioDevice      => [ ['SDL_AudioDeviceID'] ],
-        SDL_UnlockAudio          => [ [] ],
-        SDL_UnlockAudioDevice    => [ ['SDL_AudioDeviceID'] ],
-        SDL_CloseAudio           => [ [] ],
-        SDL_CloseAudioDevice     => [ ['SDL_AudioDeviceID'] ]
-    };
-    define audio => [
-        [   SDL_LoadWAV => sub ( $file, $spec, $audio_buf, $audio_len ) {
-                SDL_LoadWAV_RW( SDL_RWFromFile( $file, 'rb' ), 1, $spec, $audio_buf, $audio_len );
-            }
-        ]
-    ];
+
+
     attach blendmode => {
         SDL_ComposeCustomBlendMode => [
             [   'SDL_BlendFactor',    'SDL_BlendFactor',
@@ -299,21 +238,6 @@ END
         ]
     };
     #
-    package SDL2::AssertData {
-        use SDL2::Utils;
-        has
-            always_ignore => 'int',
-            trigger_count => 'uint',
-            condition     => 'opaque',    # string
-            filename      => 'opaque',    # string
-            linenum       => 'int',
-            function      => 'opaque',    # string
-            next          => 'opaque'     # const struct SDL_AssertData *next
-    };
-    attach assert => {
-        SDL_ReportAssertion    => [ [ 'opaque', 'string', 'string', 'int' ], 'opaque' ],
-        SDL_GetAssertionReport => [ ['SDL_AssertData'] ],
-    };
     FFI::C::ArrayDef->new(    # Used sparingly when I need to pass a list of SDL_Point objects
         ffi,
         name    => 'SDL2x_PointList',
@@ -339,115 +263,9 @@ END
         members => ['SDL_FRect'],
     );
     #
-    ffi->type( '(opaque,opaque,opaque)->int' => 'SDL_HitTest' );
-
     # An opaque handle to an OpenGL context.
     package SDL2::GLContext { use SDL2::Utils; has() };
-    attach video => {
-        SDL_GetNumVideoDrivers     => [ [],         'int' ],
-        SDL_GetVideoDriver         => [ ['int'],    'string' ],
-        SDL_VideoInit              => [ ['string'], 'int' ],
-        SDL_VideoQuit              => [ [] ],
-        SDL_GetCurrentVideoDriver  => [ [],                                              'string' ],
-        SDL_GetNumVideoDisplays    => [ [],                                              'int' ],
-        SDL_GetDisplayName         => [ ['int'],                                         'string' ],
-        SDL_GetDisplayBounds       => [ [ 'int', 'SDL_Rect' ],                           'int' ],
-        SDL_GetDisplayUsableBounds => [ [ 'int', 'SDL_Rect' ],                           'int' ],
-        SDL_GetDisplayDPI          => [ [ 'int', 'float *', 'float *', 'float *' ],      'int' ],
-        SDL_GetDisplayOrientation  => [ ['int'],                                         'int' ],
-        SDL_GetNumDisplayModes     => [ ['int'],                                         'int' ],
-        SDL_GetDisplayMode         => [ [ 'int', 'int', 'SDL_DisplayMode' ],             'int' ],
-        SDL_GetDesktopDisplayMode  => [ [ 'int', 'SDL_DisplayMode' ],                    'int' ],
-        SDL_GetCurrentDisplayMode  => [ [ 'int', 'SDL_DisplayMode' ],                    'int' ],
-        SDL_GetClosestDisplayMode  => [ [ 'int', 'SDL_DisplayMode', 'SDL_DisplayMode' ], 'opaque' ],
-        SDL_GetWindowDisplayIndex  => [ ['SDL_Window'],                                  'int' ],
-        SDL_SetWindowDisplayMode   => [ [ 'SDL_Window', 'SDL_DisplayMode' ],             'int' ],
-        SDL_GetWindowDisplayMode   => [ [ 'SDL_Window', 'SDL_DisplayMode' ],             'int' ],
-        SDL_GetWindowPixelFormat   => [ ['SDL_Window'],                                  'uint32' ],
-        SDL_CreateWindow => [ [ 'string', 'int', 'int', 'int', 'int', 'uint32' ] => 'SDL_Window' ],
-        SDL_CreateWindowFrom => [ ['opaque']     => 'SDL_Window' ],
-        SDL_GetWindowID      => [ ['SDL_Window'] => 'uint32' ],
-        SDL_GetWindowFromID  => [ ['uint32']     => 'SDL_Window' ],
-        SDL_GetWindowFlags   => [ ['SDL_Window'] => 'uint32' ],
-        SDL_SetWindowTitle   => [ [ 'SDL_Window', 'string' ] ],
-        SDL_GetWindowTitle   => [ ['SDL_Window'], 'string' ],
-        SDL_SetWindowIcon    => [ [ 'SDL_Window', 'SDL_Surface' ] ],
-
-        # These don't work correctly yet. (cast issues)
-        SDL_SetWindowData            => [ [ 'SDL_Window', 'string', 'opaque*' ], 'opaque*' ],
-        SDL_GetWindowData            => [ [ 'SDL_Window', 'string' ], 'opaque*' ],
-        SDL_SetWindowPosition        => [ [ 'SDL_Window', 'int',  'int' ] ],
-        SDL_GetWindowPosition        => [ [ 'SDL_Window', 'int*', 'int*' ] ],
-        SDL_SetWindowSize            => [ [ 'SDL_Window', 'int',  'int' ] ],
-        SDL_GetWindowSize            => [ [ 'SDL_Window', 'int*', 'int*' ] ],
-        SDL_GetWindowBordersSize     => [ [ 'SDL_Window', 'int*', 'int*', 'int*', 'int*' ], 'int' ],
-        SDL_SetWindowMinimumSize     => [ [ 'SDL_Window', 'int',  'int' ] ],
-        SDL_GetWindowMinimumSize     => [ [ 'SDL_Window', 'int*', 'int*' ] ],
-        SDL_SetWindowMaximumSize     => [ [ 'SDL_Window', 'int',  'int' ] ],
-        SDL_GetWindowMaximumSize     => [ [ 'SDL_Window', 'int*', 'int*' ] ],
-        SDL_SetWindowBordered        => [ [ 'SDL_Window', 'bool' ] ],
-        SDL_SetWindowResizable       => [ [ 'SDL_Window', 'bool' ] ],
-        SDL_ShowWindow               => [ ['SDL_Window'] ],
-        SDL_HideWindow               => [ ['SDL_Window'] ],
-        SDL_RaiseWindow              => [ ['SDL_Window'] ],
-        SDL_MaximizeWindow           => [ ['SDL_Window'] ],
-        SDL_MinimizeWindow           => [ ['SDL_Window'] ],
-        SDL_RestoreWindow            => [ ['SDL_Window'] ],
-        SDL_SetWindowFullscreen      => [ [ 'SDL_Window', 'uint32' ],         'int' ],
-        SDL_GetWindowSurface         => [ ['SDL_Window'],                     'SDL_Surface' ],
-        SDL_UpdateWindowSurface      => [ ['SDL_Window'],                     'int' ],
-        SDL_UpdateWindowSurfaceRects => [ [ 'SDL_Window', 'opaque*', 'int' ], 'int' ],
-        SDL_SetWindowGrab            => [ [ 'SDL_Window', 'bool' ] ],
-        ( $ver->patch >= 15 ? ( SDL_SetWindowKeyboardGrab => [ [ 'SDL_Window', 'bool' ] ] ) : () ),
-        ( $ver->patch >= 15 ? ( SDL_SetWindowMouseGrab    => [ [ 'SDL_Window', 'bool' ] ] ) : () ),
-        SDL_GetWindowGrab => [ ['SDL_Window'], 'bool' ],
-        ( $ver->patch >= 15 ? ( SDL_GetWindowKeyboardGrab => [ ['SDL_Window'], 'bool' ] ) : () ),
-        ( $ver->patch >= 15 ? ( SDL_GetWindowMouseGrab    => [ ['SDL_Window'], 'bool' ] ) : () ),
-        SDL_GetGrabbedWindow    => [ [],                             'SDL_Window' ],
-        SDL_SetWindowBrightness => [ [ 'SDL_Window', 'float' ],      'int' ],
-        SDL_GetWindowBrightness => [ ['SDL_Window'],                 'float' ],
-        SDL_SetWindowOpacity    => [ [ 'SDL_Window', 'float' ],      'int' ],
-        SDL_GetWindowOpacity    => [ [ 'SDL_Window', 'float*' ],     'int' ],
-        SDL_SetWindowModalFor   => [ [ 'SDL_Window', 'SDL_Window' ], 'int' ],
-        SDL_SetWindowInputFocus => [ ['SDL_Window'],                 'int' ],
-        SDL_SetWindowGammaRamp  =>
-            [ [ 'SDL_Window', 'uint32[256]', 'uint32[256]', 'uint32[256]' ], 'int' ],
-        SDL_GetWindowGammaRamp => [
-            [ 'SDL_Window', 'uint32[256]', 'uint32[256]', 'uint32[256]' ], 'int'
-
-                #=> sub ( $inner, $window ) {
-                #    my @red = my @blue = my @green = map { \0 } 1 .. 256;
-                #    my $ok  = $inner->( $window, \@red, \@green, \@blue );
-                #    $ok == 0 ? ( \@red, \@green, \@blue ) : $ok;
-                #}
-        ],
-        SDL_SetWindowHitTest => [
-            [ 'SDL_Window', 'SDL_HitTest', 'opaque' ],
-            'int' => sub ( $xsub, $window, $callback, $callback_data = () ) {    # Fake void pointer
-                my $cb = $callback;
-                if ( defined $callback ) {
-                    $cb = FFI::Platypus::Closure->new(
-                        sub ( $win, $area, $data ) {
-                            $callback->(
-                                ffi->cast( 'opaque' => 'SDL_Window', $win ),
-                                ffi->cast( 'opaque' => 'SDL_Point',  $area ),
-                                $callback_data
-                            );
-                        }
-                    );
-                    $cb->sticky;
-                }
-                $xsub->( $window, $cb, $callback_data );
-                return $cb;
-            }
-        ],
-        ( $ver->patch >= 15 ? ( SDL_FlashWindow => [ [ 'SDL_Window', 'uint32' ], 'int' ] ) : () ),
-        SDL_DestroyWindow        => [ ['SDL_Window'] ],
-        SDL_IsScreenSaverEnabled => [ [], 'bool' ],
-        SDL_EnableScreenSaver    => [ [] ],
-        SDL_DisableScreenSaver   => [ [] ],
-        },
-        opengl => {
+    attach opengl => {
         SDL_GL_LoadLibrary        => [ ['string'], 'int' ],
         SDL_GL_GetProcAddress     => [ ['string'], 'opaque' ],
         SDL_GL_UnloadLibrary      => [ [] ],
@@ -464,7 +282,7 @@ END
         SDL_GL_GetSwapInterval    => [ [],      'int' ],
         SDL_GL_SwapWindow         => [ ['SDL_Window'] ],
         SDL_GL_DeleteContext      => [ ['SDL_GLContext'] ]
-        };
+    };
     attach render => {
         SDL_GetNumRenderDrivers     => [ [],                            'int' ],
         SDL_GetRenderDriverInfo     => [ [ 'int', 'SDL_RendererInfo' ], 'int' ],
@@ -1048,15 +866,15 @@ END
 
     package SDL2::VideoDisplay {
         use SDL2::Utils;
-        has name              => 'opaque',    # string
+        has name              => 'opaque',             # string
             max_display_modes => 'int',
             num_display_modes => 'int',
-            display_modes     => 'opaque',    # SDL_DisplayMode
-            desktop_mode      => 'opaque',    # SDL_DisplayMode
-            orientation       => 'opaque',    # SDL_DisplayOrientation
-            fullscreen_window => 'opaque',    # SDL_Window
-            device            => 'opaque',    # SDL_VideoDevice
-            driverdata        => 'opaque';    # void *
+            display_modes     => 'SDL_DisplayMode',    # SDL_DisplayMode
+            desktop_mode      => 'SDL_DisplayMode',    # SDL_DisplayMode
+            orientation       => 'opaque',             # SDL_DisplayOrientation
+            fullscreen_window => 'opaque',             # SDL_Window
+            device            => 'opaque',             # SDL_VideoDevice
+            driverdata        => 'opaque';             # void *
     };
 
     package SDL2::VideoDevice {
@@ -1066,9 +884,9 @@ END
 
     package SDL2::WindowUserData {
         use SDL2::Utils;
-        has name => 'opaque',                 # string
-            data => 'opaque',                 # void *
-            next => 'opaque';                 # SDL_WindowUserData
+        has name => 'opaque',                          # string
+            data => 'opaque',                          # void *
+            next => 'opaque';                          # SDL_WindowUserData
     };
 
     package SDL2::SysWMinfo {
@@ -7705,6 +7523,24 @@ Expected parameters include:
 
 Returns an L<SDL2::Finger> object on success or C<undef> if no object at the
 given ID and index could be found.
+
+=head1 Video Driver
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 =head1 Raw Audio Mixing
 

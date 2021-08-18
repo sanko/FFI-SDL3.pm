@@ -1,18 +1,29 @@
 package SDL2::AudioSpec {
-    use strict;
-    use warnings;
+    use strictures 2;
+    use experimental 'signatures';
+    use lib '../../lib';
     use SDL2::Utils;
-    ffi->type( '(opaque,opaque,int)->void' => 'SDL_AudioCallback' );
     has
-        freq     => 'int',
-        format   => 'uint16',
-        channels => 'uint8',
-        silence  => 'uint8',
-        samples  => 'uint16',
-        padding  => 'uint16',
-        size     => 'uint32',
-        callback => 'opaque',    # 'SDL_AudioCallback',
-        userdata => 'opaque';    # void *
+        freq      => 'int',
+        format    => 'uint16',
+        channels  => 'uint8',
+        silence   => 'uint8',
+        samples   => 'uint16',
+        padding   => 'uint16',
+        size      => 'uint32',
+        _callback => 'opaque',    # 'SDL_AudioCallback',
+        userdata  => 'opaque';    # void *
+
+    sub callback ( $s, $cb = () ) {
+        if ( defined $cb ) {
+            my $closure = ffi->closure($cb);
+            ffi->cast( 'opaque', 'SDL_AudioCallback', $s->_callback )->unsticky
+                if defined $s->_callback;
+            $closure->sticky;
+            return $s->_callback($closure);
+        }
+        ffi->cast( 'opaque', 'SDL_AudioCallback', $_[0]->_callback );
+    }
 
 =encoding utf-8
 
@@ -26,8 +37,6 @@ SDL2::AudioSpec - The Structure that Defines a Point with Integers
     # TODO: I need to whip up a quick example
 
 =head1 DESCRIPTION
-
-SDL2::AudioSpec
 
 The calculated values in this structure are calculated by SDL_OpenAudio().
 
@@ -61,18 +70,17 @@ For multi-channel audio, the default SDL channel mapping is:
 
 =item C<callback> - Callback that feeds the audio device (undef to use C<SDL_QueueAudio( ... )>)
 
-FFI::Platypus currently cannot properly handle closures for callbacks. You'll
-need to do all the casting manually with something like...
-
-    # ...
-    callback => SDL2::FFI::ffi()->cast(
-            'SDL_AudioCallback' => 'opaque',
-            SDL2::FFI::ffi->closure( \&RefToYourActualCallback )
-    )
-
 =item C<userdata> - Userdata passed to callback (ignored for undef callbacks)
 
 =back
+
+=head1 LICENSE
+
+Copyright (C) Sanko Robinson.
+
+This library is free software; you can redistribute it and/or modify it under
+the terms found in the Artistic License 2. Other copyrights, terms, and
+conditions may apply to data transmitted through this module.
 
 =head1 AUTHOR
 

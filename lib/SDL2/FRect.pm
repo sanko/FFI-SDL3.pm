@@ -1,4 +1,3 @@
-
 package SDL2::FRect {
     use SDL2::Utils;
     has x => 'float', y => 'float', w => 'float', h => 'float';

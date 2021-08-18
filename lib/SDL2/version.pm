@@ -1,5 +1,5 @@
 package SDL2::version 0.01 {
-    use SDL2::Utils;
+    use SDL2::Utils qw[has];
     has major => 'uint8', minor => 'uint8', patch => 'uint8';
 
 =encoding utf-8

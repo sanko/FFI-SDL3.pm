@@ -1,5 +1,4 @@
 package SDL2::Semaphore {
-
     use SDL2::Utils;
     use SDL2::Sem;
     has();

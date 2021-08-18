@@ -1,5 +1,4 @@
 package SDL2::Sem {
-
     use SDL2::Utils;
     has();
 
