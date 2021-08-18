@@ -1,4 +1,8 @@
-ignore = **/*.bak **/_*.pm
+; Run "tidyall -a" to process all files.
+; Run "tidyall -g" to process all added or modified files in the current git working directory.
+; https://perladvent.org/2020/2020-12-01.html
+
+ignore = **/*.bak **/_*.pm blib/**/*
 
 [PerlTidy]
 select = **/*.{pl,pm,t}
@@ -12,3 +16,12 @@ argv = -anl -baao --check-syntax --closing-side-comments-balanced -nce -dnl --de
 
 [PodTidy]
 select = lib/**/*.{pm,pod}
+
+[PodChecker]
+select = **/*.{pl,pm,pod}
+
+;[Test::Vars]
+;select = **/*.{pl,pl.in,pm,t}
+
+;[PodSpell]
+;select = **/*.{pl,pl.in,pm,pod}

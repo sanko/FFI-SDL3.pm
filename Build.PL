@@ -8,12 +8,5 @@ use strict;
 
 use Module::Build::Tiny 0.035;
 
-use Devel::CheckBin;
-
-check_bin('perl');
-Build_PL();
-use lib qw[blib/lib lib];use SDL2::Utils;SDL2::Utils::ffi();
-exit;('1');
-
 Build_PL();
 

@@ -43,8 +43,11 @@
          }
       },
       "runtime" : {
+         "recommends" : {
+            "B::Deparse" : "0"
+         },
          "requires" : {
-            "Alien::libsdl2" : "1.06",
+            "Alien::libsdl2" : "1.07",
             "Data::Dump" : "0",
             "Exporter::Tiny" : "0",
             "FFI::Build" : "1.04",
@@ -53,6 +56,7 @@
             "File::Share" : "0",
             "File::Spec::Functions" : "0",
             "Path::Tiny" : "0",
+            "Try::Tiny" : "0",
             "perl" : "5.02000",
             "strictures" : "2"
          }
@@ -80,5 +84,5 @@
    "version" : "0.06",
    "x_authority" : "cpan:SANKO",
    "x_serialization_backend" : "JSON::PP version 4.06",
-   "x_static_install" : 0
+   "x_static_install" : 1
 }

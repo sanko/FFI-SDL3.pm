@@ -4,10 +4,12 @@ requires 'FFI::Platypus', '1.55';
 requires 'FFI::C';
 requires 'File::Spec::Functions';
 requires 'Exporter::Tiny';
-requires 'Alien::libsdl2', '1.06';
+requires 'Alien::libsdl2', '1.07';
 requires 'FFI::Build', '1.04';
 requires 'Path::Tiny';
 requires 'File::Share';
+requires 'Try::Tiny';
+recommends 'B::Deparse';
 
 requires 'Data::Dump';
 
