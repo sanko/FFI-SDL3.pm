@@ -79,7 +79,6 @@ package SDL2::FFI 0.06 {
         ]
     ];
     #
-    #use SDL2::syswm;
     use Data::Dump;
 
     # https://github.com/libsdl-org/SDL/blob/main/include/SDL.h
@@ -94,10 +93,6 @@ package SDL2::FFI 0.06 {
         },
         unknown => { SDL_SetMainReady => [ [] => 'void' ] };
     #
-    #
-    #
-    #
-    # XXX - From SDL_stding.h
     # Define a four character code as a Uint32
     sub SDL_FOURCC ( $A, $B, $C, $D ) {
         ( ord($A) << 0 ) | ( ord($B) << 8 ) | ( ord($C) << 16 ) | ( ord($D) << 24 );
@@ -190,38 +185,6 @@ package SDL2::FFI 0.06 {
     };
 
     package SDL2::RTF::FontEngine {
-        use SDL2::Utils;
-        has;
-    };
-
-    package SDL2::ShapeDriver { };
-
-    package SDL2::VideoDisplay {
-        use SDL2::Utils;
-        has name              => 'opaque',             # string
-            max_display_modes => 'int',
-            num_display_modes => 'int',
-            display_modes     => 'SDL_DisplayMode',    # SDL_DisplayMode
-            desktop_mode      => 'SDL_DisplayMode',    # SDL_DisplayMode
-            orientation       => 'opaque',             # SDL_DisplayOrientation
-            fullscreen_window => 'opaque',             # SDL_Window
-            device            => 'opaque',             # SDL_VideoDevice
-            driverdata        => 'opaque';             # void *
-    };
-
-    package SDL2::VideoDevice {
-        use SDL2::Utils;
-        has;
-    };
-
-    package SDL2::WindowUserData {
-        use SDL2::Utils;
-        has name => 'opaque',                          # string
-            data => 'opaque',                          # void *
-            next => 'opaque';                          # SDL_WindowUserData
-    };
-
-    package SDL2::VideoBootStrap {
         use SDL2::Utils;
         has;
     };
@@ -416,126 +379,6 @@ those functions directly anyhow; use L<< C<SDL_Init( ... )>|/C<SDL_Init( ... )>
 
 You can use this function in an C<END { ... }> block to ensure that it is run
 when your application is shutdown.
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 =head1 Defined Values and Enumerations
 
