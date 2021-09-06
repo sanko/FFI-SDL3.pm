@@ -4,7 +4,7 @@ package SDL2::Utils {
     use strictures 2;
     use experimental 'signatures';
     use base 'Exporter::Tiny';
-    our @EXPORT = qw[attach define deprecate has enum ffi is];
+    our @EXPORT = qw[attach define deprecate has enum ffi is threads_wrapped];
     use Alien::libsdl2;
     use FFI::CheckLib;
     use FFI::Platypus 1.46;
@@ -33,6 +33,9 @@ package SDL2::Utils {
     #    $ver;
     #}
     #ddx( Alien::libsdl2->dynamic_libs );
+    my $thread_safe = 0;
+    sub threads_wrapped () {$thread_safe}    # Fake thread safe
+
     sub ffi () {
         CORE::state $ffi;
         if ( !defined $ffi ) {
@@ -66,38 +69,52 @@ package SDL2::Utils {
             my $lib = undef;
             if (1) {
                 my $root = path(__FILE__)->absolute->parent(3)->realpath;
-                my $dir  = eval { dist_dir('SDL2-FFI') };
+                my $dir;    # eval { dist_dir('SDL2-FFI') };
                 $dir //= $root->child('share')->realpath;
+                my $c = $root->child('ffi/bundle.c');
+                if ( defined(&Test2::V0::diag) ) {
+                    eval { Test2::V0::diag( 'c file: ' . $c . ' | ' . ( -f $c ? '1' : '0' ) ) };
+                }
                 my $build = FFI::Build->new(
                     'bundle',
                     dir     => $dir,
                     alien   => ['Alien::libsdl2'],
-                    source  => [ $root->child('ffi/bundle.c') ],
+                    source  => [$c],
                     libs    => [ Alien::libsdl2->libs_static() // Alien::libsdl2->dynamic_libs() ],
                     verbose => 2
                 );
-                $lib = (
-                    ( !-f $build->file->path ) || (
-                        (
-                            [ stat $build->file->path ]->[9]
-                            < [ stat $root->child('ffi/bundle.c') ]->[9]
-                        )
-                    )
-                ) ? $build->build : $build->file->path;
+                $lib
+                    = ( ( !-f $build->file->path ) ||
+                        ( ( [ stat $build->file->path ]->[9] < [ stat $c ]->[9] ) ) ) ?
+                    $build->build :
+                    $build->file->path;
 
                 #$lib
                 #    = -f $build->file->path && -f $root->child('ffi/sdl2.c') &&
                 #    [ stat $build->file->path ]->[9]
                 #    >= [ stat( $root->child('ffi/sdl2.c') ) ]->[9] ? $build->file : $build->build;
                 #    warn $lib;
+                $thread_safe = defined $lib ? $lib : ();
+                if ( defined(&Test2::V0::diag) ) {
+                    eval { Test2::V0::diag( 'lib: ' . $lib . ' | ' . ( -f $lib ? '1' : '0' ) ); };
+                }
             }
-            $ffi = FFI::Platypus->new(
-                api          => 2,
-                experimental => 2,
-                lib          => [ Alien::libsdl2->dynamic_libs, $lib ]
-            );
-            FFI::C->ffi($ffi);
-            $lib // $ffi->bundle;
+            {
+                $ffi = FFI::Platypus->new(
+                    api          => 2,
+                    experimental => 2,
+                    lib          => [ Alien::libsdl2->dynamic_libs, $lib, ]
+                );
+                FFI::C->ffi($ffi);
+            }
+
+            #$thread_safe = $ffi->bundle();
+            #$lib //= $ffi->bundle;
+            #if ( defined(&Test2::V0::diag) ) {
+            #    eval {
+            #        Test2::V0::diag( 'bundle: ' . $lib->path . ' | ' . ( -f $lib ? '1' : '0' ) );
+            #    };
+            #}
         }
         $ffi;
     }

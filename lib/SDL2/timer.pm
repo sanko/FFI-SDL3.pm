@@ -10,11 +10,11 @@ package SDL2::timer 0.01 {
     my %_timers;
     END { %_timers = () }
     attach timer => {
-        SDL_GetTicks                => [ [], 'uint32' ],
-        SDL_GetPerformanceCounter   => [ [], 'uint64' ],
-        SDL_GetPerformanceFrequency => [ [], 'uint64' ],
-        SDL_Delay                   => [ ['uint32'] ],
-        Bundle_SDL_AddTimer         => [
+        SDL_GetTicks                                            => [ [], 'uint32' ],
+        SDL_GetPerformanceCounter                               => [ [], 'uint64' ],
+        SDL_GetPerformanceFrequency                             => [ [], 'uint64' ],
+        SDL_Delay                                               => [ ['uint32'] ],
+        ( threads_wrapped() ? 'Bundle_' : '' ) . 'SDL_AddTimer' => [
             [ 'uint32', 'SDL_TimerCallback', 'opaque' ],
             'SDL_TimerID',
             sub ( $inner, $delay, $code, $params = () ) {
@@ -27,12 +27,14 @@ package SDL2::timer 0.01 {
                 );
                 my $id = $inner->( $delay, $cb, undef );
                 $_timers{$id} = $cb;    # Store reference
+                $_timers{$id}->sticky;
                 return $id;
             }
         ],
-        Bundle_SDL_RemoveTimer => [
+        ( threads_wrapped() ? 'Bundle_' : '' ) . 'SDL_RemoveTimer' => [
             ['SDL_TimerID'] => 'SDL_bool' => sub ( $inner, $id ) {
                 my $retval = $inner->($id);
+                $_timers{$id}->unstick;
                 delete $_timers{$id};
                 return $retval;
             }

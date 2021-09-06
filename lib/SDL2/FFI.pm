@@ -91,7 +91,13 @@ package SDL2::FFI 0.06 {
         SDL_WasInit       => [ ['uint32'] => 'uint32' ],
         SDL_Quit          => [ [] ],
         },
-        unknown => { SDL_SetMainReady => [ [] => 'void' ] };
+        unknown => { SDL_SetMainReady => [ [] => 'void' ] },
+        bundle  => {
+        ffi_pl_bundle_init => [ [ 'string', 'int', 'opaque' ] ],
+        ffi_pl_bundle_fini => [ ['string'] ]
+        };
+    ffi_pl_bundle_init( __PACKAGE__, scalar @ARGV, @ARGV );
+    END { ffi_pl_bundle_fini(__PACKAGE__) }
     #
     # Define a four character code as a Uint32
     sub SDL_FOURCC ( $A, $B, $C, $D ) {
@@ -191,9 +197,14 @@ package SDL2::FFI 0.06 {
 
     # bundled code testing
     #my $holder;
-    attach
-        debug  => { Bundle_SDL_PrintEvent => [ ['SDL_Event'] ], },
-        events => { Bundle_SDL_Yield      => [ [] ], };
+    if ( threads_wrapped() ) {
+        attach
+            debug  => { Bundle_SDL_PrintEvent => [ ['SDL_Event'] ], },
+            events => { Bundle_SDL_Yield      => [ [] ], };
+    }
+    else {
+        define events => [ [ SDL_Yield => sub () {1} ] ];
+    }
 
     #warn SDL2::SDLK_UP();
     #warn SDL2::SDLK_DOWN();

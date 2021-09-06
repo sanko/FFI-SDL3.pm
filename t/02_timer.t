@@ -2,16 +2,34 @@ use strict;
 use warnings;
 use Test2::V0;
 use lib -d '../t' ? './lib' : 't/lib';
+use lib '../lib', 'lib';
 use SDL2::FFI qw[:all];
 #
 needs_display();
-END { SDL_Quit() }
+
+END {
+    diag(__LINE__);
+    SDL_Quit();
+    diag(__LINE__);
+}
 bail_out 'Error initializing SDL: ' . SDL_GetError()
     unless SDL_Init( SDL_INIT_VIDEO | SDL_INIT_TIMER ) == 0;
 my $done;
+#
+diag(__LINE__);
 my $id = SDL_AddTimer( 2000, sub { pass('Timer triggered'); $done++; 0; } );
+diag(__LINE__);
 ok $id, 'SDL_AddTimer( ... ) returned id == ' . $id;
-for ( 1 .. 5 ) { SDL_Yield(); last if $done; sleep 1; }
+diag(__LINE__);
+for ( 1 .. 5 ) {
+    diag( __LINE__ . '|' . $_ );
+    SDL_PollEvent( my $event = SDL2::Event->new() );
+    last if $done;
+    sleep 1;
+}
+diag(__LINE__);
+SDL_RemoveTimer($id);
+diag(__LINE__);
 #
 done_testing;
 

@@ -396,16 +396,20 @@ void Bundle_SDL_Yield() {
 
   // SDL_Log("<Bundle_SDL_Yield> (%u)", _interval);
   SDL_LockMutex(lock);
+  // SDL_Log("399");
   _interval =
       cb(_interval, NULL); // Call cb and set global int for other thread
-  cb = NULL; // Clear it so we don't repeat this cb without cause
-  SDL_CondSignal(cond);
+                           // SDL_Log("402");
+  cb = NULL;               // Clear it so we don't repeat this cb without cause
+                           // SDL_Log("404");
   SDL_UnlockMutex(lock);
+  // SDL_Log("406");
+   SDL_CondSignal(cond);
   // SDL_Log("</Bundle_SDL_Yield>");
 }
 
 Uint32 c_callback(Uint32 interval, void *param) {
-  //SDL_Log("<c_callback> (%u)", _interval);
+  // SDL_Log("<c_callback> (%u)", _interval);
   /*if (lock == NULL)
           return 0;
   if (cond == NULL)
@@ -413,12 +417,18 @@ Uint32 c_callback(Uint32 interval, void *param) {
   if (param == NULL)
           return 0;*/
   done = SDL_FALSE;
+  // SDL_Log("420");
   SDL_LockMutex(lock);
-  cb = (SDL_TimerCallback) param;
+  // SDL_Log("422");
+  cb = (SDL_TimerCallback)param;
+  // SDL_Log("424");
   _interval = interval;
   //_param = param;
   SDL_CondWait(cond, lock); // Wait for main thread to return from callback
+                            // SDL_Log("428");
   SDL_UnlockMutex(lock);
+  // SDL_Log("430");
+  SDL_CondSignal(cond);
   // SDL_Log("</c_callback> (%u)", _interval);
   done = SDL_TRUE;
   return _interval;

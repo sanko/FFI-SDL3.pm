@@ -18,6 +18,16 @@ package SDL2::system 0.01 {
     #
     if ($win32) {
 
+        package SDL2::IDirect3DDevice9 {
+            use SDL2::Utils;
+            our $TYPE = has();
+        };
+
+        package SDL2::ID3D11Device {
+            use SDL2::Utils;
+            our $TYPE = has();
+        };
+
         #(void *userdata, void *hWnd, unsigned int message, Uint64 wParam, Sint64 lParam);
         ffi->type( '(opaque,opaque,uint,uint64,sint64)->void' => 'SDL_WindowsMessageHook' );
         attach system => {
@@ -34,19 +44,9 @@ package SDL2::system 0.01 {
                 }
             ],
             SDL_Direct3D9GetAdapterIndex => [ ['int'],                   'int' ],
-            SDL_RenderGetD3D9Device      => [ ['SDL_Renderer'],          'IDirect3DDevice9' ],
-            SDL_RenderGetD3D11Device     => [ ['SDL_Renderer'],          'ID3D11Device' ],
+            SDL_RenderGetD3D9Device      => [ ['SDL_Renderer'],          'SDL_IDirect3DDevice9' ],
+            SDL_RenderGetD3D11Device     => [ ['SDL_Renderer'],          'SDL_ID3D11Device' ],
             SDL_DXGIGetOutputInfo        => [ [ 'int', 'int*', 'int*' ], 'SDL_bool' ]
-        };
-
-        package SDL2::IDirect3DDevice9 {
-            use SDL2::Utils;
-            our $TYPE = has();
-        };
-
-        package SDL2::ID3D11Device {
-            use SDL2::Utils;
-            our $TYPE = has();
         };
     }
     elsif ($macos) {

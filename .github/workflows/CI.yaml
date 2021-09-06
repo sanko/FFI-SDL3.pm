@@ -55,5 +55,5 @@ jobs:
     - name: Regular Tests
       run: |
           cpanm -v .
-          # prove -v -o -n
+          # prove -v -o -n -d
           # perl Makefile.PL && make && make test
