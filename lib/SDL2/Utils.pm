@@ -5,7 +5,6 @@ package SDL2::Utils {
     use experimental 'signatures';
     use base 'Exporter::Tiny';
     our @EXPORT = qw[attach define deprecate has enum ffi is threads_wrapped];
-    use Alien::libsdl2;
     use FFI::CheckLib;
     use FFI::Platypus 1.46;
     use FFI::Platypus::Memory qw[malloc strcpy free];
@@ -32,7 +31,6 @@ package SDL2::Utils {
     #        ->call( $ver = SDL2::Version->new() );
     #    $ver;
     #}
-    #ddx( Alien::libsdl2->dynamic_libs );
     my $thread_safe = 0;
     sub threads_wrapped () {$thread_safe}    # Fake thread safe
 
@@ -41,46 +39,40 @@ package SDL2::Utils {
         if ( !defined $ffi ) {
             use FFI::Build;
             use FFI::Build::File::C;
+            my $distdir = Path::Tiny->new( dist_dir('SDL2-FFI') );
+            my $root    = path(__FILE__)->absolute->parent(3)->realpath;
+            my $lines   = $distdir->child('config.ini');
+            my ( $cflags, $lflags )
+                = $lines->is_file ? $lines->lines_raw : ( '', '' );    # hope for the best!
+
+            #$lines // return;
+            $cflags = '-I' . $distdir->child( 'include', 'SDL2' )->relative . ' ' . $cflags;
+            $lflags = '-L' . $distdir->child('lib')->absolute . ' ' . $lflags;
             if ( defined(&Test2::V0::diag) ) {
                 my $Win32 = $^O eq 'MSWin32';
                 #
-                #skip_all 'requires a shared object or DLL'
-                #    unless Alien::libsdl2->dynamic_libs;
-                #
-                #  nasty hack
-                #$ENV{LD_LIBRARY_PATH}   = Alien::libsdl2->dist_dir . '/lib';
-                #$ENV{DYLD_LIBRARY_PATH} = Alien::libsdl2->dist_dir . '/lib';
-                #
-                eval { Test2::V0::diag( 'dist_dir: ' . Alien::libsdl2->dist_dir . '/lib' ) };
+                eval { Test2::V0::diag( 'dist_dir: ' . $distdir ) };
                 warn $@ if $@;
-                eval { Test2::V0::diag( 'libs: ' . Alien::libsdl2->libs ) };
+                eval { Test2::V0::diag( 'libs: ' . $lflags ) };
                 warn $@ if $@;
-                eval { Test2::V0::diag( 'cflags: ' . Alien::libsdl2->cflags ) };
-                warn $@ if $@;
-                eval { Test2::V0::diag( 'cflags static: ' . Alien::libsdl2->cflags_static ) };
-                warn $@ if $@;
-                eval {
-                    Test2::V0::diag( 'Dynamic libs: ' . join ':', Alien::libsdl2->dynamic_libs );
-                };
-                warn $@ if $@;
-                eval { Test2::V0::diag( 'bin dir: ' . join( ' ', Alien::libsdl2->bin_dir ) ) };
+                eval { Test2::V0::diag( 'cflags: ' . $cflags ) };
                 warn $@ if $@;
             }
             my $lib = undef;
             if (1) {
-                my $root = path(__FILE__)->absolute->parent(3)->realpath;
-                my $dir;    # eval { dist_dir('SDL2-FFI') };
-                $dir //= $root->child('share')->realpath;
+
+                #my $dir;    # eval { dist_dir('SDL2-FFI') };
+                #$dir //= $root->child('share')->realpath;
                 my $c = $root->child('ffi/bundle.c');
                 if ( defined(&Test2::V0::diag) ) {
                     eval { Test2::V0::diag( 'c file: ' . $c . ' | ' . ( -f $c ? '1' : '0' ) ) };
                 }
                 my $build = FFI::Build->new(
                     'bundle',
-                    dir     => $dir,
-                    alien   => ['Alien::libsdl2'],
+                    dir     => $distdir,
                     source  => [$c],
-                    libs    => [ Alien::libsdl2->libs_static() // Alien::libsdl2->dynamic_libs() ],
+                    libs    => $lflags,
+                    cflags  => $cflags,
                     verbose => 2
                 );
                 $lib
@@ -103,7 +95,7 @@ package SDL2::Utils {
                 $ffi = FFI::Platypus->new(
                     api          => 2,
                     experimental => 2,
-                    lib          => [ Alien::libsdl2->dynamic_libs, $lib, ]
+                    lib => [ $distdir->child('lib')->children(qr/\.(dynlib|so|dll)\z/), $lib ]
                 );
                 FFI::C->ffi($ffi);
             }

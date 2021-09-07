@@ -75,3 +75,5 @@ eg/icons/sample_640×426_new.bmp
 eg/memcpy_weirdness.pl
 share/libbundle.so
 ffi/_build
+
+share/
