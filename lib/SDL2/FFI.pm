@@ -1,4 +1,4 @@
-package SDL2::FFI 0.06 {
+package SDL2::FFI 0.07 {
     use lib '../lib', 'lib';
 
     # ABSTRACT: FFI Wrapper for SDL (Simple DirectMedia Layer) Development Library
