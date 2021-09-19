@@ -6,7 +6,6 @@ package builder::SDL2 {
     use Path::Tiny qw[path];
     use Archive::Extract;
     use Config;
-    use Config::Tiny;
     #
     $|++;
     #
@@ -204,15 +203,19 @@ package builder::SDL2 {
             #warn `./sdl2_config --prefix=%s --cflags`;
             #warn `./sdl2_config --prefix=%s --libs`;
             chdir $sharedir->child( 'lib', 'pkgconfig' );
+            $ENV{PKG_CONFIG_PATH} .= $sharedir->child( 'lib', 'pkgconfig' )->absolute;
             my $cflags
-                = `pkg-config SDL2_gfx.pc SDL2_image.pc SDL2_mixer.pc sdl2.pc SDL2_ttf.pc --cflags`;
+                = `pkg-config sdl2.pc SDL2_gfx.pc SDL2_image.pc SDL2_mixer.pc SDL2_ttf.pc --cflags`;
             chomp $cflags;
             my $lflags
-                = `pkg-config SDL2_gfx.pc SDL2_image.pc SDL2_mixer.pc sdl2.pc SDL2_ttf.pc --libs`;
+                = `pkg-config sdl2.pc SDL2_gfx.pc SDL2_image.pc SDL2_mixer.pc SDL2_ttf.pc --libs`;
             chomp $lflags;
             $sharedir->child('config.ini')->spew_raw("$cflags\n$lflags");
             chdir $basedir->absolute;
         }
+
+=pod
+
         for my $sub (qw[. include lib bin]) {
             for my $file ( $sharedir->child($sub)->children ) {
 
@@ -220,11 +223,11 @@ package builder::SDL2 {
                 CORE::say '  - ' . $file->absolute;
                 use FFI::ExtractSymbols;
                 use FFI::CheckLib;
-                use App::dumpbin;
-                use Data::Dump;
-                ddx \{ App::dumpbin::exports( $file->absolute ) } if $file =~ /\.dll$/;    # Windows
-                print `nm -gu $file`                              if $file =~ /\.dylib$/;  # OSX
-                next;
+                #use App::dumpbin;
+                #use Data::Dump;
+                #ddx \{ App::dumpbin::exports( $file->absolute ) } if $file =~ /\.dll$/;    # Windows
+                #print `nm -gu $file`                              if $file =~ /\.dylib$/;  # OSX
+                #next;
 
                 #my $libpath = find_lib( lib => 'foo' );
                 extract_symbols(
@@ -245,6 +248,9 @@ package builder::SDL2 {
                 #system( 'nm', '-D', $_->absolute );
             }
         }
+
+=cut
+
     }
 
     sub make_install_lib ( $src_path, $prefix, $buildenv, $extra_args = () ) {

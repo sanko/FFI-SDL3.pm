@@ -1,7 +1,7 @@
 //#define PERL_NO_GET_CONTEXT 1
-#include "SDL2/SDL.h"
-#include <SDL2/SDL_events.h>
-#include <SDL2/SDL_stdinc.h>
+#include "SDL.h"
+#include <SDL_events.h>
+#include <SDL_stdinc.h>
 #include <ffi_platypus_bundle.h>
 //#include <EXTERN.h> /* from the Perl distribution     */
 //#include <XSUB.h>
@@ -397,14 +397,13 @@ void Bundle_SDL_Yield() {
   // SDL_Log("<Bundle_SDL_Yield> (%u)", _interval);
   SDL_LockMutex(lock);
   // SDL_Log("399");
-  _interval =
-      cb(_interval, NULL); // Call cb and set global int for other thread
-                           // SDL_Log("402");
-  cb = NULL;               // Clear it so we don't repeat this cb without cause
-                           // SDL_Log("404");
+  _interval = cb(_interval, NULL); // Call cb and set global int for other
+                                   // thread SDL_Log("402");
+  cb = NULL; // Clear it so we don't repeat this cb without cause
+             // SDL_Log("404");
   SDL_UnlockMutex(lock);
   // SDL_Log("406");
-   SDL_CondSignal(cond);
+  SDL_CondSignal(cond);
   // SDL_Log("</Bundle_SDL_Yield>");
 }
 
