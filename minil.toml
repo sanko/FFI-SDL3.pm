@@ -1,5 +1,5 @@
 name = "SDL2-FFI"
-badges = ["github-actions/CI", "metacpan"]
+badges = ["github-actions/linux.yaml", "github-actions/windows.yaml", "github-actions/osx.yaml", "metacpan"]
 module_maker="ModuleBuildTiny"
 static_install = "auto"
 license="artistic_2"

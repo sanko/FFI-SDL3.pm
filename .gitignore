@@ -77,3 +77,10 @@ share/libbundle.so
 ffi/_build
 
 share/
+
+temp/
+
+eg/glyph-*.bmp
+
+builder/_alien
+builder/stage

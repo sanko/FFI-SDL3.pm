@@ -1,4 +1,4 @@
-name: Windows
+name: Windows (Strawberry)
 
 on:
     push:
@@ -12,7 +12,8 @@ jobs:
       fail-fast: false
       matrix:
         runner: [windows-latest]
-        perl: [ '5.20', '5.30', '5.32', 'latest' ]
+        perl: [ '5.30', '5.32', 'latest' ]
+        dist: [ 'strawberry' ]
 
     runs-on: ${{matrix.runner}}
     name: OS ${{matrix.runner}} Perl ${{matrix.perl}}
@@ -23,11 +24,11 @@ jobs:
     steps:
     - uses: actions/checkout@v2
 
-    - name: Set up perl
+    - name: Set up perl ${{ matrix.dist }} ${{ matrix.perl }}
       uses: shogo82148/actions-setup-perl@v1.11.0
       with:
           perl-version: ${{ matrix.perl }}
-          distribution: ${{ ( startsWith( matrix.runner, 'windows-' ) && 'strawberry' ) || 'default' }}
+          distribution: ${{ matrix.dist }}
 
     - name: perl -V
       run: perl -V
@@ -35,9 +36,6 @@ jobs:
     #- name: Install libsdl2
     #  if: ${{ startsWith( matrix.runner, 'ubuntu-' )  }}
     #  run: sudo apt-get install libsdl2-dev
-    - name: Install unexpected Win32 dependencies
-      run: |
-          cpanm -v -n --mirror http://cpan.cpantesters.org/ App::dumpbin
 
     - name: Install dependencies
       run: |

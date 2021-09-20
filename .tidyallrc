@@ -2,7 +2,7 @@
 ; Run "tidyall -g" to process all added or modified files in the current git working directory.
 ; https://perladvent.org/2020/2020-12-01.html
 
-ignore = **/*.bak **/_*.pm blib/**/*
+ignore = **/*.bak **/_*.pm blib/**/* builder/_alien/**/*
 
 [PerlTidy]
 select = **/*.{pl,pm,t}

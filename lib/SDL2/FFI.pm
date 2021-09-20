@@ -2,7 +2,8 @@ package SDL2::FFI 0.08 {
     use lib '../lib', 'lib';
 
     # ABSTRACT: FFI Wrapper for SDL (Simple DirectMedia Layer) Development Library
-    use strictures 2;
+    use strict;
+    use warnings;
     use experimental 'signatures';
     use base 'Exporter::Tiny';
     use SDL2::Utils;
@@ -61,6 +62,11 @@ package SDL2::FFI 0.08 {
     use SDL2::platform;    # We bypass config.h to get platform.h
     use SDL2::syswm;
     #
+    use SDL2::Image;
+
+    #use SDL2::TTF;
+    # use SDL2::Mixer;
+    #
     define init => [
         [ SDL_INIT_TIMER          => 0x00000001 ],
         [ SDL_INIT_AUDIO          => 0x00000010 ],
@@ -78,8 +84,6 @@ package SDL2::FFI 0.08 {
             }
         ]
     ];
-    #
-    use Data::Dump;
 
     # https://github.com/libsdl-org/SDL/blob/main/include/SDL.h
     push @{ $EXPORT_TAGS{default} }, qw[:init];
@@ -91,14 +95,25 @@ package SDL2::FFI 0.08 {
         SDL_WasInit       => [ ['uint32'] => 'uint32' ],
         SDL_Quit          => [ [] ],
         },
-        unknown => { SDL_SetMainReady => [ [] => 'void' ] },
-        bundle  => {
-        ffi_pl_bundle_init => [ [ 'string', 'int', 'opaque' ] ],
-        ffi_pl_bundle_fini => [ ['string'] ]
-        };
-    ffi_pl_bundle_init( __PACKAGE__, scalar @ARGV, @ARGV );
-    END { ffi_pl_bundle_fini(__PACKAGE__) }
-    #
+        unknown => { SDL_SetMainReady => [ [] => 'void' ] };
+
+    # bundled code testing
+    #my $holder;
+    if ( threads_wrapped() ) {
+        attach
+            debug   => { Bundle_SDL_PrintEvent => [ ['SDL_Event'] ], },
+            events  => { Bundle_SDL_Yield      => [ [] ] },
+            threads => {
+            ffi_pl_bundle_init  => [ [ 'string', 'int', 'opaque' ] ],
+            Bundle_SDL_Wrap_END => [ ['string'] ]
+            };
+        Bundle_SDL_Wrap_BEGIN( __PACKAGE__, scalar @ARGV, @ARGV );
+        END { Bundle_SDL_Wrap_END(__PACKAGE__) if threads_wrapped() }
+    }
+    else {
+        define events => [ [ SDL_Yield => sub () {1} ] ];
+    }
+
     # Define a four character code as a Uint32
     sub SDL_FOURCC ( $A, $B, $C, $D ) {
         ( ord($A) << 0 ) | ( ord($B) << 8 ) | ( ord($C) << 16 ) | ( ord($D) << 24 );
@@ -150,31 +165,6 @@ package SDL2::FFI 0.08 {
         has;
     };
 
-    package SDL2::Image {
-        use SDL2::Utils;
-        has;
-    };
-
-    package SDL2::TTF {
-        use SDL2::Utils;
-        has;
-    };
-
-    package SDL2::TTF::Image {
-        use SDL2::Utils;
-        has;
-    };
-
-    package SDL2::TTF::Font {
-        use SDL2::Utils;
-        has;
-    };
-
-    package SDL2::TTF::PosBuf {
-        use SDL2::Utils;
-        has;
-    };
-
     package SDL2::Net {
         use SDL2::Utils;
         has;
@@ -194,17 +184,6 @@ package SDL2::FFI 0.08 {
         use SDL2::Utils;
         has;
     };
-
-    # bundled code testing
-    #my $holder;
-    if ( threads_wrapped() ) {
-        attach
-            debug  => { Bundle_SDL_PrintEvent => [ ['SDL_Event'] ], },
-            events => { Bundle_SDL_Yield      => [ [] ], };
-    }
-    else {
-        define events => [ [ SDL_Yield => sub () {1} ] ];
-    }
 
     #warn SDL2::SDLK_UP();
     #warn SDL2::SDLK_DOWN();

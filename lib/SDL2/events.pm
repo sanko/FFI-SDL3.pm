@@ -96,7 +96,7 @@ package SDL2::events 0.01 {
         # and should be allocated with SDL_RegisterEvents()
         [ SDL_USEREVENT => 0x8000 ],
 
-        # This last event is only  for bounding internal arrays
+        # This last event is only for bounding internal arrays
         [ SDL_LASTEVENT => 0xFFFF ]
     ];
 
@@ -157,9 +157,18 @@ package SDL2::events 0.01 {
             type      => 'uint32',
             timestamp => 'uint32',
             windowId  => 'uint32',
-            text      => 'char[' . SDL2::FFI::SDL_TEXTEDITINGEVENT_TEXT_SIZE() . ']',
+            _text     => 'char[' . SDL2::FFI::SDL_TEXTEDITINGEVENT_TEXT_SIZE() . ']',
             start     => 'sint32',
             length    => 'sint32';
+
+        sub text ($s) {
+            my $txt = '';
+            for my $chr ( @{ $s->_text } ) {
+                last if $chr == 0;
+                $txt .= chr $chr;
+            }
+            $txt;
+        }
     };
     define events => [ [ SDL_TEXTINPUTEVENT_TEXT_SIZE => 32 ] ];
 
@@ -169,7 +178,16 @@ package SDL2::events 0.01 {
             type      => 'uint32',
             timestamp => 'uint32',
             windowId  => 'uint32',
-            text      => 'char[' . SDL2::FFI::SDL_TEXTINPUTEVENT_TEXT_SIZE() . ']';
+            _text     => 'char[' . SDL2::FFI::SDL_TEXTINPUTEVENT_TEXT_SIZE() . ']';
+
+        sub text ($s) {
+            my $txt = '';
+            for my $chr ( @{ $s->_text } ) {
+                last if $chr == 0;
+                $txt .= chr $chr;
+            }
+            $txt;
+        }
     };
 
     package SDL2::MouseMotionEvent {

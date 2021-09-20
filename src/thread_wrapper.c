@@ -1,12 +1,6 @@
-//#define PERL_NO_GET_CONTEXT 1
-#include "SDL.h"
+#include <SDL.h>
 #include <SDL_events.h>
 #include <SDL_stdinc.h>
-#include <ffi_platypus_bundle.h>
-//#include <EXTERN.h> /* from the Perl distribution     */
-//#include <XSUB.h>
-//#include <perl.h> /* from the Perl distribution     */
-// char buffer[512];
 
 /* Very cheap system to prevent accessing perl context concurrently in multiple
  * threads */
@@ -17,73 +11,17 @@ SDL_TimerCallback cb;
 SDL_mutex *lock;
 SDL_cond *cond;
 
-void ffi_pl_bundle_init(const char *package, int argc, void *argv[]) {
+void Bundle_SDL_Wrap_BEGIN(const char *package, int argc, const char *argv[]) {
   if (lock == NULL)
     lock = SDL_CreateMutex();
   if (cond == NULL)
     cond = SDL_CreateCond();
 }
-void ffi_pl_bundle_fini(const char *package) {
+void Bundle_SDL_Wrap_END(const char *package) {
   SDL_DestroyMutex(lock);
   SDL_DestroyCond(cond);
 }
-/*
-void ffi_pl_bundle_constant(const char *package, ffi_platypus_constant_t *c) {
-  // printf("%s\n", package);
-  // build info
-  c->set_sint("SDL2::CONSTANTS::SDL_VIDEO_DRIVER_WINDOWS",
-#if defined(SDL_VIDEO_DRIVER_WINDOWS)
-              1
-#else
-              0
-#endif
-  );
 
-  c->set_sint("SDL2::CONSTANTS::SDL_VIDEO_DRIVER_X11",
-#if defined(SDL_VIDEO_DRIVER_X11)
-              1
-#else
-              0
-#endif
-  );
-
-  c->set_sint("SDL2::CONSTANTS::SDL_VIDEO_DRIVER_DIRECTFB",
-#if defined(SDL_VIDEO_DRIVER_DIRECTFB)
-              1
-#else
-              0
-#endif
-  );
-  c->set_sint("SDL2::CONSTANTS::SDL_VIDEO_DRIVER_COCOA",
-#if defined(SDL_VIDEO_DRIVER_COCOA)
-              1
-#else
-              0
-#endif
-  );
-  c->set_sint("SDL2::CONSTANTS::SDL_VIDEO_DRIVER_UIKIT",
-#if defined(SDL_VIDEO_DRIVER_UIKIT)
-              1
-#else
-              0
-#endif
-  );
-  c->set_sint("SDL2::CONSTANTS::SDL_VIDEO_DRIVER_VIVANTE",
-#if defined(SDL_VIDEO_DRIVER_VIVANTE)
-              1
-#else
-              0
-#endif
-  );
-  c->set_sint("SDL2::CONSTANTS::SDL_VIDEO_DRIVER_OS2",
-#if defined(SDL_VIDEO_DRIVER_OS2)
-              1
-#else
-              0
-#endif
-  );
-}
-*/
 static const char *DisplayOrientationName(int orientation) {
   switch (orientation) {
 #define CASE(X)                                                                \

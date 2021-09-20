@@ -1,22 +1,35 @@
 package builder::SDL2 {
-    use Module::Build::Tiny;
-    use strictures 2;
+    use strict;
+    use warnings;
     use experimental 'signatures';
     use HTTP::Tiny;
     use Path::Tiny qw[path];
     use Archive::Extract;
+    #
+    use ExtUtils::CBuilder;
+    #
     use Config;
+    use Module::Build::Tiny;
+    #
+    use Carp::Always;
+    use Alien::gmake;
     #
     $|++;
     #
-    use Data::Dump;
+    #$ENV{TSDL2} = './temp/';
     #
-    my $basedir  = Path::Tiny->cwd;            #->child('sdl_libs');
-    my $tempdir  = Path::Tiny->tempdir();
+    my $basedir  = Path::Tiny->cwd;    #->child('sdl_libs');
+    my $tempdir  = $ENV{TSDL2} ? $basedir->child( $ENV{TSDL2} ) : Path::Tiny->tempdir();
     my $sharedir = $basedir->child('share');
+
+    #`rm -rf $sharedir`;
     #
-    my @libraries   = qw[SDL2 SDL2_mixer SDL2_ttf SDL2_image SDL2_gfx];
-    my %libversions = (
+    my $quiet = $ENV{QSDL2} // 0;
+    #
+    #die $sharedir;
+    #
+    my @libraries   = qw[SDL2 SDL2_image SDL2_mixer SDL2_ttf  SDL2_gfx];
+    my %libversions = (                                                  # Allow custom lib versions
         SDL2       => $ENV{VSDL2}       // '2.0.16',
         SDL2_mixer => $ENV{VSDL2_mixer} // '2.0.4',
         SDL2_ttf   => $ENV{VSDL2_ttf}   // '2.0.15',
@@ -30,15 +43,32 @@ package builder::SDL2 {
         SDL2_image => 'https://www.libsdl.org/projects/SDL_image/release/SDL2_image-%s%s',
         SDL2_gfx   => 'https://github.com/a-hurst/sdl2gfx-builds/releases/download/%s/SDL2_gfx-%s%s'
     );
-    my %override_urls = ( libwebp =>
-            'http://storage.googleapis.com/downloads.webmproject.org/releases/webp/%s.tar.gz' );
+    my %override_urls = (    # Allow custom download URLs for libs (github releases, tags, etc.)
+        ( defined $ENV{DSDL2}       ? ( SDL2       => $ENV{DSDL2} )       : () ),
+        ( defined $ENV{DSDL2_mixer} ? ( SDL2_mixer => $ENV{DSDL2_mixer} ) : () ),
+        ( defined $ENV{DSDL2_ttf}   ? ( SDL2_ttf   => $ENV{DSDL2_ttf} )   : () ),
+        ( defined $ENV{DSDL2_image} ? ( SDL2_image => $ENV{DSDL2_image} ) : () ),
+        ( defined $ENV{DSDL2_gfx}   ? ( SDL2_gfx   => $ENV{DSDL2_gfx} )   : () ),
+        libwebp => 'http://storage.googleapis.com/downloads.webmproject.org/releases/webp/%s.tar.gz'
+    );
+    #
+    my ( $cflags, $lflags )
+        = $sharedir->child('config.ini')->is_file ?
+        $sharedir->child('config.ini')->lines( { chomp => 1, count => 2 } ) :
+        ();
+    #
+    sub SDL_Build () {
+        if (
+            !$sharedir->is_dir
 
-    sub SDL_Build {
-        my $action = @ARGV && $ARGV[0] =~ /\A\w+\z/ ? shift @ARGV : 'build';
-        if ( $action eq 'build' ) {
-            buildDLLs($^O);
+            #|| $sharedir->child('lib')->children < 4
+        ) {
+            my $x64 = $Config{ptrsize} == 8;
+            $x64 = 1;
+            buildDLLs( $^O, $x64 );
+            build_thread_wrapper( $^O, $x64 );
         }
-        Module::Build::Tiny::Build(@_);
+        Module::Build::Tiny::Build();
     }
 
     sub SDL_Build_PL {
@@ -58,14 +88,15 @@ package builder::SDL2 {
         $meta->save(@$_) for ['MYMETA.json'], [ 'MYMETA.yml' => { version => 1.4 } ];
     }
 
-    sub buildDLLs ($platform_name) {
+    sub buildDLLs ( $platform_name, $x64 ) {
         for my $d ( $tempdir, $sharedir ) {
 
-            #$d->remove_tree( { safe => 0, verbose => 1 } );
-            $d->mkpath( { verbose => 1 } );
+            #$d->remove_tree( { safe => 0, verbose => !$quiet } );
+            $d->mkpath( { verbose => !$quiet } );
         }
+        $sharedir->child('lib')->mkpath( { verbose => !$quiet } );
+        $sharedir->child('bin')->mkpath( { verbose => !$quiet } );
         if ( 'MSWin32' eq $platform_name ) {
-            my $x64  = $Config{archname} =~ /^MSWin32-x64/ && $Config{ptrsize} == 8;
             my $http = HTTP::Tiny->new;
             for my $lib (@libraries) {
 
@@ -76,26 +107,82 @@ package builder::SDL2 {
                     ( $libversion, $libversion, $x64 ? '-win32-x64.zip' : '-win32-x86.zip' ) :
                     ( 'devel-' . $libversion, '-mingw.tar.gz' );
                 printf 'Downloading %s %s... ', $lib, $libversion;
-                my $sourcepath
-                    = fetch_source( $liburl, $tempdir->child( Path::Tiny->new($liburl)->basename ),
-                    );
+                my $sourcepath = fetch_source( $liburl,
+                    $tempdir->child( Path::Tiny->new($liburl)->basename ) );
                 if ($sourcepath) {
-                    if ( $sourcepath->child('Makefile')->is_file ) {
+                    if ( $lib eq 'SDL2_gfx' ) {
+                        warn 'HERE!!!!!!!!!!!!!!!!!!!!!';
+                        warn $sourcepath->child('SDL2_gfx.dll')->absolute->stringify;
+                        warn $sharedir->child( 'bin', 'SDL2_gfx.dll' )->absolute->stringify;
+
+                        #sleep 120;
+                        $sourcepath->child('SDL2_gfx.dll')
+                            ->move( $sharedir->child( 'lib', 'SDL2_gfx.dll' ) );
+                        $sharedir->child( 'lib', 'SDL2_gfx.dll' )->chmod('0755');
+
+                        #sleep 120;
+                    }
+                    elsif ( $sourcepath->child('Makefile')->is_file ) {
                         my $orig_path = Path::Tiny->cwd->absolute;
                         chdir $sourcepath;
-                        system 'gmake', 'install-package', 'arch=i686-w64-mingw32',
-                            'prefix=' . $sharedir->absolute;
+
+                        #system Alien::gmake->exe, 'install-package',
+                        #    'arch=' . ( $x64 ? 'i686-w64-mingw32' : 'x86_64-w64-mingw32' ),
+                        #    'prefix=' . $sharedir->absolute->stringify;
+                        # collect files sizes
+                        my $sizes
+                            = $sourcepath->child( $x64 ? 'x86_64-w64-mingw32' : 'i686-w64-mingw32' )
+                            ->visit(
+                            sub {
+                                my ( $path, $state ) = @_;
+                                my $rel = $path->relative(
+                                    $sourcepath->child(
+                                        $x64 ? 'x86_64-w64-mingw32' : 'i686-w64-mingw32'
+                                    )
+                                );
+                                my $dest = $sharedir->child($rel);
+                                if ( $path->is_dir ) {
+                                    warn $dest;
+
+                                    #use Data::Dump;
+                                    #ddx $dest->mkpath({ verbose => !$quiet, chmod => '0755' });
+                                    return;
+                                }
+                                $dest->touchpath;
+                                $path->copy( $sharedir->child($rel) );
+                                $state->{$rel} = -s $path;
+                            },
+                            { recurse => 1 }
+                            );
+                        my $prefix = $sharedir->absolute->stringify;
+                        $sharedir->child( 'bin', 'sdl2-config' )
+                            ->edit_raw( sub {s[^prefix=.*][prefix=${prefix}]smg} );
+                        $sharedir->child( 'bin', 'sdl2-config' )->chmod('0755');
+                        $sharedir->child( 'lib', 'libSDL2.la' )
+                            ->edit_raw( sub {s[^libdir=.*][prefix=${prefix}/lib]smg} );
+                        $sharedir->child( 'lib', 'libSDL2main.la' )
+                            ->edit_raw( sub {s[^libdir=.*][libdir=${prefix}/lib]smg} );
+                        $sharedir->child( 'lib', 'pkgconfig', 'sdl2.pc' )
+                            ->edit_raw( sub {s[^prefix=.*][prefix=${prefix}]smg} );
                         chdir $orig_path;
                     }
                 }
-                else {
-                    die 'oops!';
-                }
-            }
 
-            # TODO: store in config file:
-            # cflags = '-I'
-            #ld flags = '-lmingw32 -lSDL2main -lSDL2 -ggdb3 -O0 --std=c99 -lSDL2_image -lm  -Wall'
+                #else {
+                #    die 'oops!';
+                #}
+            }
+            $cflags
+                = ( $x64 ? '-m64' : '-m32' ) .
+                ' -Dmain=SDL_main -I' . $sharedir->child('include')->absolute .
+                ' -I' . $sharedir->child( 'include', 'SDL2' )->absolute;
+            $lflags = ( $x64 ? '-m64' : '-m32' ) .
+                ' -L' . $sharedir->child('lib')->absolute . ' -lSDL2main -lSDL2 -mwindows ';
+
+#' -Wl,--dynamicbase -Wl,--nxcompat -lm -ldinput8 -ldxguid -ldxerr8 -luser32 -lgdi32 -lwinmm -limm32 -lole32 -loleaut32 -lshell32 -lsetupapi -lversion -luuid ';
+# TODO: store in config file:
+# cflags = '-I'
+#ld flags = '-lmingw32 -lSDL2main -lSDL2 -ggdb3 -O0 --std=c99 -lSDL2_image -lm  -Wall'
         }
         else {
             my $suffix = '.tar.gz';    # source code
@@ -109,26 +196,15 @@ package builder::SDL2 {
             $buildenv{PKG_CONFIG_PATH} .= $pkgconfig_dir->absolute;
             $buildenv{LD_LIBRARY_PATH} .= $builtlib_dir->absolute;
             $buildenv{LDFLAGS}         .= '-L' . $builtlib_dir->absolute;
-            $buildenv{CPPFLAGS}        .= '-I' . $include_dir->absolute;
-            #
-            my $x64 = $Config{archname} =~ /^MSWin32-x64/ && $Config{ptrsize} == 8;
+            $buildenv{CPPFLAGS}
+                .= '-I' . $include_dir->absolute . ' -I' . $include_dir->parent->absolute;
             #
             my $outdir = $sharedir->child('download');    #Path::Tiny->tempdir;
             $sdl2_urls{SDL2_gfx} = 'http://www.ferzkopp.net/Software/SDL2_gfx/SDL2_gfx-%s%s';
             for my $lib (@libraries) {
                 my $libversion = $libversions{$lib};
                 printf 'Downloading %s %s... ', $lib, $libversion;
-
-                # Download and extract tar archive containing source
-                #warn $sdl2_urls{$lib};
-                #my $liburl = sprintf $sdl2_urls{$lib}, $libversion, $suffix;
-                my $liburl = sprintf $sdl2_urls{$lib}, $libversion, $suffix;
-
-                #$lib eq 'SDL2_gfx' ?
-                #( $libversion, $libversion, $x64 ? '-win32-x64.zip' : '-win32-x86.zip' ) :
-                #( 'devel-' . $libversion, '-mingw.tar.gz' );
-                #$sdl2_urls{SDL2_gfx} = 'http://www.ferzkopp.net/Software/SDL2_gfx/SDL2_gfx-%s%s';
-                #warn $liburl;
+                my $liburl = $override_urls{$lib} // sprintf $sdl2_urls{$lib}, $libversion, $suffix;
                 my $libfolder  = $lib . '-' . $libversion;
                 my $sourcepath = fetch_source( $liburl,
                     $tempdir->child( Path::Tiny->new($liburl)->basename ) );
@@ -204,53 +280,15 @@ package builder::SDL2 {
             #warn `./sdl2_config --prefix=%s --libs`;
             chdir $sharedir->child( 'lib', 'pkgconfig' );
             $ENV{PKG_CONFIG_PATH} .= $sharedir->child( 'lib', 'pkgconfig' )->absolute;
-            my $cflags
-                = `pkg-config sdl2.pc SDL2_gfx.pc SDL2_image.pc SDL2_mixer.pc SDL2_ttf.pc --cflags`;
+            $cflags = $sharedir->child('include')->absolute . ' ' .
+                `pkg-config sdl2.pc SDL2_gfx.pc SDL2_image.pc SDL2_mixer.pc SDL2_ttf.pc --cflags`;
             chomp $cflags;
-            my $lflags
+            $lflags
                 = `pkg-config sdl2.pc SDL2_gfx.pc SDL2_image.pc SDL2_mixer.pc SDL2_ttf.pc --libs`;
             chomp $lflags;
-            $sharedir->child('config.ini')->spew_raw("$cflags\n$lflags");
             chdir $basedir->absolute;
         }
-
-=pod
-
-        for my $sub (qw[. include lib bin]) {
-            for my $file ( $sharedir->child($sub)->children ) {
-
-                #`./bin/`;
-                CORE::say '  - ' . $file->absolute;
-                use FFI::ExtractSymbols;
-                use FFI::CheckLib;
-                #use App::dumpbin;
-                #use Data::Dump;
-                #ddx \{ App::dumpbin::exports( $file->absolute ) } if $file =~ /\.dll$/;    # Windows
-                #print `nm -gu $file`                              if $file =~ /\.dylib$/;  # OSX
-                #next;
-
-                #my $libpath = find_lib( lib => 'foo' );
-                extract_symbols(
-                    $file->absolute,
-                    export => sub {
-                        ddx \@_;
-                    },
-                    code => sub {
-                        ddx \@_;
-
-                        #print "found a function called $_[0]\n";
-                    },
-                    data => sub {
-                        ddx \@_;
-                    }
-                );
-
-                #system( 'nm', '-D', $_->absolute );
-            }
-        }
-
-=cut
-
+        $sharedir->child('config.ini')->spew_raw("$cflags\n$lflags");
     }
 
     sub make_install_lib ( $src_path, $prefix, $buildenv, $extra_args = () ) {
@@ -259,9 +297,9 @@ package builder::SDL2 {
         chdir $src_path;
         my $success = 0;
         for my $cmd (
-            [ './configure', '--prefix=' . $prefix ],
-            [ 'make',        '-j10' ],
-            [ 'make',        'install' ]
+            [ './configure', ( $quiet ? '--silent' : () ), '--prefix=' . $prefix ],
+            [ Alien::gmake->exe, ( $quiet ? '--silent' : () ), '-j10' ],
+            [ Alien::gmake->exe, ( $quiet ? '--silent' : () ), 'install' ]
         ) {
             if ( $cmd->[0] eq './configure' && $extra_args ) {
                 push @$cmd, @$extra_args;
@@ -297,7 +335,7 @@ package builder::SDL2 {
                 #->child(
                 #		$outfile->basename('.tar.gz', '.zip'))
                 ;
-            printf 'Extrating to %s... ', $outdir;
+            printf 'Extracting to %s... ', $outdir;
             my $ae = Archive::Extract->new( archive => $outfile );
             if ( $ae->extract( to => $outdir ) ) {
                 CORE::say 'okay';
@@ -312,5 +350,35 @@ package builder::SDL2 {
             ddx $response;
         }
     }
-};
+
+    sub build_thread_wrapper ( $platform_name, $x64 ) {
+        my $c = $basedir->child( 'src', 'thread_wrapper.c' );
+        use FFI::Build;
+        my $build = FFI::Build->new(
+            'thread_wrapper',
+            cflags => $cflags,
+            dir    => $sharedir->child('bin')->absolute->stringify,
+            export => [
+                qw[
+                    Bundle_SDL_Wrap_BEGIN Bundle_SDL_Wrap_END DisplayOrientationName Bundle_SDL_PrintEvent
+                    Bundle_SDL_Yield
+                    c_callback
+                    Bundle_SDL_AddTimer
+                    Bundle_SDL_RemoveTimer]
+            ],
+            libs    => $lflags,
+            source  => [ $c->absolute->stringify ],
+            verbose => $quiet ? 0 : 2
+        );
+
+        # $lib is an instance of FFI::Build::File::Library
+        my $lib = $build->build;
+
+        #my $ffi = FFI::Platypus->new( api => 1 );
+        # The filename will be platform dependant, but something like libfrooble.so or frooble.dll
+        #$ffi->lib( $lib->path );
+        warn $lib;
+        return $lib;
+    }
+}
 1;
