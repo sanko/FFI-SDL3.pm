@@ -63,8 +63,8 @@ package SDL2::FFI 0.08 {
     use SDL2::syswm;
     #
     use SDL2::Image;
+    use SDL2::TTF;
 
-    #use SDL2::TTF;
     # use SDL2::Mixer;
     #
     define init => [
