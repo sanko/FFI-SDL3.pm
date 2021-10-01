@@ -1,5 +1,5 @@
 use strictures 2;
-use lib '../lib';
+use lib '../blib/lib';
 use SDL2::FFI qw[:all];
 
 # Taken from example found here: https://wiki.libsdl.org/SDL_CreateSoftwareRenderer

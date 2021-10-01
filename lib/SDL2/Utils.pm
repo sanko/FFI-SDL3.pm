@@ -5,7 +5,7 @@ package SDL2::Utils {
     use warnings;
     use experimental 'signatures';
     use base 'Exporter::Tiny';
-    our @EXPORT = qw[attach define deprecate has enum ffi is threads_wrapped];
+    our @EXPORT = qw[attach define deprecate has enum ffi is threads_wrapped load_lib];
     use FFI::CheckLib;
     use FFI::Platypus 1.46;
     use FFI::Platypus::Memory qw[malloc strcpy free];
@@ -32,8 +32,55 @@ package SDL2::Utils {
     #        ->call( $ver = SDL2::Version->new() );
     #    $ver;
     #}
-    my $thread_safe = eval 'use threads;use threads::shared;' ? 1 : 0;
-    sub threads_wrapped () {$thread_safe}    # Fake thread safe
+    sub threads_wrapped () {    # Fake thread safe
+        loaded_libs('thread_wrapper');
+    }
+    my $loaded_libs;
+
+    sub loaded_libs ($name) {
+        defined $loaded_libs->{$name} ? 1 : 0;
+    }
+    my %libs;
+    my %prereq = (
+
+        # Windows... this matters in Windows...
+        SDL2_image     => [qw[SDL2 jpeg png16 tiff webp zlib1]],
+        SDL2_ttf       => [qw[SDL2 freetype]],
+        thread_wrapper => [qw[SDL2]],
+        freetype       => [qw[zlib1]]
+    );
+
+    sub load_lib ($name) {
+        $libs{all}{$name} // return;                # This should be a fatal error
+        load_lib($_) for @{ $prereq{$name} // [] }; # Recurse!
+        my $_cdd = "\0" x 1024;                     # for Windows and SDL2_ttf
+        CORE::state $SetDllDirectoryA;              # https://github.com/BindBC/bindbc-sdl/issues/10
+        CORE::state $GetDllDirectoryA;
+        if ( $^O eq 'MSWin32' ) {
+            if ( !defined $SetDllDirectoryA ) {
+                ffi()->lib( 'Kernel32.dll', undef );
+                $SetDllDirectoryA = ffi()->function( SetDllDirectoryA => ['string'] => 'bool' );
+            }
+            if ( !defined $GetDllDirectoryA ) {
+                ffi()->lib( 'Kernel32.dll', undef );
+                $GetDllDirectoryA
+                    = ffi()->function( GetDllDirectoryA => [ 'int', 'string' ] => 'int' );
+            }
+            $_cdd = undef if !$GetDllDirectoryA->call( length $_cdd, $_cdd );
+            $SetDllDirectoryA->call(
+                Path::Tiny->new( $libs{all}{$name} )->parent->absolute->stringify );
+        }
+
+        #warn sprintf 'Loading %s => %s', $name, $libs{all}{$name} // '[missing]';
+        ffi()->lib( $libs{all}{$name} );
+        $SetDllDirectoryA->call($_cdd) if $^O eq 'MSWin32' && defined $_cdd;
+        $loaded_libs = {
+            map {
+                path($_)->basename(qw[.so .dylib .dll]) =~ m[^(?:lib)?(.+)(\-.+)?$];
+                $1 => $_
+            } grep {defined} ffi()->lib()
+        };
+    }
 
     sub ffi () {
         CORE::state $ffi;
@@ -46,6 +93,31 @@ package SDL2::Utils {
             my ( $cflags, $lflags )
                 = $lines->is_file ? $lines->lines_raw( { chomp => 1 } ) :
                 ( '', '' );    # hope for the best!
+
+            #
+            my @libs = (
+                $distdir->child('lib')->children(qr[\.(so|dylib|dll)$]),
+                $distdir->child('bin')->children(qr[\.(so|dylib|dll)$])
+            );
+            my %loaded_libs = map {
+                path($_)->basename(qw[.so .dylib .dll]) =~ m[^((?:lib)?(.+?)(\-\d+)?)$];
+                $2 => $_
+            } @libs;
+            %libs = (
+                sdl => {
+                    map {
+                        path($_)->basename(qw[.so .dylib .dll]) =~ m[^((?:lib)?(.+?)(\-\d+)?)$];
+                        $2 => $_
+                    } map { /SDL/ ? $loaded_libs{$_} : () } keys %loaded_libs
+                },
+                thread_wrapper =>
+                    [ sort map { /thread_wrapper/ ? $loaded_libs{$_} : () } keys %loaded_libs ],
+                pre => [
+                    sort map { /^(?:lib)?(?!.*(SDL|thread).+).+$/ ? $loaded_libs{$_} : () }
+                        keys %loaded_libs
+                ],
+                all => \%loaded_libs
+            );
 
             #$lines // return;
             $cflags = '-I' . $distdir->child( 'include', 'SDL2' )->relative . ' ' . $cflags;
@@ -60,13 +132,7 @@ package SDL2::Utils {
                 eval { Test2::V0::diag( 'cflags: ' . $cflags ) };
                 warn $@ if $@;
                 require Data::Dump;
-                eval {
-                    Test2::V0::diag(
-                        'libs: ' . join '; ',
-                        $distdir->child('lib')->children(qr[\.(so|dylib|dll)$]),
-                        $distdir->child('bin')->children(qr[SDL.+\.dll$])
-                    );
-                };
+                eval { Test2::V0::diag( 'libs: ' . join '; ', @libs ); };
 
                 #Data::Dump::ddx(
                 #    \{ api => 2, experimental => 2, lib => [ Alien::libsdl2->dynamic_libs ] } );
@@ -76,24 +142,30 @@ package SDL2::Utils {
                     api          => 2,
                     experimental => 2,
                     lib          => [
-                        $distdir->child('lib')->children(qr[\.(so|dylib|dll)$]),
-                        $distdir->child('bin')->children(qr[SDL.+\.dll$])
+
+                        #$libs{all}{thread_wrapper}
+                        #SDL2.dll
+                        #SDL2_image
+                        #SDL2_mixer
+                        #SDL2_ttf
+                        #SDL2_gfx
+                        #SDL2_ttf
+                        #@{ $libs{pre} }, @{ $libs{sdl} }, @{ $libs{wrapper} },
                     ]
                 );
+
+                #warn join ', ', $ffi->lib;
+                #$loaded_libs
+                #    = { map { path($_)->basename(qw[.so .dylib .dll]) =~ m[^lib(.+)$]; $1 => 1 }
+                #        $ffi->lib };
+                #		use Data::Dump;
+                #
+                #ddx $loaded_libs;
                 FFI::C->ffi($ffi);
             }
-
-            #$thread_safe = $ffi->bundle();
-            #$lib //= $ffi->bundle;
-            #if ( defined(&Test2::V0::diag) ) {
-            #    eval {
-            #        Test2::V0::diag( 'bundle: ' . $lib->path . ' | ' . ( -f $lib ? '1' : '0' ) );
-            #    };
-            #}
         }
         $ffi;
     }
-    ffi();    # auto-init
 
     sub enumX {
         (undef) = shift;
@@ -132,7 +204,14 @@ package SDL2::Utils {
 
     sub enum (%args) {
         my ($package) = caller();
-        $package = 'SDL2::FFI';
+        $package = 'SDL2::FFI' unless
+
+            # Known knowns
+            $package eq 'SDL2::IMG'   ||
+            $package eq 'SDL2::TTF'   ||
+            $package eq 'SDL2::Mixer' ||
+            $package eq 'SDL2::GFX';
+        #
         for my $tag ( keys %args ) {
 
 #use Data::Dump;
@@ -162,14 +241,20 @@ package SDL2::Utils {
 
             #ddx $enum if  $tag eq 'WindowShapeMode';
             #            warn $_tag if $tag eq 'WindowShapeMode';
-            push @{ $SDL2::FFI::EXPORT_TAGS{$_tag} },
+            push @{ $::package->{EXPORT_TAGS}{$_tag} },
                 sort map { ref $_ ? ref $_ eq 'CODE' ? $_->() : $_->[0] : $_ } @{ $args{$tag} };
         }
     }
 
     sub enumD (%args) {
         my ($package) = caller();
-        $package = 'SDL2::FFI';
+        $package = 'SDL2::FFI' unless
+
+            # Known knowns
+            $package eq 'SDL2::IMG'   ||
+            $package eq 'SDL2::TTF'   ||
+            $package eq 'SDL2::Mixer' ||
+            $package eq 'SDL2::GFX';
         for my $tag ( keys %args ) {
             use Data::Dump;
 
@@ -197,14 +282,20 @@ package SDL2::Utils {
 
             #ddx $enum if  $tag eq 'WindowShapeMode';
             #            warn $_tag if $tag eq 'WindowShapeMode';
-            push @{ $SDL2::FFI::EXPORT_TAGS{$_tag} },
+            push @{ ${"${package}::EXPORT_TAGS"}{$_tag} },
                 sort map { ref $_ ? ref $_ eq 'CODE' ? $_->() : $_->[0] : $_ } @{ $args{$tag} };
         }
     }
 
     sub attach (%args) {
         my ($package) = caller();
-        $package = 'SDL2::FFI';
+        $package = 'SDL2::FFI' unless
+
+            # Known knowns
+            $package eq 'SDL2::IMG'   ||
+            $package eq 'SDL2::TTF'   ||
+            $package eq 'SDL2::Mixer' ||
+            $package eq 'SDL2::GFX';
         for my $tag ( sort keys %args ) {
             for my $func ( sort keys %{ $args{$tag} } ) {
 
@@ -214,7 +305,10 @@ package SDL2::Utils {
                 my $perl = $func;
                 $perl =~ s[^Bundle_][];
                 ffi->attach( [ $func => $package . '::' . $perl ] => @{ $args{$tag}{$func} } );
-                push @{ $SDL2::FFI::EXPORT_TAGS{$tag} }, $perl;
+                no strict 'refs';
+                push @{ ${"${package}::EXPORT_TAGS"}{$tag} }, $perl
+
+                    #@{ ${"${package}::{EXPORT_TAGS}{$tag}"} }, $perl;
             }
         }
     }
@@ -250,7 +344,13 @@ package SDL2::Utils {
 
     sub define (%args) {
         my ($package) = caller();
-        $package = 'SDL2::FFI';
+        $package = 'SDL2::FFI' unless
+
+            # Known knowns
+            $package eq 'SDL2::IMG'   ||
+            $package eq 'SDL2::TTF'   ||
+            $package eq 'SDL2::Mixer' ||
+            $package eq 'SDL2::GFX';
         for my $tag ( keys %args ) {
 
             #print $_->[0] . ' ' for sort { $a->[0] cmp $b->[0] } @{ $Defines{$tag} };
@@ -262,7 +362,12 @@ package SDL2::Utils {
                 ->() :
                 constant->import( $package . '::' . $_->[0] => $_->[1] )
                 for @{ $args{$tag} };
-            push @{ $SDL2::FFI::EXPORT_TAGS{$tag} },
+            no strict 'refs';
+            push    #@{
+
+                #${"${package}::EXPORT_TAGS"}{$tag}
+                #},
+                @{ ${"${package}::EXPORT_TAGS"}{$tag} },
                 sort map { ref $_ ? $_->[0] : $_ } @{ $args{$tag} };
         }
     }
@@ -312,5 +417,7 @@ package SDL2::Utils {
             'broken: ' . $conv;
         $len ? ( ( map {'int'} 1 .. $count ), $retval ) : $retval;
     }
+    #
+    ffi();    # auto-init
 };
 1;

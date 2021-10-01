@@ -102,7 +102,15 @@ package builder::SDL2 {
 
                 # Download zip archive containing library
                 my $libversion = $libversions{$lib};
-                my $liburl     = sprintf $sdl2_urls{$lib},
+
+                # https://www.libsdl.org/projects/SDL_image/release/SDL2_image-2.0.5-win32-x86.zip
+                # https://www.libsdl.org/projects/SDL_image/release/SDL2_image-2.0.52.0.5
+                #my $liburl = sprintf $sdl2_urls{$lib},
+                #    $lib eq 'SDL2_gfx' ?
+                #    ( $libversion, $libversion, $x64 ? '-win32-x64.zip' : '-win32-x86.zip' ) :
+                #    $lib ne 'SDL2' ? ( $libversion, $x64 ? '-win32-x64.zip' : '-win32-x86.zip' ) :
+                #    ( 'devel-' . $libversion, '-mingw.tar.gz' );
+                my $liburl = sprintf $sdl2_urls{$lib},
                     $lib eq 'SDL2_gfx' ?
                     ( $libversion, $libversion, $x64 ? '-win32-x64.zip' : '-win32-x86.zip' ) :
                     ( 'devel-' . $libversion, '-mingw.tar.gz' );
@@ -117,8 +125,8 @@ package builder::SDL2 {
 
                         #sleep 120;
                         $sourcepath->child('SDL2_gfx.dll')
-                            ->move( $sharedir->child( 'lib', 'SDL2_gfx.dll' ) );
-                        $sharedir->child( 'lib', 'SDL2_gfx.dll' )->chmod('0755');
+                            ->move( $sharedir->child( 'bin', 'SDL2_gfx.dll' ) );
+                        $sharedir->child( 'bin', 'SDL2_gfx.dll' )->chmod('0755');
 
                         #sleep 120;
                     }
@@ -165,6 +173,20 @@ package builder::SDL2 {
                         $sharedir->child( 'lib', 'pkgconfig', 'sdl2.pc' )
                             ->edit_raw( sub {s[^prefix=.*][prefix=${prefix}]smg} );
                         chdir $orig_path;
+                    }
+                    else {
+                        #$sourcepath->child('Makefile')->is_file
+                        #$sourcepath->child('SDL2_gfx.dll')->absolute->stringify;
+                        #$sharedir->child( 'bin', 'SDL2_gfx.dll' )->absolute->stringify;
+                        #sleep 120;
+                        for my $kid ( $sourcepath->children(qr/.*\.dll/) ) {
+                            warn $kid;
+                            my $dest = $sharedir->child( 'bin', $kid->basename );
+                            warn $dest;
+                            $dest->touchpath;
+                            $kid->copy($dest);
+                            $dest->chmod('0755');
+                        }
                     }
                 }
 
@@ -347,7 +369,9 @@ package builder::SDL2 {
         }
         else {
             CORE::say 'oops!';
-            ddx $response;
+            warn $liburl;
+            use Data::Dump;
+            ddx($response);
         }
     }
 
@@ -357,7 +381,7 @@ package builder::SDL2 {
         my $build = FFI::Build->new(
             'thread_wrapper',
             cflags => $cflags,
-            dir    => $sharedir->child('bin')->absolute->stringify,
+            dir    => $sharedir->child('lib')->absolute->stringify,
             export => [
                 qw[
                     Bundle_SDL_Wrap_BEGIN Bundle_SDL_Wrap_END DisplayOrientationName Bundle_SDL_PrintEvent

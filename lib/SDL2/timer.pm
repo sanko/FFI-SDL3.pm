@@ -1,9 +1,12 @@
 package SDL2::timer 0.01 {
-    use SDL2::Utils;
+    use SDL2::Utils qw[attach define ffi load_lib threads_wrapped];
     use experimental 'signatures';
     #
     use SDL2::stdinc;
     use SDL2::error;
+    #
+    load_lib('thread_wrapper');
+    #
     #
     ffi->type( '(uint32,opaque)->uint32' => 'SDL_TimerCallback' );
     ffi->type( 'int'                     => 'SDL_TimerID' );

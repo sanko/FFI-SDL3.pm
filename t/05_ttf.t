@@ -3,7 +3,9 @@ use warnings;
 use Test2::V0;
 use lib -d '../t' ? './lib' : 't/lib';
 use lib '../lib', 'lib';
-use SDL2::FFI qw[:ttf SDL_RWFromFile];
+#
+use SDL2::FFI qw[SDL_RWFromFile];
+use SDL2::TTF qw[:all];
 $|++;
 #
 my $hello_world_ttf = ( -d '../t' ? './' : './t/' ) . '/etc/hello-world.ttf';
@@ -53,64 +55,43 @@ ok $font->isa('SDL2::TTF::Font'), 'font returned is an SDL2::TTF::Font object';
 # Returns void... Just making sure it doesn't die
 TTF_CloseFont($font);
 #
+# Returns void... Just making sure it doesn't die
+TTF_ByteSwappedUNICODE(1);
+my $style = TTF_GetFontStyle( TTF_OpenFontIndex( $hello_world_ttf, 16, 0 ) );
+is TTF_GetFontStyle( TTF_OpenFontIndex( $hello_world_ttf, 16, 0 ) ), TTF_STYLE_NORMAL,
+    'TTF_GetFontStyle( ... ) returns normal on our font';
+
+# Returns void... Just making sure it doesn't die
+TTF_SetFontStyle( $font, TTF_STYLE_BOLD | TTF_STYLE_ITALIC );
+
+# set the loaded font's style back to normal
+TTF_SetFontStyle( $font, TTF_STYLE_NORMAL );
+is TTF_GetFontOutline($font), 0, 'TTF_GetFontOutline( $font ) is zero by default';
+TTF_SetFontOutline( $font, 5 );
+is TTF_GetFontOutline($font), 5, 'TTF_GetFontOutline( $font ) is now 5';
+is TTF_GetFontHinting($font), TTF_HINTING_NORMAL,
+    'TTF_GetFontHinting( $font ) is TTF_HINTING_NORMAL by default';
+TTF_SetFontHinting( $font, TTF_HINTING_MONO );
+is TTF_GetFontHinting($font), TTF_HINTING_MONO,
+    'TTF_GetFontHinting( $font ) is now TTF_HINTING_MONO';
+#
+is TTF_GetFontKerning($font), 1, 'Kerning is enabled by default';
+TTF_SetFontKerning( $font, 0 );
+is TTF_GetFontKerning($font), 0, 'Kerning is now disabled';
+#
+is TTF_FontHeight($font),           16,             'Font height is 16';
+is TTF_FontAscent($font),           26,             'Font max ascent is 26';
+is TTF_FontDescent($font),          0,              'Font max descent is 0';
+is TTF_FontLineSkip($font),         16,             'Recommended height is 16';
+is TTF_FontFaces($font),            1,              'I only created one font face...';
+is TTF_FontFaceIsFixedWidth($font), 0,              '...which is not monospaced';
+is TTF_FontFaceFamilyName($font),   'hello, world', '...and is named "hello, world"';
+is TTF_FontFaceStyleName($font),    'Regular',      '...and is "Regular" styled';
+is TTF_GlyphIsProvided( $font, 'H' ), 2, '...and provides an "H"';
+is TTF_GlyphIsProvided( $font, 'I' ), 3, '...and provides an "I"';
+is TTF_GlyphIsProvided( $font, 'h' ), 0, '...but not an "h"';
+is TTF_GlyphIsProvided( $font, 'i' ), 0, '...and not an "i"';
+is TTF_GlyphIsProvided( $font, 'A' ), 0, '...not even an "A"';
+is TTF_GlyphIsProvided( $font, 'a' ), 0, '...or even an "a"';
+#
 done_testing;
-__END__
-
-#
-needs_display();
-
-END {
-    diag(__LINE__);
-    SDL_Quit();
-    diag(__LINE__);
-}
-bail_out 'Error initializing SDL: ' . SDL_GetError()
-    unless SDL_Init( SDL_INIT_VIDEO | SDL_INIT_TIMER ) == 0;
-my $done;
-share($done) if $threads;
-#
-diag(__LINE__);
-my $id = SDL_AddTimer( 2000, sub { pass('Timer triggered'); $done++; 0; } );
-diag(__LINE__);
-ok $id, 'SDL_AddTimer( ... ) returned id == ' . $id;
-diag(__LINE__);
-for ( 1 .. 5 ) {
-    diag( __LINE__ . '|' . $_ );
-    SDL_PollEvent( my $event = SDL2::Event->new() );
-    last if $done;
-    sleep 1;
-}
-diag(__LINE__);
-SDL_RemoveTimer($id);
-diag(__LINE__);
-#
-done_testing;
-
-sub needs_display {    # Taken from Test::NeedsDisplay but without Test::More
-
-    # Get rid of Win32 and existing DISPLAY cases
-    return 1 if $^O eq 'MSWin32';
-    return 1 if $ENV{DISPLAY};
-
-    # The quick way is to use the xvfb-run script
-    diag 'No DISPLAY. Looking for xvfb-run...';
-    my @PATHS = split $Config::Config{path_sep}, $ENV{PATH};
-    foreach my $path (@PATHS) {
-        my $xvfb_run = File::Spec->catfile( $path, 'xvfb-run' );
-        next unless -e $xvfb_run;
-        next unless -x $xvfb_run;
-        diag 'Restarting with xvfb-run...';
-        exec( $xvfb_run, $^X,
-            ( $INC{'blib.pm'} ? '-Mblib' : () ),
-            ( $INC{'perl5db.pl'} ? '-d' : () ), $0,
-        );
-    }
-
-    # If provided with the :skip_all, abort the run
-    if ( $_[1] and $_[1] eq ':skip_all' ) {
-        plan( skip_all => 'Test needs a DISPLAY' );
-        exit(0);
-    }
-    diag 'Failed to find xvfb-run.';
-    diag 'Running anyway, but will probably fail...';
-}

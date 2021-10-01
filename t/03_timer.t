@@ -4,7 +4,6 @@ use Test2::V0;
 use lib -d '../t' ? './lib' : 't/lib';
 use lib '../lib', 'lib';
 use SDL2::FFI qw[:all];
-my $threads = eval 'use threads;use threads::shared' ? 1 : 0;
 $|++;
 #
 needs_display();
@@ -17,18 +16,29 @@ END {
 bail_out 'Error initializing SDL: ' . SDL_GetError()
     unless SDL_Init( SDL_INIT_VIDEO | SDL_INIT_TIMER ) == 0;
 my $done;
-share($done) if $threads;
 #
 diag(__LINE__);
-my $id = SDL_AddTimer( 2000, sub { pass('Timer triggered'); $done++; 0; } );
+my $id = SDL_AddTimer(
+    2000,
+    sub {
+        diag(__LINE__);
+        pass('Timer triggered');
+        diag(__LINE__);
+        $done++;
+        0;
+    }
+);
 diag(__LINE__);
 ok $id, 'SDL_AddTimer( ... ) returned id == ' . $id;
 diag(__LINE__);
 for ( 1 .. 5 ) {
     diag( __LINE__ . '|' . $_ );
     SDL_PollEvent( my $event = SDL2::Event->new() );
+    diag( __LINE__ . '|' . $_ );
     last if $done;
+    diag( __LINE__ . '|' . $_ );
     sleep 1;
+    diag( __LINE__ . '|' . $_ );
 }
 diag(__LINE__);
 SDL_RemoveTimer($id);

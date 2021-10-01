@@ -1,6 +1,7 @@
 #include <SDL.h>
 #include <SDL_events.h>
 #include <SDL_stdinc.h>
+//#include <stdio.h>
 
 /* Very cheap system to prevent accessing perl context concurrently in multiple
  * threads */
@@ -12,12 +13,16 @@ SDL_mutex *lock;
 SDL_cond *cond;
 
 void Bundle_SDL_Wrap_BEGIN(const char *package, int argc, const char *argv[]) {
+  // fprintf(stderr, "# Bundle_SDL_Wrap_BEGIN( %s, ... )", package);
+
   if (lock == NULL)
     lock = SDL_CreateMutex();
   if (cond == NULL)
     cond = SDL_CreateCond();
 }
 void Bundle_SDL_Wrap_END(const char *package) {
+  // fprintf(stderr, "# Bundle_SDL_Wrap_END( %s )", package);
+
   SDL_DestroyMutex(lock);
   SDL_DestroyCond(cond);
 }
@@ -325,6 +330,8 @@ void Bundle_SDL_PrintEvent(SDL_Event *event) {
 }
 
 void Bundle_SDL_Yield() {
+  // fprintf(stderr, "# Bundle_SDL_Yield( )");
+
   /*if (lock == NULL)
           return;
   if (cond == NULL)
@@ -336,9 +343,10 @@ void Bundle_SDL_Yield() {
   SDL_LockMutex(lock);
   // SDL_Log("399");
   _interval = cb(_interval, NULL); // Call cb and set global int for other
-                                   // thread SDL_Log("402");
+  // thread
+  // SDL_Log("402");
   cb = NULL; // Clear it so we don't repeat this cb without cause
-             // SDL_Log("404");
+  // SDL_Log("404");
   SDL_UnlockMutex(lock);
   // SDL_Log("406");
   SDL_CondSignal(cond);
@@ -346,7 +354,9 @@ void Bundle_SDL_Yield() {
 }
 
 Uint32 c_callback(Uint32 interval, void *param) {
-  // SDL_Log("<c_callback> (%u)", _interval);
+  // fprintf(stderr, "# c_callback( %d, ... )", interval);
+  // return interval;
+  // SDL_Log("<c_callback> (%u)", interval);
   /*if (lock == NULL)
           return 0;
   if (cond == NULL)
@@ -362,7 +372,7 @@ Uint32 c_callback(Uint32 interval, void *param) {
   _interval = interval;
   //_param = param;
   SDL_CondWait(cond, lock); // Wait for main thread to return from callback
-                            // SDL_Log("428");
+  // SDL_Log("428");
   SDL_UnlockMutex(lock);
   // SDL_Log("430");
   SDL_CondSignal(cond);
@@ -372,7 +382,11 @@ Uint32 c_callback(Uint32 interval, void *param) {
 }
 
 SDL_TimerID Bundle_SDL_AddTimer(int delay, SDL_TimerCallback cb, void *params) {
+  // fprintf(stderr, "# Bundle_SDL_AddTimer( %d, ... )", delay);
   return SDL_AddTimer(delay, c_callback, cb);
 }
 
-SDL_bool Bundle_SDL_RemoveTimer(SDL_TimerID id) { return SDL_RemoveTimer(id); }
+SDL_bool Bundle_SDL_RemoveTimer(SDL_TimerID id) {
+  // fprintf(stderr, "# Bundle_SDL_RemoveTimer( %d )", id);
+  return SDL_RemoveTimer(id);
+}
