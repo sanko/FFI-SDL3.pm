@@ -93,5 +93,43 @@ is TTF_GlyphIsProvided( $font, 'h' ), 0, '...but not an "h"';
 is TTF_GlyphIsProvided( $font, 'i' ), 0, '...and not an "i"';
 is TTF_GlyphIsProvided( $font, 'A' ), 0, '...not even an "A"';
 is TTF_GlyphIsProvided( $font, 'a' ), 0, '...or even an "a"';
+{
+    # get the glyph metric for the letter 'g' in a loaded font
+    my ( $minx, $maxx, $miny, $maxy, $advance );
+    is TTF_GlyphMetrics( $font, 'H', \$minx, \$maxx, \$miny, \$maxy, \$advance ), 0,
+        'TTF_GlyphMetrics( $font, "H", ... ) == 0';
+    is $minx,    0,  '   $minx == 0';
+    is $maxx,    23, '   $maxx == 23';
+    is $miny,    0,  '   $miny == 0';
+    is $maxy,    26, '   $maxy == 26';
+    is $advance, 13, '   $advance == 13';
+}
+{
+    my ( $w, $h );
+    is TTF_SizeText( $font, 'H', \$w, \$h ), 0, 'TTF_SizeText( ..., "H", ... ) == 0';
+    is $w, 23, '    $w == 23';
+    is $h, 26, '    $h == 26';
+    is TTF_SizeText( $font, 'HI', \$w, \$h ), 0, 'TTF_SizeText( ..., "HI", ... ) == 0';
+    is $w, 39, '    $w == 39';
+    is $h, 26, '    $h == 26';
+    #
+    is TTF_SizeText( $font, 'HIHI', \$w, \$h ), 0, 'TTF_SizeText( ..., "HIHI", ... ) == 0';
+    is $w, 68, '    $w == 68';
+    is $h, 26, '    $h == 26';
+}
+{
+    my ( $w, $h );
+    #my $win = $^O eq 'MSWin32';
+    is TTF_SizeUNICODE( $font, 'H', \$w, \$h ), 0, 'TTF_SizeUNICODE( ..., "H", ... ) == 0';
+    #$win ? is $w, 59, '    $w == 59' : is $w, 47, '    $w == 47';
+    is $h, 26, '    $h == 26';
+    is TTF_SizeUNICODE( $font, 'HI', \$w, \$h ), 0, 'TTF_SizeUNICODE( ..., "HI", ... ) == 0';
+    #$win ? is $w, 59, '    $w == 59' : is $w, 47, '    $w == 47';
+    is $h, 26, '    $h == 26';
+    #
+    is TTF_SizeUNICODE( $font, 'HIHI', \$w, \$h ), 0, 'TTF_SizeUNICODE( ..., "HIHI", ... ) == 0';
+    #$win ? is $w, 71, '    $w == 71' : is $w, 47, '    $w == 47';
+    is $h, 26, '    $h == 26';
+}
 #
 done_testing;

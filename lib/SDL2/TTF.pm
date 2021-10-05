@@ -76,6 +76,14 @@ package SDL2::TTF 0.01 {
                 $inner->( $font, ord $ch );
             }
         ],
+        TTF_GlyphMetrics => [
+            [ 'SDL_TTF_Font', 'uint16', 'int*', 'int*', 'int*', 'int*', 'int*' ],
+            'int' => sub ( $inner, $font, $ch, $minx, $maxx, $miny, $maxy, $advance ) {
+                $inner->( $font, ord $ch, $minx, $maxx, $miny, $maxy, $advance );
+            }
+        ],
+        TTF_SizeText => [ [ 'SDL_TTF_Font', 'string', 'int*', 'int*' ], 'int' ],
+		TTF_SizeUNICODE=> [ [ 'SDL_TTF_Font', 'string', 'int*', 'int*' ], 'int' ],
         #
         TTF_RenderText_Solid   => [ [ 'SDL_TTF_Font', 'string', 'SDL_Color' ], 'SDL_Surface' ],
         TTF_RenderGlyph_Shaded =>
@@ -145,9 +153,9 @@ Expected parameters include:
 
 Evaluates to true if compiled with SDL at least C<major.minor.patch>.
 
-	if ( SDL_TTF_VERSION_ATLEAST( 2, 0, 5 ) ) {
-		# Some feature that requires 2.0.5+
-	}
+    if ( SDL_TTF_VERSION_ATLEAST( 2, 0, 5 ) ) {
+        # Some feature that requires 2.0.5+
+    }
 
 Expected parameters include:
 
@@ -207,7 +215,7 @@ Returns C<1> if already initialized, C<0> if not initialized.
 
 Shutdown and cleanup the truetype font API.
 
-	TTF_Quit( );
+    TTF_Quit( );
 
 After calling this, the C<SDL_ttf> functions should not be used, excepting L<<
 C<TTF_WasInit( )>|/C<TTF_WasInit( )> >>. You may, of course, use L<<
@@ -228,7 +236,7 @@ string which may be fetched with L<< C<TTF_GetError( )>|/C<TTF_GetError( )> >>
 
 This is really a defined macro for C<SDL_GetError( )>.
 
-	printf 'Oh My Goodness, an error: %s', TTF_GetError();
+    printf 'Oh My Goodness, an error: %s', TTF_GetError();
 
 Use this to tell the user what happened when an error status has been returned
 from an C<SDL_ttf> function call.
@@ -328,7 +336,7 @@ Returns a new L<SDL2::TTF::Font> structure on success.
 
 Load C<src>, face C<index>, for use as a font, at C<ptsize> size.
 
-	# load font.ttf at size 16 into font
+    # load font.ttf at size 16 into font
     my $font = TTF_OpenFontIndexRW( SDL_RWFromFile( 'font.ttf', 'rb' ), 1, 16, 0 );
     if ( !$font ) {
         printf( "TTF_OpenFontIndexRW: %s\n", TTF_GetError() );
@@ -357,9 +365,9 @@ Returns a new L<SDL2::TTF::Font> structure on success.
 Free the memory used by C<font>, and free C<font> itself as well. Do not use
 C<font> after this without loading a new font to it.
 
-	# free the font
-	TTF_CloseFont( $font );
-	undef $font; # to be safe...
+    # free the font
+    TTF_CloseFont( $font );
+    undef $font; # to be safe...
 
 Expected parameters include:
 
@@ -381,8 +389,8 @@ character in a string will temporarily override this setting for the remainder
 of that string, however this setting will be restored for the next one. The
 default mode is non-swapped, native endianness of the CPU.
 
-	# Turn on byte swapping for UNICODE text
-	TTF_ByteSwappedUNICODE( 1 );
+    # Turn on byte swapping for UNICODE text
+    TTF_ByteSwappedUNICODE( 1 );
 
 Expected parameters include:
 
@@ -501,9 +509,9 @@ underlines.
 
 Get the current outline size of the loaded C<font>.
 
-	# get the loaded font's outline width
-	my $outline = TTF_GetFontOutline( $font );
-	printf 'The font outline width is %d pixels', $outline;
+    # get the loaded font's outline width
+    my $outline = TTF_GetFontOutline( $font );
+    printf 'The font outline width is %d pixels', $outline;
 
 Expected parameters include:
 
@@ -521,13 +529,13 @@ Returns the size of the outline currently set on the font, in pixels.
 
 Set the outline pixel width of the loaded C<font>.
 
-	# set the loaded font's outline to 1 pixel wide
-	TTF_SetFontOutline( $font, 1 );
+    # set the loaded font's outline to 1 pixel wide
+    TTF_SetFontOutline( $font, 1 );
 
-	# render some outlined text...
+    # render some outlined text...
 
-	# set the loaded font's outline back to normal
-	TTF_SetFontOutline( $font, 0 );
+    # set the loaded font's outline back to normal
+    TTF_SetFontOutline( $font, 0 );
 
 Expected parameters include:
 
@@ -595,13 +603,13 @@ if you know which font you are using beforehand, especially when using smaller
 sized fonts. If the user is selecting a font, you may wish to let them select
 the hinting mode for that font as well.
 
-	# set the loaded font's hinting to optimized for monochrome rendering
-	TTF_SetFontHinting( $font, TTF_HINTING_MONO );
+    # set the loaded font's hinting to optimized for monochrome rendering
+    TTF_SetFontHinting( $font, TTF_HINTING_MONO );
 
-	# render some monochrome text...
+    # render some monochrome text...
 
-	# set the loaded font's hinting back to normal
-	TTF_SetFontHinting( $font, TTF_HINTING_NORMAL );
+    # set the loaded font's hinting back to normal
+    TTF_SetFontHinting( $font, TTF_HINTING_NORMAL );
 
 Expected parameters include:
 
@@ -641,9 +649,9 @@ Notes:
 
 Get the current kerning setting of the loaded C<font>.
 
-	# get the loaded font's kerning setting
-	my $kerning = TTF_GetFontKerning( $font );
-	printf 'The font kerning is currently %sabled', $kerning ? 'en' : 'dis';
+    # get the loaded font's kerning setting
+    my $kerning = TTF_GetFontKerning( $font );
+    printf 'The font kerning is currently %sabled', $kerning ? 'en' : 'dis';
 
 The default for a newly loaded font is enabled.
 
@@ -664,13 +672,13 @@ enabled.
 
 Set whether to use kerning when rendering the loaded font.
 
-	# turn off kerning on the loaded font
-	TTF_SetFontKerning( $font, 0 );
+    # turn off kerning on the loaded font
+    TTF_SetFontKerning( $font, 0 );
 
-	# render some text string...
+    # render some text string...
 
-	# turn kerning back on for the loaded font
-	TTF_SetFontKerning( $font, 1 );
+    # turn kerning back on for the loaded font
+    TTF_SetFontKerning( $font, 1 );
 
 This has no effect on individual glyphs, but rather when rendering whole
 strings of characters, at least a word at a time. Perhaps the only time to
@@ -693,7 +701,7 @@ Note: Passing an undefined C<font> into this function will cause a segfault.
 
 Get the maximum pixel height of all glyphs of the loaded font.
 
-	printf "The font max height is: %d\n", TTF_FontHeight( $font );
+    printf "The font max height is: %d\n", TTF_FontHeight( $font );
 
 You may use this height for rendering text as close together vertically as
 possible, though adding at least one pixel height to it will space it so they
@@ -718,13 +726,13 @@ Returns the maximum pixel height of all glyphs in the font.
 Get the maximum pixel ascent of all glyphs of the loaded C<font>. This can also
 be interpreted as the distance from the top of the font to the baseline.
 
-	printf "The font ascent is: %d\n", TTF_FontAscent( $font );
+    printf "The font ascent is: %d\n", TTF_FontAscent( $font );
 
 It could be used when drawing an individual glyph relative to a top point, by
 combining it with the glyph's maxy metric to resolve the top of the rectangle
 used when blitting the glyph on the screen.
 
-	$rect->y( $top + TTF_FontAscent($font) - $glyph_metric->maxy );
+    $rect->y( $top + TTF_FontAscent($font) - $glyph_metric->maxy );
 
 Expected parameters include:
 
@@ -744,13 +752,13 @@ Get the maximum pixel descent of all glyphs of the loaded C<font>. This can
 also be interpreted as the distance from the baseline to the bottom of the
 font.
 
-	printf "The font descent is: %d\n", TTF_FontDescent( $font );
+    printf "The font descent is: %d\n", TTF_FontDescent( $font );
 
 It could be used when drawing an individual glyph relative to a bottom point,
 by combining it with the glyph's maxy metric to resolve the top of the
 rectangle used when blitting the glyph on the screen.
 
-	$rect->y( $bottom - TTF_FontDescent($font) - $glyph_metric->maxy );
+    $rect->y( $bottom - TTF_FontDescent($font) - $glyph_metric->maxy );
 
 Expected parameters include:
 
@@ -788,7 +796,7 @@ Returns the recommended pixel height.
 
 Get the number of faces ("sub-fonts") available in the loaded C<font>.
 
-	printf "The number of faces in the font is: %ld\n", TTF_FontFaces($font);
+    printf "The number of faces in the font is: %ld\n", TTF_FontFaces($font);
 
 This is a count of the number of specific fonts (based on size and style and
 other typographical features perhaps) contained in the font itself. It seems to
@@ -811,18 +819,18 @@ Returns the number of faces in the C<font>.
 
 Test if the current font face of the loaded font is a fixed width C<font>.
 
-	if(TTF_FontFaceIsFixedWidth($font)) {
-		printf "The font is fixed width.\n";
-	}
-	else {
-		print "The font is not fixed width.\n";
-	}
+    if(TTF_FontFaceIsFixedWidth($font)) {
+        printf "The font is fixed width.\n";
+    }
+    else {
+        print "The font is not fixed width.\n";
+    }
 
 Fixed width fonts are monospace, meaning every character that exists in the
 font is the same width, thus you can assume that a rendered string's width is
 going to be the result of a simple calculation:
 
-	$glyph_width * length( $string )
+    $glyph_width * length( $string )
 
 Expected parameters include:
 
@@ -841,8 +849,8 @@ zero is returned.
 
 Get the current font face family name from the loaded font.
 
-	my $fam = TTF_FontFaceFamilyName( $font );
-	print 'The family name of the face in the font is ' . $fam if defined $fam;
+    my $fam = TTF_FontFaceFamilyName( $font );
+    print 'The family name of the face in the font is ' . $fam if defined $fam;
 
 Expected parameters include:
 
@@ -860,8 +868,8 @@ Returns the current family name of the font face if defined.
 
 Get the current font face style name from the loaded font.
 
-	my $style = TTF_FontFaceStyleName( $font );
-	print 'The style name of the face in the font is ' . $style if defined $style;
+    my $style = TTF_FontFaceStyleName( $font );
+    print 'The style name of the face in the font is ' . $style if defined $style;
 
 Expected parameters include:
 
@@ -879,8 +887,8 @@ Returns the current style name of the font face if defined.
 
 Get the status of the availability of the glyph for ch from the loaded C<font>.
 
-	my $index = TTF_GlyphIsProvided( $font, 'g' );
-	printf "There is no 'g' in the loaded font!\n" if !$index;
+    my $index = TTF_GlyphIsProvided( $font, 'g' );
+    printf "There is no 'g' in the loaded font!\n" if !$index;
 
 Expected parameters include:
 
@@ -897,60 +905,222 @@ Note: Passing an undefined C<font> into this function will cause a segfault.
 Returns the index of the glyph for C<ch> in C<font>, or C<0> for an undefined
 character code.
 
+=head2 C<TTF_GlyphMetrics( ... )>
 
+Get desired glyph metrics of the UNICODE char given in C<ch> from the loaded C<font>.
 
+    # get the glyph metric for the letter 'g' in a loaded font
+    my ( $minx, $maxx, $miny, $maxy, $advance );
+    if ( TTF_GlyphMetrics( $font, 'g', \$minx, \$maxx, \$miny, \$maxy, \$advance ) == -1 ) {
+        printf "%s\n", TTF_GetError();
+    }
+    else {
+        warn;
+        printf "minx    : %d\n", $minx;
+        printf "maxx    : %d\n", $maxx;
+        printf "miny    : %d\n", $miny;
+        printf "maxy    : %d\n", $maxy;
+        printf "advance : %d\n", $advance;
+    }
 
+Expected parameters include:
 
+=over
 
+=item C<font> - the loaded font to query
 
+=item C<ch> - the Unicode character to test glyph metrics of
 
+=item C<minx> - pointer to int to store the returned minimum X offset into, or C<undef> when no return value desired
 
+=item C<maxx> - pointer to int to store the returned maximum X offset into, or C<undef> when no return value desired
 
+=item C<miny> - pointer to int to store the returned minimum Y offset into, or C<undef> when no return value desired
 
+=item C<maxy> - pointer to int to store the returned maximum X offset into, or C<undef> when no return value desired
 
+=item C<advance> - pointer to int to store the returned advance offset into, or C<undef> when no return value desired.
 
+=back
 
+Note: Passing an undefined C<font> into this function will cause a segfault.
 
+Returns C<0> on success, with all defined parameters set to the glyph metric as appropriate. C<-1> on errors, such as when the glyph named by ch does not exist in the font.
 
+=head3 Notes
 
+This diagram shows the relationships between the values:
 
+=begin :html
 
+<p><img alt="glyph metrics" src="https://www.libsdl.org/projects/SDL_ttf/docs/metrics.png" /></p>
 
+=end :html
 
+=begin text
 
+L<https://www.libsdl.org/projects/SDL_ttf/docs/metrics.png>
 
+=end text
 
+Here's how the numbers look:
 
+    TTF_FontHeight        : 53
+    TTF_FontAscent        : 38
+    TTF_FontDescent       : -14
+    TTF_FontLineSkip      : 55
+    TTF_GlyphMetrics('g') :
+        minx    = 1
+        maxx    = 15
+        miny    = -7
+        maxy    = 15
+        advance = 16
 
+We see from the Line Skip that each line of text is 55 pixels high, including spacing for this font.
 
+The C<Ascent-Descent=52>, so there seems to be 3 pixels worth of space between lines for this font.
 
+Let's say we want to draw the surface of glyph 'g' (retrived via
+L<< C<TTF_RenderGlyph_Solid( ... )>|/C<TTF_RenderGlyph_Solid( ... )> >> or a similar function), at coordinates (X,Y) for the top left corner of the desired location. Here's the math using glyph metrics:
 
+    # $glyph, $screen, $rect
+    my ($minx, $maxy, $advance);
+    TTF_GlyphMetrics( $font, 'g', \$minx, undef, undef, \$maxy, \$advance );
+    $rect->x( $X + $minx );
+    $rect->y( $Y + TTF_FontAscent($font) - $maxy );
+    SDL_BlitSurface( $glyph, undef, $screen, $rect );
+    $X += $advance;
 
+Let's say we want to draw the same glyph at coordinates (X,Y) for the origin (on the baseline) of the desired location. Here's the math using glyph metrics:
 
+    my ( $minx, $maxy, $advance );
+    TTF_GlyphMetrics( $font, 'g', \$minx, undef, undef, \$maxy, \$advance );
+    rect->x( $X + $minx );
+    rect->y( $Y - $maxy );
+    SDL_BlitSurface( $glyph, undef, $screen, $rect);
+    $X += $advance;
 
+Notes:
 
+=over
 
+=item * The only difference between these example is the C<TTF_FontAscent( $font )> used in the top-left corner algorithm.
 
+=item * These examples assume that 'g' is present in the font!
 
+=item * In practice you may want to also subtract C<TTF_GetFontOutline( $font )> from your X and Y coordinates to keep the glyphs in the same place no matter what outline size is set.
 
+=back
 
+See the web page at L<The FreeType2 Documentation Tutorial|http://freetype.sourceforge.net/freetype2/docs/tutorial/step2.html> for more.
 
+Any glyph based rendering calculations will not result in accurate kerning between adjacent glyphs.
 
+=head2 C<TTF_SizeText( ... )>
 
+Calculate the resulting surface size of the LATIN1 encoded C<text> rendered using C<font>.
 
+    # get the width and height of a string as it would be rendered in a loaded font
+    my ($w, $h);
+    if( TTF_SizeText( $font, 'Hello World!', \$w, \$h ) ) {
+        # perhaps print the current TTF_GetError(), the string can't be rendered...
+    }
+	else {
+        printf( "width=%d height=%d\n", $w, $h );
+    }
 
+No actual rendering is done, however correct kerning is done to get the actual width.
+The height returned in C<h> is the same as you can get using L<< C<TTF_FontHeight( ... )>|/C<TTF_FontHeight( ... )> >>.
 
+Expected parameters include:
 
+=over
 
+=item C<font> - the loaded font to use to calculate the size of the string with
 
+=item C<text> - The LATIN1 string to size up
 
+=item C<w> - pointer to int in which to fill the text width, or C<undef> for no desired return value
 
+=item C<h> - pointer to int in which to fill the text height, or C<undef> for no desired return value
 
+=back
 
+Notes:
 
+=over
 
+=item * Passing a C<undef> font into this function will cause a segfault
 
+=item * Passing a C<undef> text into this function will result in undefined behavior
 
+=back
+
+Returns C<0> on success with the ints pointed to by C<w> and C<h> set as appropriate, if they are not C<undef>. C<-1> is returned on errors, such as a glyph in the string not being found.
+
+=head2 C<TTF_SizeUNICODE( ... )>
+
+Calculate the resulting surface size of the UNICODE encoded C<text> rendered using C<font>.
+
+    # get the width and height of a string as it would be rendered in a loaded font
+    my ($w, $h);
+    if( TTF_SizeUNICODE( $font, 'Hello World!', \$w, \$h ) ) {
+        # perhaps print the current TTF_GetError(), the string can't be rendered...
+    }
+	else {
+        printf( "width=%d height=%d\n", $w, $h );
+    }
+
+No actual rendering is done, however correct kerning is done to get the actual width.
+The height returned in C<h> is the same as you can get using L<< C<TTF_FontHeight( ... )>|/C<TTF_FontHeight( ... )> >>.
+
+Expected parameters include:
+
+=over
+
+=item C<font> - the loaded font to use to calculate the size of the string with
+
+=item C<text> - The UNICODE string to size up
+
+=item C<w> - pointer to int in which to fill the text width, or C<undef> for no desired return value
+
+=item C<h> - pointer to int in which to fill the text height, or C<undef> for no desired return value
+
+=back
+
+Notes:
+
+=over
+
+=item * Passing a C<undef> font into this function will cause a segfault
+
+=item * Passing a C<undef> text into this function will result in undefined behavior
+
+=back
+
+Returns C<0> on success with the ints pointed to by C<w> and C<h> set as appropriate, if they are not C<undef>. C<-1> is returned on errors, such as a glyph in the string not being found.
+
+=head1 Render Functions
+
+These functions render text using a L<SDL2::TTF::Font>.
+
+There are three modes of rendering:
+
+=over
+
+=item Solid: Quick and Dirty
+
+Create an 8-bit palettized surface and render the given text at fast quality with the given font and color. The pixel value of 0 is the colorkey, giving a transparent background when blitted. Pixel and colormap value 1 is set to the text foreground color. This allows you to change the color without having to render the text again. Palette index 0 is of course not drawn when blitted to another surface, since it is the colorkey, and thus transparent, though its actual color is 255 minus each of the RGB components of the foreground color. This is the fastest rendering speed of all the rendering modes. This results in no box around the text, but the text is not as smooth. The resulting surface should blit faster than the Blended one. Use this mode for FPS and other fast changing updating text displays.
+
+=item Shaded: Slow and Nice, but with a Solid Box
+
+Create an 8-bit palettized surface and render the given text at high quality with the given font and colors. The 0 pixel value is background, while other pixels have varying degrees of the foreground color from the background color. This results in a box of the background color around the text in the foreground color. The text is antialiased. This will render slower than Solid, but in about the same time as Blended mode. The resulting surface should blit as fast as Solid, once it is made. Use this when you need nice text, and can live with a box.
+
+=item Blended: Slow Slow Slow, but Ultra Nice over another image
+
+Create a 32-bit ARGB surface and render the given text at high quality, using alpha blending to dither the font with the given color. This results in a surface with alpha transparency, so you don't have a solid colored box around the text. The text is antialiased. This will render slower than Solid, but in about the same time as Shaded mode. The resulting surface will blit slower than if you had used Solid or Shaded. Use this when you want high quality, and the text isn't changing too fast.
+
+=back
 
 
 
