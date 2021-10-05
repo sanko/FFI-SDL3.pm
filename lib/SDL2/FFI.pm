@@ -120,8 +120,6 @@ package SDL2::FFI 0.08 {
 
     # Exts
     #require SDL2::Image if SDL2::Utils::loaded_libs('SDL2_image');
-    #require SDL2::TTF 	if SDL2::Utils::loaded_libs('SDL2_tty');
-    #use SDL2::TTF;
     # TODO
     package SDL2::Mixer {
         use SDL2::Utils;

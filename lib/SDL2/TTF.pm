@@ -82,29 +82,49 @@ package SDL2::TTF 0.01 {
                 $inner->( $font, ord $ch, $minx, $maxx, $miny, $maxy, $advance );
             }
         ],
-        TTF_SizeText => [ [ 'SDL_TTF_Font', 'string', 'int*', 'int*' ], 'int' ],
-		TTF_SizeUNICODE=> [ [ 'SDL_TTF_Font', 'string', 'int*', 'int*' ], 'int' ],
+        TTF_SizeText    => [ [ 'SDL_TTF_Font', 'string', 'int*', 'int*' ], 'int' ],
+        TTF_SizeUNICODE => [ [ 'SDL_TTF_Font', 'string', 'int*', 'int*' ], 'int' ],
         #
-        TTF_RenderText_Solid   => [ [ 'SDL_TTF_Font', 'string', 'SDL_Color' ], 'SDL_Surface' ],
-        TTF_RenderGlyph_Shaded =>
-            [ [ 'SDL_TTF_Font', 'uint16', 'SDL_Color', 'SDL_Color' ], 'SDL_Surface' ],
+        TTF_RenderText_Solid    => [ [ 'SDL_TTF_Font', 'string', 'SDL_Color' ], 'SDL_Surface' ],
+        TTF_RenderUTF8_Solid    => [ [ 'SDL_TTF_Font', 'string', 'SDL_Color' ], 'SDL_Surface' ],
+        TTF_RenderUNICODE_Solid => [ [ 'SDL_TTF_Font', 'string', 'SDL_Color' ], 'SDL_Surface' ],
+        TTF_RenderGlyph_Solid   => [
+            [ 'SDL_TTF_Font', 'uint16', 'SDL_Color' ],
+            'SDL_Surface' => sub ( $inner, $font, $ch, $fg ) {
+                $inner->( $font, ord $ch, $fg );
+            }
+        ],
         TTF_RenderText_Shaded =>
             [ [ 'SDL_TTF_Font', 'string', 'SDL_Color', 'SDL_Color' ], 'SDL_Surface' ],
+        TTF_RenderUTF8_Shaded =>
+            [ [ 'SDL_TTF_Font', 'string', 'SDL_Color', 'SDL_Color' ], 'SDL_Surface' ],
+        TTF_RenderUNICODE_Shaded =>
+            [ [ 'SDL_TTF_Font', 'string', 'SDL_Color', 'SDL_Color' ], 'SDL_Surface' ],
+        TTF_RenderGlyph_Shaded => [
+            [ 'SDL_TTF_Font', 'uint16', 'SDL_Color', 'SDL_Color' ],
+            'SDL_Surface' => sub ( $inner, $font, $ch, $fg, $bg ) {
+                $inner->( $font, ord $ch, $fg, $bg );
+            }
+        ],
+        TTF_RenderText_Blended    => [ [ 'SDL_TTF_Font', 'string', 'SDL_Color' ], 'SDL_Surface' ],
+        TTF_RenderUTF8_Blended    => [ [ 'SDL_TTF_Font', 'string', 'SDL_Color' ], 'SDL_Surface' ],
+        TTF_RenderUNICODE_Blended => [ [ 'SDL_TTF_Font', 'string', 'SDL_Color' ], 'SDL_Surface' ],
+        TTF_RenderGlyph_Blended   => [
+            [ 'SDL_TTF_Font', 'uint16', 'SDL_Color' ],
+            'SDL_Surface' => sub ( $inner, $font, $ch, $fg ) {
+                $inner->( $font, ord $ch, $fg );
+            }
+        ],
         #
     };
     define ttf => [
-        [ TTF_SetError               => \&SDL2::FFI::SDL_SetError ],
-        [ TTF_GetError               => \&SDL2::FFI::SDL_GetError ],
-        [ TTF_STYLE_NORMAL           => 0x00 ],
-        [ TTF_STYLE_BOLD             => 0x01 ],
-        [ TTF_STYLE_ITALIC           => 0x02 ],
-        [ TTF_STYLE_UNDERLINE        => 0x04 ],
-        [ TTF_STYLE_STRIKETHROUGH    => 0x08 ],
-        [ TTF_HINTING_NORMAL         => 0 ],
-        [ TTF_HINTING_LIGHT          => 1 ],
-        [ TTF_HINTING_MONO           => 2 ],
-        [ TTF_HINTING_NONE           => 3 ],
-        [ TTF_HINTING_LIGHT_SUBPIXEL => 4 ],
+        [ TTF_SetError => \&SDL2::FFI::SDL_SetError ],
+        [ TTF_GetError => \&SDL2::FFI::SDL_GetError ],
+        #
+        [ TTF_STYLE_NORMAL    => 0x00 ], [ TTF_STYLE_BOLD => 0x01 ], [ TTF_STYLE_ITALIC => 0x02 ],
+        [ TTF_STYLE_UNDERLINE => 0x04 ], [ TTF_STYLE_STRIKETHROUGH => 0x08 ],
+        [ TTF_HINTING_NORMAL  => 0 ],    [ TTF_HINTING_LIGHT => 1 ], [ TTF_HINTING_MONO => 2 ],
+        [ TTF_HINTING_NONE    => 3 ],    [ TTF_HINTING_LIGHT_SUBPIXEL => 4 ],
     ];
 
     # Export symbols!
@@ -907,7 +927,8 @@ character code.
 
 =head2 C<TTF_GlyphMetrics( ... )>
 
-Get desired glyph metrics of the UNICODE char given in C<ch> from the loaded C<font>.
+Get desired glyph metrics of the UNICODE char given in C<ch> from the loaded
+C<font>.
 
     # get the glyph metric for the letter 'g' in a loaded font
     my ( $minx, $maxx, $miny, $maxy, $advance );
@@ -945,7 +966,9 @@ Expected parameters include:
 
 Note: Passing an undefined C<font> into this function will cause a segfault.
 
-Returns C<0> on success, with all defined parameters set to the glyph metric as appropriate. C<-1> on errors, such as when the glyph named by ch does not exist in the font.
+Returns C<0> on success, with all defined parameters set to the glyph metric as
+appropriate. C<-1> on errors, such as when the glyph named by ch does not exist
+in the font.
 
 =head3 Notes
 
@@ -953,7 +976,8 @@ This diagram shows the relationships between the values:
 
 =begin :html
 
-<p><img alt="glyph metrics" src="https://www.libsdl.org/projects/SDL_ttf/docs/metrics.png" /></p>
+<p><img alt="glyph metrics"
+src="https://www.libsdl.org/projects/SDL_ttf/docs/metrics.png" /></p>
 
 =end :html
 
@@ -976,12 +1000,16 @@ Here's how the numbers look:
         maxy    = 15
         advance = 16
 
-We see from the Line Skip that each line of text is 55 pixels high, including spacing for this font.
+We see from the Line Skip that each line of text is 55 pixels high, including
+spacing for this font.
 
-The C<Ascent-Descent=52>, so there seems to be 3 pixels worth of space between lines for this font.
+The C<Ascent-Descent=52>, so there seems to be 3 pixels worth of space between
+lines for this font.
 
-Let's say we want to draw the surface of glyph 'g' (retrived via
-L<< C<TTF_RenderGlyph_Solid( ... )>|/C<TTF_RenderGlyph_Solid( ... )> >> or a similar function), at coordinates (X,Y) for the top left corner of the desired location. Here's the math using glyph metrics:
+Let's say we want to draw the surface of glyph 'g' (retrieved via L<<
+C<TTF_RenderGlyph_Solid( ... )>|/C<TTF_RenderGlyph_Solid( ... )> >> or a
+similar function), at coordinates (X,Y) for the top left corner of the desired
+location. Here's the math using glyph metrics:
 
     # $glyph, $screen, $rect
     my ($minx, $maxy, $advance);
@@ -991,7 +1019,8 @@ L<< C<TTF_RenderGlyph_Solid( ... )>|/C<TTF_RenderGlyph_Solid( ... )> >> or a sim
     SDL_BlitSurface( $glyph, undef, $screen, $rect );
     $X += $advance;
 
-Let's say we want to draw the same glyph at coordinates (X,Y) for the origin (on the baseline) of the desired location. Here's the math using glyph metrics:
+Let's say we want to draw the same glyph at coordinates (X,Y) for the origin
+(on the baseline) of the desired location. Here's the math using glyph metrics:
 
     my ( $minx, $maxy, $advance );
     TTF_GlyphMetrics( $font, 'g', \$minx, undef, undef, \$maxy, \$advance );
@@ -1012,13 +1041,17 @@ Notes:
 
 =back
 
-See the web page at L<The FreeType2 Documentation Tutorial|http://freetype.sourceforge.net/freetype2/docs/tutorial/step2.html> for more.
+See the web page at L<The FreeType2 Documentation
+Tutorial|http://freetype.sourceforge.net/freetype2/docs/tutorial/step2.html>
+for more.
 
-Any glyph based rendering calculations will not result in accurate kerning between adjacent glyphs.
+Any glyph based rendering calculations will not result in accurate kerning
+between adjacent glyphs.
 
 =head2 C<TTF_SizeText( ... )>
 
-Calculate the resulting surface size of the LATIN1 encoded C<text> rendered using C<font>.
+Calculate the resulting surface size of the LATIN1 encoded C<text> rendered
+using C<font>.
 
     # get the width and height of a string as it would be rendered in a loaded font
     my ($w, $h);
@@ -1029,8 +1062,9 @@ Calculate the resulting surface size of the LATIN1 encoded C<text> rendered usin
         printf( "width=%d height=%d\n", $w, $h );
     }
 
-No actual rendering is done, however correct kerning is done to get the actual width.
-The height returned in C<h> is the same as you can get using L<< C<TTF_FontHeight( ... )>|/C<TTF_FontHeight( ... )> >>.
+No actual rendering is done, however correct kerning is done to get the actual
+width. The height returned in C<h> is the same as you can get using L<<
+C<TTF_FontHeight( ... )>|/C<TTF_FontHeight( ... )> >>.
 
 Expected parameters include:
 
@@ -1056,11 +1090,14 @@ Notes:
 
 =back
 
-Returns C<0> on success with the ints pointed to by C<w> and C<h> set as appropriate, if they are not C<undef>. C<-1> is returned on errors, such as a glyph in the string not being found.
+Returns C<0> on success with the variables pointed to by C<w> and C<h> set as
+appropriate, if they are not C<undef>. C<-1> is returned on errors, such as a
+glyph in the string not being found.
 
 =head2 C<TTF_SizeUNICODE( ... )>
 
-Calculate the resulting surface size of the UNICODE encoded C<text> rendered using C<font>.
+Calculate the resulting surface size of the UNICODE encoded C<text> rendered
+using C<font>.
 
     # get the width and height of a string as it would be rendered in a loaded font
     my ($w, $h);
@@ -1071,8 +1108,9 @@ Calculate the resulting surface size of the UNICODE encoded C<text> rendered usi
         printf( "width=%d height=%d\n", $w, $h );
     }
 
-No actual rendering is done, however correct kerning is done to get the actual width.
-The height returned in C<h> is the same as you can get using L<< C<TTF_FontHeight( ... )>|/C<TTF_FontHeight( ... )> >>.
+No actual rendering is done, however correct kerning is done to get the actual
+width. The height returned in C<h> is the same as you can get using L<<
+C<TTF_FontHeight( ... )>|/C<TTF_FontHeight( ... )> >>.
 
 Expected parameters include:
 
@@ -1098,7 +1136,9 @@ Notes:
 
 =back
 
-Returns C<0> on success with the ints pointed to by C<w> and C<h> set as appropriate, if they are not C<undef>. C<-1> is returned on errors, such as a glyph in the string not being found.
+Returns C<0> on success with the variables pointed to by C<w> and C<h> set as
+appropriate, if they are not C<undef>. C<-1> is returned on errors, such as a
+glyph in the string not being found.
 
 =head1 Render Functions
 
@@ -1110,41 +1150,617 @@ There are three modes of rendering:
 
 =item Solid: Quick and Dirty
 
-Create an 8-bit palettized surface and render the given text at fast quality with the given font and color. The pixel value of 0 is the colorkey, giving a transparent background when blitted. Pixel and colormap value 1 is set to the text foreground color. This allows you to change the color without having to render the text again. Palette index 0 is of course not drawn when blitted to another surface, since it is the colorkey, and thus transparent, though its actual color is 255 minus each of the RGB components of the foreground color. This is the fastest rendering speed of all the rendering modes. This results in no box around the text, but the text is not as smooth. The resulting surface should blit faster than the Blended one. Use this mode for FPS and other fast changing updating text displays.
+Create an 8-bit palletized surface and render the given text at fast quality
+with the given font and color. The pixel value of 0 is the colorkey, giving a
+transparent background when blitted. Pixel and colormap value 1 is set to the
+text foreground color. This allows you to change the color without having to
+render the text again. Palette index 0 is of course not drawn when blitted to
+another surface, since it is the colorkey, and thus transparent, though its
+actual color is 255 minus each of the RGB components of the foreground color.
+This is the fastest rendering speed of all the rendering modes. This results in
+no box around the text, but the text is not as smooth. The resulting surface
+should blit faster than the Blended one. Use this mode for FPS and other fast
+changing updating text displays.
 
 =item Shaded: Slow and Nice, but with a Solid Box
 
-Create an 8-bit palettized surface and render the given text at high quality with the given font and colors. The 0 pixel value is background, while other pixels have varying degrees of the foreground color from the background color. This results in a box of the background color around the text in the foreground color. The text is antialiased. This will render slower than Solid, but in about the same time as Blended mode. The resulting surface should blit as fast as Solid, once it is made. Use this when you need nice text, and can live with a box.
+Create an 8-bit palletized surface and render the given text at high quality
+with the given font and colors. The 0 pixel value is background, while other
+pixels have varying degrees of the foreground color from the background color.
+This results in a box of the background color around the text in the foreground
+color. The text is antialiased. This will render slower than Solid, but in
+about the same time as Blended mode. The resulting surface should blit as fast
+as Solid, once it is made. Use this when you need nice text, and can live with
+a box.
 
 =item Blended: Slow Slow Slow, but Ultra Nice over another image
 
-Create a 32-bit ARGB surface and render the given text at high quality, using alpha blending to dither the font with the given color. This results in a surface with alpha transparency, so you don't have a solid colored box around the text. The text is antialiased. This will render slower than Solid, but in about the same time as Shaded mode. The resulting surface will blit slower than if you had used Solid or Shaded. Use this when you want high quality, and the text isn't changing too fast.
+Create a 32-bit ARGB surface and render the given text at high quality, using
+alpha blending to dither the font with the given color. This results in a
+surface with alpha transparency, so you don't have a solid colored box around
+the text. The text is antialiased. This will render slower than Solid, but in
+about the same time as Shaded mode. The resulting surface will blit slower than
+if you had used Solid or Shaded. Use this when you want high quality, and the
+text isn't changing too fast.
 
 =back
 
+=head2 C<TTF_RenderText_Solid( ... )>
 
+Render the LATIN1 encoded C<text> using C<font> with C<fg> color onto a new
+surface, using the B<Solid> mode. The caller (you!) is responsible for freeing
+any returned surface.
 
+    # Render some text in solid black to a new surface
+    # then blit to the upper left of the screen
+    # then free the text surface
+    my $color = SDL2::Color->new({r => 0, g => 0, b => 0});
+	if(!(my $text_surface = TTF_RenderText_Solid( $font,"Hello World!", $color))) {
+		# handle error here, perhaps print TTF_GetError at least
+	}
+	else {
+		SDL_BlitSurface( $text_surface, undef, $screen, undef );
+		# perhaps we can reuse it, but I assume not for simplicity.
+		SDL_FreeSurface( $text_surface );
+	}
 
+Expected parameters include:
 
+=over
 
+=item C<font> - font to render the text with
 
+=item C<text> - the LATIN1 string to render
 
+=item C<fg> - the color to render the text in; this becomes colormap index 1
 
+=back
 
+Notes:
 
+=over
 
+=item * Passing a C<undef> font into this function will cause a segfault
 
+=item * Passing a C<undef> text into this function will result in undefined behavior
 
+=back
 
+Returns a new L<SDL2::Surface> on success.
 
+=head2 C<TTF_RenderUTF8_Solid( ... )>
 
+Render the UTF8 encoded C<text> using C<font> with C<fg> color onto a new
+surface, using the B<Solid> mode. The caller (you!) is responsible for freeing
+any returned surface.
 
+    # Render some text in solid black to a new surface
+    # then blit to the upper left of the screen
+    # then free the text surface
+    my $color = SDL2::Color->new({r => 0, g => 0, b => 0});
+	if(!(my $text_surface = TTF_RenderUTF8_Solid( $font,"Hello World!", $color))) {
+		# handle error here, perhaps print TTF_GetError at least
+	}
+	else {
+		SDL_BlitSurface( $text_surface, undef, $screen, undef );
+		# perhaps we can reuse it, but I assume not for simplicity.
+		SDL_FreeSurface( $text_surface );
+	}
 
+Expected parameters include:
 
+=over
 
+=item C<font> - font to render the text with
 
+=item C<text> - the UTF8 string to render
 
+=item C<fg> - the color to render the text in; this becomes colormap index 1
 
+=back
+
+Notes:
+
+=over
+
+=item * Passing a C<undef> font into this function will cause a segfault
+
+=item * Passing a C<undef> text into this function will result in undefined behavior
+
+=back
+
+Returns a new L<SDL2::Surface> on success.
+
+=head2 C<TTF_RenderUNICODE_Solid( ... )>
+
+Render the UNICODE encoded C<text> using C<font> with C<fg> color onto a new
+surface, using the B<Solid> mode. The caller (you!) is responsible for freeing
+any returned surface.
+
+    # Render some text in solid black to a new surface
+    # then blit to the upper left of the screen
+    # then free the text surface
+    my $color = SDL2::Color->new({r => 0, g => 0, b => 0});
+	if(!(my $text_surface = TTF_RenderUNICODE_Solid( $font,"Hello World!", $color))) {
+		# handle error here, perhaps print TTF_GetError at least
+	}
+	else {
+		SDL_BlitSurface( $text_surface, undef, $screen, undef );
+		# perhaps we can reuse it, but I assume not for simplicity.
+		SDL_FreeSurface( $text_surface );
+	}
+
+Expected parameters include:
+
+=over
+
+=item C<font> - font to render the text with
+
+=item C<text> - the UNICODE string to render
+
+=item C<fg> - the color to render the text in; this becomes colormap index 1
+
+=back
+
+Notes:
+
+=over
+
+=item * Passing a C<undef> font into this function will cause a segfault
+
+=item * Passing a C<undef> text into this function will result in undefined behavior
+
+=back
+
+Returns a new L<SDL2::Surface> on success.
+
+=head2 C<TTF_RenderGlyph_Solid( ... )>
+
+Render the glyph for the UNICODE C<ch> using C<font> with C<fg> color onto a
+new surface, using the B<Solid> mode. The caller (you!) is responsible for
+freeing any returned surface.
+
+    # Render and cache all printable ASCII characters in solid black
+    my @glyph_cache;
+    for my $ord ( 0 .. 127 ) {
+        push @glyph_cache, TTF_RenderGlyph_Solid( $font, chr $ord, $color );
+    }
+
+Expected parameters include:
+
+=over
+
+=item C<font> - font to render the text with
+
+=item C<ch> - the glyph to render
+
+=item C<fg> - the color to render the glyph in; this becomes colormap index 1
+
+=back
+
+Note: Passing a C<undef> font into this function will cause a segfault.
+
+Returns a new L<SDL2::Surface> on success. C<undef> is returned on errors, such
+as when the glyph is not available in the font.
+
+Combined with a cache of the glyph metrics (minx, miny, and advance), you might
+make a fast text rendering routine that prints directly to the screen, but with
+inaccurate kerning.
+
+=head2 C<TTF_RenderText_Shaded( ... )>
+
+Render the LATIN1 encoded C<text> using C<font> with C<fg> color onto a new
+surface filled with the C<bg> color, using the B<Shaded> mode. The caller
+(you!) is responsible for freeing any returned surface.
+
+    # Render some text in shaded black on white to a new surface
+    # then blit to the upper left of the screen
+    # then free the text surface
+    my $color   = SDL2::Color->new({r => 0, g => 0, b => 0});
+    my $bgcolor = SDL2::Color->new({r => 0xff, g => 0xff, b => 0xff});
+	if(!(my $text_surface = TTF_RenderText_Shaded( $font,"Hello World!", $color, $bgcolor))) {
+		# handle error here, perhaps print TTF_GetError at least
+	}
+	else {
+		SDL_BlitSurface( $text_surface, undef, $screen, undef );
+		# perhaps we can reuse it, but I assume not for simplicity.
+		SDL_FreeSurface( $text_surface );
+	}
+
+Expected parameters include:
+
+=over
+
+=item C<font> - font to render the text with
+
+=item C<text> - the LATIN1 string to render
+
+=item C<fg> - the color to render the text in; this becomes colormap index 1
+
+=item C<bg> - the color to render the background box in; this becomes colormap index 0
+
+=back
+
+Notes:
+
+=over
+
+=item * Passing a C<undef> font into this function will cause a segfault
+
+=item * Passing a C<undef> text into this function will result in undefined behavior
+
+=back
+
+Returns a new L<SDL2::Surface> on success.
+
+=head2 C<TTF_RenderUTF8_Shaded( ... )>
+
+Render the UTF8 encoded C<text> using C<font> with C<fg> color onto a new
+surface filled with the C<bg> color, using the B<Shaded> mode. The caller
+(you!) is responsible for freeing any returned surface.
+
+    # Render some text in shaded black on white to a new surface
+    # then blit to the upper left of the screen
+    # then free the text surface
+    my $color   = SDL2::Color->new({r => 0, g => 0, b => 0});
+    my $bgcolor = SDL2::Color->new({r => 0xff, g => 0xff, b => 0xff});
+	if(!(my $text_surface = TTF_RenderUTF8_Shaded( $font,"Hello World!", $color, $bgcolor))) {
+		# handle error here, perhaps print TTF_GetError at least
+	}
+	else {
+		SDL_BlitSurface( $text_surface, undef, $screen, undef );
+		# perhaps we can reuse it, but I assume not for simplicity.
+		SDL_FreeSurface( $text_surface );
+	}
+
+Expected parameters include:
+
+=over
+
+=item C<font> - font to render the text with
+
+=item C<text> - the UTF8 string to render
+
+=item C<fg> - the color to render the text in; this becomes colormap index 1
+
+=item C<bg> - the color to render the background box in; this becomes colormap index 0
+
+=back
+
+Notes:
+
+=over
+
+=item * Passing a C<undef> font into this function will cause a segfault
+
+=item * Passing a C<undef> text into this function will result in undefined behavior
+
+=back
+
+Returns a new L<SDL2::Surface> on success.
+
+=head2 C<TTF_RenderUNICODE_Shaded( ... )>
+
+Render the UNICODE encoded C<text> using C<font> with C<fg> color onto a new
+surface filled with the C<bg> color, using the B<Shaded> mode. The caller
+(you!) is responsible for freeing any returned surface.
+
+    # Render some text in shaded black on white to a new surface
+    # then blit to the upper left of the screen
+    # then free the text surface
+    my $color   = SDL2::Color->new({r => 0, g => 0, b => 0});
+    my $bgcolor = SDL2::Color->new({r => 0xff, g => 0xff, b => 0xff});
+	if(!(my $text_surface = TTF_RenderUNICODE_Shaded( $font,"Hello World!", $color, $bgcolor))) {
+		# handle error here, perhaps print TTF_GetError at least
+	}
+	else {
+		SDL_BlitSurface( $text_surface, undef, $screen, undef );
+		# perhaps we can reuse it, but I assume not for simplicity.
+		SDL_FreeSurface( $text_surface );
+	}
+
+Expected parameters include:
+
+=over
+
+=item C<font> - font to render the text with
+
+=item C<text> - the UNICODE string to render
+
+=item C<fg> - the color to render the text in; this becomes colormap index 1
+
+=item C<bg> - the color to render the background box in; this becomes colormap index 0
+
+=back
+
+Notes:
+
+=over
+
+=item * Passing a C<undef> font into this function will cause a segfault
+
+=item * Passing a C<undef> text into this function will result in undefined behavior
+
+=back
+
+Returns a new L<SDL2::Surface> on success.
+
+=head2 C<TTF_RenderGlyph_Shaded( ... )>
+
+Render the glyph for the UNICODE C<ch> using C<font> with C<fg> color onto a
+new surface, using the B<Shaded> mode. The caller (you!) is responsible for
+freeing any returned surface.
+
+    # Render and cache all printable ASCII characters in solid black
+    my @glyph_cache;
+    for my $ord ( 0 .. 127 ) {
+        push @glyph_cache, TTF_RenderGlyph_Shaded( $font, chr $ord, $color, $bgcolor );
+    }
+
+Expected parameters include:
+
+=over
+
+=item C<font> - font to render the text with
+
+=item C<ch> - the glyph to render
+
+=item C<fg> - the color to render the glyph in; this becomes colormap index 1
+
+=back
+
+Note: Passing a C<undef> font into this function will cause a segfault.
+
+Returns a new L<SDL2::Surface> on success. C<undef> is returned on errors, such
+as when the glyph is not available in the font.
+
+Combined with a cache of the glyph metrics (minx, miny, and advance), you might
+make a fast text rendering routine that prints directly to the screen, but with
+inaccurate kerning.
+
+=head2 C<TTF_RenderText_Blended( ... )>
+
+Render the LATIN1 encoded C<text> using C<font> with C<fg> color onto a new
+surface, using the B<Blended> mode. The caller (you!) is responsible for
+freeing any returned surface.
+
+    # Render some text in blended black to a new surface
+    # then blit to the upper left of the screen
+    # then free the text surface
+    my $color   = SDL2::Color->new({r => 0, g => 0, b => 0});
+	if(!(my $text_surface = TTF_RenderText_Blended( $font,"Hello World!", $color ))) {
+		# handle error here, perhaps print TTF_GetError at least
+	}
+	else {
+		SDL_BlitSurface( $text_surface, undef, $screen, undef );
+		# perhaps we can reuse it, but I assume not for simplicity.
+		SDL_FreeSurface( $text_surface );
+	}
+
+Expected parameters include:
+
+=over
+
+=item C<font> - font to render the text with
+
+=item C<text> - the LATIN1 string to render
+
+=item C<fg> - the color to render the text in; pixels are blended between transparent and this color to draw the antialiased glyphs
+
+=back
+
+Notes:
+
+=over
+
+=item * Passing a C<undef> font into this function will cause a segfault
+
+=item * Passing a C<undef> text into this function will result in undefined behavior
+
+=back
+
+Returns a new L<SDL2::Surface> on success.
+
+=head2 C<TTF_RenderUTF8_Blended( ... )>
+
+Render the UTF8 encoded C<text> using C<font> with C<fg> color onto a new
+surface, using the B<Blended> mode. The caller (you!) is responsible for
+freeing any returned surface.
+
+    # Render some text in blended black to a new surface
+    # then blit to the upper left of the screen
+    # then free the text surface
+    my $color   = SDL2::Color->new({r => 0, g => 0, b => 0});
+	if(!(my $text_surface = TTF_RenderUTF8_Blended( $font,"Hello World!", $color ))) {
+		# handle error here, perhaps print TTF_GetError at least
+	}
+	else {
+		SDL_BlitSurface( $text_surface, undef, $screen, undef );
+		# perhaps we can reuse it, but I assume not for simplicity.
+		SDL_FreeSurface( $text_surface );
+	}
+
+Expected parameters include:
+
+=over
+
+=item C<font> - font to render the text with
+
+=item C<text> - the UTF8 string to render
+
+=item C<fg> - the color to render the text in; pixels are blended between transparent and this color to draw the antialiased glyphs
+
+=back
+
+Notes:
+
+=over
+
+=item * Passing a C<undef> font into this function will cause a segfault
+
+=item * Passing a C<undef> text into this function will result in undefined behavior
+
+=back
+
+Returns a new L<SDL2::Surface> on success.
+
+=head2 C<TTF_RenderUNICODE_Blended( ... )>
+
+Render the UNICODE encoded C<text> using C<font> with C<fg> color onto a new
+surface, using the B<Blended> mode. The caller (you!) is responsible for
+freeing any returned surface.
+
+    # Render some text in blended black to a new surface
+    # then blit to the upper left of the screen
+    # then free the text surface
+    my $color   = SDL2::Color->new({r => 0, g => 0, b => 0});
+	if(!(my $text_surface = TTF_RenderUNICODE_Blended( $font,"Hello World!", $color ))) {
+		# handle error here, perhaps print TTF_GetError at least
+	}
+	else {
+		SDL_BlitSurface( $text_surface, undef, $screen, undef );
+		# perhaps we can reuse it, but I assume not for simplicity.
+		SDL_FreeSurface( $text_surface );
+	}
+
+Expected parameters include:
+
+=over
+
+=item C<font> - font to render the text with
+
+=item C<text> - the UNICODE string to render
+
+=item C<fg> - the color to render the text in; pixels are blended between transparent and this color to draw the antialiased glyphs
+
+=back
+
+Notes:
+
+=over
+
+=item * Passing a C<undef> font into this function will cause a segfault
+
+=item * Passing a C<undef> text into this function will result in undefined behavior
+
+=back
+
+Returns a new L<SDL2::Surface> on success.
+
+=head2 C<TTF_RenderGlyph_Blended( ... )>
+
+Render the glyph for the UNICODE C<ch> using C<font> with C<fg> color onto a
+new surface, using the B<Blended> mode. The caller (you!) is responsible for
+freeing any returned surface.
+
+    # Render and cache all printable ASCII characters in blended black
+    my @glyph_cache;
+    for my $ord ( 0 .. 127 ) {
+        push @glyph_cache, TTF_RenderGlyph_Blended( $font, chr $ord, $color );
+    }
+
+Expected parameters include:
+
+=over
+
+=item C<font> - font to render the text with
+
+=item C<ch> - the glyph to render
+
+=item C<fg> - the color to render the glyph in; pixels are blended between transparent and this color to draw the antialiased glyph
+
+=back
+
+Note: Passing a C<undef> font into this function will cause a segfault.
+
+Returns a new L<SDL2::Surface> on success. C<undef> is returned on errors, such
+as when the glyph is not available in the font.
+
+Combined with a cache of the glyph metrics (minx, miny, and advance), you might
+make a fast text rendering routine that prints directly to the screen, but with
+inaccurate kerning.
+
+=head2 Defined Values
+
+These may be imported by name or with the C<:all> tag.
+
+=over
+
+=item C<TTF_MAJOR_VERSION>
+
+SDL_ttf library major number at compilation time.
+
+=item C<TTF_MINOR_VERSION>
+
+SDL_ttf library minor number at compilation time.
+
+=item C<TTF_PATCHLEVEL>
+
+SDL_ttf library patch level at compilation time.
+
+=item C<UNICODE_BOM_NATIVE>
+
+This allows you to switch byte-order of UNICODE text data to native order,
+meaning the mode of your CPU. This is meant to be used in a UNICODE string that
+you are using with the SDL_ttf API.
+
+=item C<UNICODE_BOM_SWAPPED>
+
+This allows you to switch byte-order of UNICODE text data to swapped order,
+meaning the reversed mode of your CPU. So if your CPU is LSB, then the data
+will be interpreted as MSB. This is meant to be used in a UNICODE string that
+you are using with the SDL_ttf API.
+
+=item C<TTF_STYLE_NORMAL>
+
+Used to indicate regular, normal, plain rendering style.
+
+=item C<TTF_STYLE_BOLD>
+
+Used to indicate bold rendering style. This is used in a bitmask along with
+other styles.
+
+=item C<TTF_STYLE_ITALIC>
+
+Used to indicate italicized rendering style. This is used in a bitmask along
+with other styles.
+
+=item C<TTF_STYLE_UNDERLINE>
+
+Used to indicate underlined rendering style. This is used in a bitmask along
+with other styles.
+
+=item C<TTF_STYLE_STRIKETHROUGH>
+
+Used to indicate strikethrough rendering style. This is used in a bitmask along
+with other styles.
+
+=item C<TTF_HINTING_NORMAL>
+
+This corresponds to the default hinting algorithm, optimized for standard
+gray-level rendering
+
+=item C<TTF_HINTING_LIGHT>
+
+A lighter hinting algorithm for non-monochrome modes. Many generated glyphs are
+more fuzzy but better resemble its original shape. A bit like rendering on Mac
+OS X.
+
+=item C<TTF_HINTING_MONO>
+
+Strong hinting algorithm that should only be used for monochrome output. The
+result is probably unpleasant if the glyph is rendered in non-monochrome modes.
+
+=item C<TTF_HINTING_NONE>
+
+No hinting is used so the font may become very blurry or messy at smaller
+sizes.
+
+=item C<TTF_HINTING_LIGHT_SUBPIXEL>
+
+A grayscale subpixel hinting algorithm.
+
+=back
 
 =head1 LICENSE
 
@@ -1161,9 +1777,10 @@ Sanko Robinson E<lt>sanko@cpan.orgE<gt>
 =begin stopwords
 
 truetype byteswapped segfault workaround bitmask strikethrough strikethroughs
-maxy ch monospace
+maxy ch monospace colormap miny grayscale antialiased
 
 =end stopwords
+
 
 =cut
 

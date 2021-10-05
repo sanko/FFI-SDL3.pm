@@ -1,6 +1,7 @@
 use strict;
 use warnings;
 use Test2::V0;
+use Test2::Tools::Class qw[isa_ok can_ok];
 use lib -d '../t' ? './lib' : 't/lib';
 use lib '../lib', 'lib';
 #
@@ -107,29 +108,81 @@ is TTF_GlyphIsProvided( $font, 'a' ), 0, '...or even an "a"';
 {
     my ( $w, $h );
     is TTF_SizeText( $font, 'H', \$w, \$h ), 0, 'TTF_SizeText( ..., "H", ... ) == 0';
-    is $w, 23, '    $w == 23';
-    is $h, 26, '    $h == 26';
+    is $w, 23, '   $w == 23';
+    is $h, 26, '   $h == 26';
     is TTF_SizeText( $font, 'HI', \$w, \$h ), 0, 'TTF_SizeText( ..., "HI", ... ) == 0';
-    is $w, 39, '    $w == 39';
-    is $h, 26, '    $h == 26';
+    is $w, 39, '   $w == 39';
+    is $h, 26, '   $h == 26';
     #
     is TTF_SizeText( $font, 'HIHI', \$w, \$h ), 0, 'TTF_SizeText( ..., "HIHI", ... ) == 0';
-    is $w, 68, '    $w == 68';
-    is $h, 26, '    $h == 26';
+    is $w, 68, '   $w == 68';
+    is $h, 26, '   $h == 26';
 }
 {
     my ( $w, $h );
+
     #my $win = $^O eq 'MSWin32';
     is TTF_SizeUNICODE( $font, 'H', \$w, \$h ), 0, 'TTF_SizeUNICODE( ..., "H", ... ) == 0';
-    #$win ? is $w, 59, '    $w == 59' : is $w, 47, '    $w == 47';
-    is $h, 26, '    $h == 26';
+
+    #$win ? is $w, 59, '   $w == 59' : is $w, 47, '   $w == 47';
+    is $h, 26, '   $h == 26';
     is TTF_SizeUNICODE( $font, 'HI', \$w, \$h ), 0, 'TTF_SizeUNICODE( ..., "HI", ... ) == 0';
-    #$win ? is $w, 59, '    $w == 59' : is $w, 47, '    $w == 47';
-    is $h, 26, '    $h == 26';
+
+    #$win ? is $w, 59, '   $w == 59' : is $w, 47, '   $w == 47';
+    is $h, 26, '   $h == 26';
     #
     is TTF_SizeUNICODE( $font, 'HIHI', \$w, \$h ), 0, 'TTF_SizeUNICODE( ..., "HIHI", ... ) == 0';
-    #$win ? is $w, 71, '    $w == 71' : is $w, 47, '    $w == 47';
-    is $h, 26, '    $h == 26';
+
+    #$win ? is $w, 71, '   $w == 71' : is $w, 47, '   $w == 47';
+    is $h, 26, '   $h == 26';
 }
+#
+{
+    my $red  = SDL2::Color->new( { r => 0, g => 0, b => 0 } );
+    my $blue = SDL2::Color->new( { r => 0, g => 0, b => 0xff } );
+    isa_ok TTF_RenderText_Solid( $font, 'Testing!', $red ), ['SDL2::Surface'],
+        'TTF_RenderText_Solid( ... ) returns an SDL2::Surface';
+    isa_ok TTF_RenderUTF8_Solid( $font, 'Testing!', $red ), ['SDL2::Surface'],
+        'TTF_RenderUTF8_Solid( ... ) returns an SDL2::Surface';
+    isa_ok TTF_RenderUNICODE_Solid( $font, 'Testing!', $red ), ['SDL2::Surface'],
+        'TTF_RenderUNICODE_Solid( ... ) returns an SDL2::Surface';
+    isa_ok TTF_RenderGlyph_Solid( $font, 'H', $red ), ['SDL2::Surface'],
+        'TTF_RenderGlyph_Solid( ... ) returns an SDL2::Surface';
+    #
+    isa_ok TTF_RenderText_Shaded( $font, 'Testing!', $red, $blue ), ['SDL2::Surface'],
+        'TTF_RenderText_Shaded( ... ) returns an SDL2::Surface';
+    isa_ok TTF_RenderUTF8_Shaded( $font, 'Testing!', $red, $blue ), ['SDL2::Surface'],
+        'TTF_RenderUTF8_Shaded( ... ) returns an SDL2::Surface';
+    isa_ok TTF_RenderUNICODE_Shaded( $font, 'Testing!', $red, $blue ), ['SDL2::Surface'],
+        'TTF_RenderUNICODE_Shaded( ... ) returns an SDL2::Surface';
+    isa_ok TTF_RenderGlyph_Shaded( $font, 'H', $red, $blue ), ['SDL2::Surface'],
+        'TTF_RenderGlyph_Shaded( ... ) returns an SDL2::Surface';
+    #
+    isa_ok TTF_RenderText_Blended( $font, 'Testing!', $red ), ['SDL2::Surface'],
+        'TTF_RenderText_Blended( ... ) returns an SDL2::Surface';
+    isa_ok TTF_RenderUTF8_Blended( $font, 'Testing!', $red ), ['SDL2::Surface'],
+        'TTF_RenderUTF8_Blended( ... ) returns an SDL2::Surface';
+    isa_ok TTF_RenderUNICODE_Blended( $font, 'Testing!', $red ), ['SDL2::Surface'],
+        'TTF_RenderUNICODE_Blended( ... ) returns an SDL2::Surface';
+    isa_ok TTF_RenderGlyph_Blended( $font, 'H', $red ), ['SDL2::Surface'],
+        'TTF_RenderGlyph_Blended( ... ) returns an SDL2::Surface';
+}
+#
+can_ok $_ for qw[
+    SDL_TTF_MAJOR_VERSION
+    SDL_TTF_MINOR_VERSION
+    SDL_TTF_PATCHLEVEL
+    UNICODE_BOM_NATIVE
+    UNICODE_BOM_SWAPPED
+    TTF_STYLE_NORMAL
+    TTF_STYLE_BOLD
+    TTF_STYLE_ITALIC
+    TTF_STYLE_UNDERLINE
+    TTF_STYLE_STRIKETHROUGH
+    TTF_HINTING_NORMAL
+    TTF_HINTING_LIGHT
+    TTF_HINTING_MONO
+    TTF_HINTING_NONE
+    TTF_HINTING_LIGHT_SUBPIXEL];
 #
 done_testing;
