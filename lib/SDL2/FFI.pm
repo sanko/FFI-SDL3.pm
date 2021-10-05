@@ -119,7 +119,6 @@ package SDL2::FFI 0.08 {
     }
 
     # Exts
-    #require SDL2::Image if SDL2::Utils::loaded_libs('SDL2_image');
     # TODO
     package SDL2::Mixer {
         use SDL2::Utils;

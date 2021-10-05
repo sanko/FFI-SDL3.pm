@@ -207,7 +207,7 @@ package SDL2::Utils {
         $package = 'SDL2::FFI' unless
 
             # Known knowns
-            $package eq 'SDL2::IMG'   ||
+            $package eq 'SDL2::Image' ||
             $package eq 'SDL2::TTF'   ||
             $package eq 'SDL2::Mixer' ||
             $package eq 'SDL2::GFX';
@@ -241,7 +241,8 @@ package SDL2::Utils {
 
             #ddx $enum if  $tag eq 'WindowShapeMode';
             #            warn $_tag if $tag eq 'WindowShapeMode';
-            push @{ $::package->{EXPORT_TAGS}{$_tag} },
+            no strict 'refs';
+            push @{ ${"${package}::EXPORT_TAGS"}{$_tag} },
                 sort map { ref $_ ? ref $_ eq 'CODE' ? $_->() : $_->[0] : $_ } @{ $args{$tag} };
         }
     }
@@ -251,7 +252,7 @@ package SDL2::Utils {
         $package = 'SDL2::FFI' unless
 
             # Known knowns
-            $package eq 'SDL2::IMG'   ||
+            $package eq 'SDL2::Image' ||
             $package eq 'SDL2::TTF'   ||
             $package eq 'SDL2::Mixer' ||
             $package eq 'SDL2::GFX';
@@ -292,7 +293,7 @@ package SDL2::Utils {
         $package = 'SDL2::FFI' unless
 
             # Known knowns
-            $package eq 'SDL2::IMG'   ||
+            $package eq 'SDL2::Image' ||
             $package eq 'SDL2::TTF'   ||
             $package eq 'SDL2::Mixer' ||
             $package eq 'SDL2::GFX';
@@ -347,7 +348,7 @@ package SDL2::Utils {
         $package = 'SDL2::FFI' unless
 
             # Known knowns
-            $package eq 'SDL2::IMG'   ||
+            $package eq 'SDL2::Image' ||
             $package eq 'SDL2::TTF'   ||
             $package eq 'SDL2::Mixer' ||
             $package eq 'SDL2::GFX';

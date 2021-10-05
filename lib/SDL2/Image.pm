@@ -2,34 +2,36 @@ package SDL2::Image 0.01 {
     use strict;
     use warnings;
     use experimental 'signatures';
-    use SDL2::Utils;
+    use base 'Exporter::Tiny';
+    use SDL2::Utils qw[attach define enum load_lib];
+    use SDL2::FFI;
+    our %EXPORT_TAGS;
     #
     sub _ver() {
-        CORE::state $version //= SDL2::FFI::IMG_Linked_Version();
+        CORE::state $version //= IMG_Linked_Version();
         $version;
     }
+    #
+    load_lib('SDL2_image');
+    #
     define image => [
         [ SDL_IMAGE_MAJOR_VERSION => sub () { SDL2::Image::_ver()->major } ],
         [ SDL_IMAGE_MINOR_VERSION => sub () { SDL2::Image::_ver()->minor } ],
         [ SDL_IMAGE_PATCHLEVEL    => sub () { SDL2::Image::_ver()->patch } ],
         [   SDL_IMAGE_VERSION => sub ($version) {
-                my $ver = SDL2::FFI::IMG_Linked_Version();
+                my $ver = IMG_Linked_Version();
                 $version->major( $ver->major );
                 $version->minor( $ver->minor );
                 $version->patch( $ver->patch );
             }
         ],
         [   SDL_IMAGE_COMPILEDVERSION => sub () {
-                SDL2::FFI::SDL_VERSIONNUM(
-                    SDL2::FFI::SDL_IMAGE_MAJOR_VERSION(),
-                    SDL2::FFI::SDL_IMAGE_MINOR_VERSION(),
-                    SDL2::FFI::SDL_IMAGE_PATCHLEVEL()
-                );
+                SDL2::FFI::SDL_VERSIONNUM( SDL_IMAGE_MAJOR_VERSION(), SDL_IMAGE_MINOR_VERSION(),
+                    SDL_IMAGE_PATCHLEVEL() );
             }
         ],
         [   SDL_IMAGE_VERSION_ATLEAST => sub ( $X, $Y, $Z ) {
-                ( SDL2::FFI::SDL_IMAGE_COMPILEDVERSION()
-                        >= SDL2::FFI::SDL_VERSIONNUM( $X, $Y, $Z ) )
+                ( SDL_IMAGE_COMPILEDVERSION() >= SDL2::FFI::SDL_VERSIONNUM( $X, $Y, $Z ) )
             }
         ]
     ];
@@ -96,7 +98,7 @@ package SDL2::Image 0.01 {
         IMG_SaveJPG    => [ [ 'SDL_Surface', 'string', 'int' ],           'int' ],
         IMG_SaveJPG_RW => [ [ 'SDL_Surface', 'SDL_RWops', 'int', 'int' ], 'int' ]
     };
-    if ( SDL2::FFI::SDL_IMAGE_VERSION_ATLEAST( 2, 0, 6 ) ) {
+    if ( SDL_IMAGE_VERSION_ATLEAST( 2, 0, 6 ) ) {
 
         # Currently on Github but not in a stable dist
         # https://github.com/libsdl-org/SDL_image/issues/182
@@ -135,6 +137,12 @@ package SDL2::Image 0.01 {
         [ IMG_GetError => sub (@args) { SDL2::FFI::SDL_GetError(@args) } ],
     ];
 
+    # Export symbols!
+    our @EXPORT_OK = map {@$_} values %EXPORT_TAGS;
+
+    #$EXPORT_TAGS{default} = [];             # Export nothing by default
+    $EXPORT_TAGS{all} = \@EXPORT_OK;    # Export everything with :all tag
+
 =encoding utf-8
 
 =head1 NAME
@@ -143,7 +151,7 @@ SDL2::Image - SDL Image Loading Library
 
 =head1 SYNOPSIS
 
-    use SDL2 qw[:image];
+    use SDL2::Image;
 
 =head1 DESCRIPTION
 

@@ -8,7 +8,7 @@ package SDL2::TTF 0.01 {
     our %EXPORT_TAGS;
     #
     sub _ver() {
-        CORE::state $version //= SDL2::FFI::TTF_Linked_Version();
+        CORE::state $version //= TTF_Linked_Version();
         $version;
     }
     #

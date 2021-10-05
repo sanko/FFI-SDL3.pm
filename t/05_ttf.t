@@ -9,7 +9,7 @@ use SDL2::FFI qw[SDL_RWFromFile];
 use SDL2::TTF qw[:all];
 $|++;
 #
-my $hello_world_ttf = ( -d '../t' ? './' : './t/' ) . '/etc/hello-world.ttf';
+my $hello_world_ttf = ( -d '../t' ? './' : './t/' ) . 'etc/hello-world.ttf';
 #
 my $compile_version = SDL2::Version->new();
 my $link_version    = TTF_Linked_Version();
