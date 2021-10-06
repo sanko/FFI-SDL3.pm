@@ -247,47 +247,6 @@ package SDL2::Utils {
         }
     }
 
-    sub enumD (%args) {
-        my ($package) = caller();
-        $package = 'SDL2::FFI' unless
-
-            # Known knowns
-            $package eq 'SDL2::Image' ||
-            $package eq 'SDL2::TTF'   ||
-            $package eq 'SDL2::Mixer' ||
-            $package eq 'SDL2::GFX';
-        for my $tag ( keys %args ) {
-            use Data::Dump;
-
-#ddx $args{$tag};    # if $tag eq 'WindowShapeMode';
-#use Data::Dump;
-#warn $tag;
-#ddx $args{$tag};
-#ddx @{$args{$tag}};
-#my $enum =
-#FFI::C->enum( $tag => $args{$tag}, { package => $package } );
-#ffi->load_custom_type('::Enum', $tag => { package => $package } => [$args{$tag}] );
-#ffi->load_custom_type('SDL2::Utils::Type::Enum' => $tag => { ref => 'int', package => $package, casing => 'keep' }
-#		, $args{$tag}
-#);
-            warn $tag;
-            ffi->load_custom_type(
-                'SDL2::Utils::Type::Enum', $tag, { rev => 'dualvar', package => $package },
-                @{ $args{$tag} }
-
-                    #{ rev => 'int', package => 'Foo', prefix => 'FOO_' },
-            );
-            my $_tag = $tag;                                     # Simple rules:
-            $_tag =~ s[^SDL_][];                                 # No SDL_XXXXX
-            $_tag = lcfirst $_tag unless $_tag =~ m[^.[A-Z]];    # Save GLattr
-
-            #ddx $enum if  $tag eq 'WindowShapeMode';
-            #            warn $_tag if $tag eq 'WindowShapeMode';
-            push @{ ${"${package}::EXPORT_TAGS"}{$_tag} },
-                sort map { ref $_ ? ref $_ eq 'CODE' ? $_->() : $_->[0] : $_ } @{ $args{$tag} };
-        }
-    }
-
     sub attach (%args) {
         my ($package) = caller();
         $package = 'SDL2::FFI' unless

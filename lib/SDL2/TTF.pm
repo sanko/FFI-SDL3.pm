@@ -5,6 +5,8 @@ package SDL2::TTF 0.01 {
     use base 'Exporter::Tiny';
     use SDL2::Utils qw[attach define load_lib];
     use SDL2::FFI;
+
+	#
     our %EXPORT_TAGS;
     #
     sub _ver() {
@@ -313,7 +315,7 @@ Expected parameters include:
 
 =over
 
-=item C<src> - the source L<SDL::RWops>
+=item C<src> - the source L<SDL2::RWops>
 
 =item C<freesrc> - a non-zero value means it will automatically close and free the C<src> for you after it finishes using the C<src>, even if a noncritical error occurred
 
@@ -342,7 +344,7 @@ Expected parameters include:
 
 =over
 
-=item C<src> - the source L<SDL::RWops>
+=item C<src> - the source L<SDL2::RWops>
 
 =item C<ptsize> - point size (based on 72 DPI) to load font as; this basically translates to pixel height
 
@@ -368,7 +370,7 @@ Expected parameters include:
 
 =over
 
-=item C<src> - the source L<SDL::RWops>
+=item C<src> - the source L<SDL2::RWops>
 
 =item C<freesrc> - a non-zero value means it will automatically close and free the C<src> for you after it finishes using the C<src>, even if a noncritical error occurred
 

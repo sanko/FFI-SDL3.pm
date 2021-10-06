@@ -5,6 +5,8 @@ package SDL2::Image 0.01 {
     use base 'Exporter::Tiny';
     use SDL2::Utils qw[attach define enum load_lib];
     use SDL2::FFI;
+    use SDL2::version;
+    #
     our %EXPORT_TAGS;
     #
     sub _ver() {
@@ -90,7 +92,12 @@ package SDL2::Image 0.01 {
         IMG_LoadXV_RW   => [ ['SDL_RWops'], 'SDL_Surface' ],
         IMG_LoadWEBP_RW => [ ['SDL_RWops'], 'SDL_Surface' ],
         #
-        IMG_ReadXPMFromArray => [ ['string_array'], 'SDL_Surface' ],
+        IMG_ReadXPMFromArray => [
+            ['string_array'],
+            'SDL_Surface' => sub ( $inner, @lines ) {
+                $inner->( ref $lines[0] eq 'ARRAY' ? @lines : \@lines );
+            }
+        ],
 
         # Individual saving functions
         IMG_SavePNG    => [ [ 'SDL_Surface', 'string' ],                  'int' ],
@@ -208,11 +215,11 @@ HAM6, HAM8, and 24bit types are not supported.
 
 =head1 Functions
 
-These may be imported by name or with the C<:image> tag.
+These may be imported by name or with the C<:all> tag.
 
 =head2 C<SDL_IMAGE_VERSION( ... )>
 
-Macro to determine compile-time version of the SDL_image library.
+Macro to determine compile-time version of the C<SDL_image> library.
 
 Expected parameters include:
 
@@ -244,7 +251,7 @@ Expected parameters include:
 
 =head2 C<IMG_Linked_Version( )>
 
-This function gets the version of the dynamically linked SDL_image library.
+This function gets the version of the dynamically linked C<SDL_image> library.
 
     my $link_version = IMG_Linked_Version();
     printf "running with SDL_image version: %d.%d.%d\n",
@@ -260,7 +267,7 @@ Returns a L<SDL2::Version> object.
 Loads dynamic libraries and prepares them for use.
 
     if ( !( IMG_Init(IMG_INIT_PNG) & IMG_INIT_PNG ) ) {
-        printf( "could not initialize sdl2_image: %s\n", IMG_GetError() );
+        printf( "could not initialize SDL_image: %s\n", IMG_GetError() );
         return !1;
     }
 
@@ -981,6 +988,12 @@ Returns a new L<SDL2::Surface> structure on success.
 Load C<xpm> as a XPM image for use as a surface, if XPM support is compiled
 into the C<SDL_image> library.
 
+	my $image = IMG_ReadXPMFromArray( @sample_xpm );
+	if( !$image ) {
+		printf "IMG_ReadXPMFromArray: %s\n", IMG_GetError();
+		# handle error
+	}
+
 XPM files may be embedded in source code. See C<eg/xpm.pl> for an example.
 
 Expected parameters include:
@@ -1195,7 +1208,7 @@ These might actually be useful and may be imported with the listed tags.
 
 =item C<SDL_IMAGE_PATCHLEVEL>
 
-=item C<SDL_IMAGE_COMPILEDVERSION> - Version number for the current SDL_image version
+=item C<SDL_IMAGE_COMPILEDVERSION> - Version number for the current C<SDL_image> version
 
 =back
 
