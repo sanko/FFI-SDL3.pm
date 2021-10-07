@@ -149,7 +149,7 @@ Allocate a new RGB surface.
     my ( $rmask, $gmask, $bmask, $amask );
     # SDL interprets each pixel as a 32-bit number, so our masks must depend
     #   on the endianness (byte order) of the machine
-    if ( SDL2::FFI::bigendian() ) {
+    if ( SDL_BYTEORDER() eq SDL_LIL_ENDIAN() ) {
         $rmask = 0xff000000;
         $gmask = 0x00ff0000;
         $bmask = 0x0000ff00;
