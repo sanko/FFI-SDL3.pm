@@ -1,0 +1,717 @@
+package SDL2::Mixer 0.01 {
+    use strict;
+    use warnings;
+    use experimental 'signatures';
+    use base 'Exporter::Tiny';
+    use SDL2::Utils qw[attach define enum load_lib];
+    use SDL2::FFI qw[SDL_RWFromFile];
+    use SDL2::stdinc;
+    use SDL2::rwops;
+    use SDL2::audio;
+    use SDL2::endian;
+    use SDL2::version;
+    #
+    our %EXPORT_TAGS;
+    #
+    #
+    sub _ver() {
+        CORE::state $version //= Mix_Linked_Version();
+        $version;
+    }
+    #
+    load_lib('SDL2_mixer');
+    #
+    define version => [
+        [ SDL_MIXER_MAJOR_VERSION => sub () { SDL2::Mixer::_ver()->major } ],
+        [ SDL_MIXER_MINOR_VERSION => sub () { SDL2::Mixer::_ver()->minor } ],
+        [ SDL_MIXER_PATCHLEVEL    => sub () { SDL2::Mixer::_ver()->patch } ],
+        [   SDL_MIXER_VERSION => sub ($version) {
+                my $ver = Mix_Linked_Version();
+                $version->major( $ver->major );
+                $version->minor( $ver->minor );
+                $version->patch( $ver->patch );
+            }
+        ],
+        [   SDL_MIXER_COMPILEDVERSION => sub () {
+                SDL2::FFI::SDL_VERSIONNUM( SDL_MIXER_MAJOR_VERSION(), SDL_MIXER_MINOR_VERSION(),
+                    SDL_MIXER_PATCHLEVEL() );
+            }
+        ],
+        [   SDL_MIXER_VERSION_ATLEAST => sub ( $X, $Y, $Z ) {
+                ( SDL_MIXER_COMPILEDVERSION() >= SDL2::FFI::SDL_VERSIONNUM( $X, $Y, $Z ) )
+            }
+        ]
+    ];
+    attach version     => { Mix_Linked_Version => [ [], 'SDL_Version' ] };
+    enum MIX_InitFlags => [
+        [ MIX_INIT_FLAC => 0x00000001 ],
+        [ MIX_INIT_MOD  => 0x00000002 ],
+        [ MIX_INIT_MP3  => 0x00000008 ],
+        [ MIX_INIT_OGG  => 0x00000010 ],
+        [ MIX_INIT_MID  => 0x00000020 ],
+        [ MIX_INIT_OPUS => 0x00000040 ]
+    ];
+    attach mixer => {
+        Mix_Init      => [ ['int'], 'int' ],
+        Mix_Quit      => [ [] ]
+    };
+    define defaults => [
+        [ MIX_CHANNELS          => 8 ],
+        [ MIX_DEFAULT_FREQUENCY => 44100 ],
+        [   MIX_DEFAULT_FORMAT => SDL2::FFI::SDL_BYTEORDER() eq SDL2::FFI::SDL_LIL_ENDIAN() ?
+                SDL2::FFI::AUDIO_S16MSB() :
+                SDL2::FFI::AUDIO_S16LSB()
+        ],
+        [ MIX_DEFAULT_CHANNELS => 2 ],
+        [ MIX_MAX_VOLUME       => 128 ]    # SDL_MIX_MAXVOLUME
+    ];
+
+    package SDL2::Mixer::Chunk {
+        use strict;
+        use warnings;
+        use SDL2::Utils qw[has];
+        our $TYPE = has
+            allocated => 'int',
+            abuf      => 'opaque',         # uint8*
+            alen      => 'uint32',
+            volume    => 'uint8';          # Per-sample volume, 0-128
+    };
+    enum
+        Mix_Fading    => [qw[MIX_NO_FADING MIX_FADING_OUT MIX_FADING_IN]],
+        Mix_MusicType => [
+        qw[
+            MUS_NONE MUS_CMD MUS_WAV MUS_MOD
+            MUS_MID MUS_OGG MUS_MP3 MUS_MP3_MAD_UNUSED
+            MUS_FLAC MUS_MODPLUG_UNUSED MUS_OPUS]
+        ];
+
+    package SDL2::Mixer::Music {
+        use warnings;
+        use SDL2::Utils qw[has];
+        our $TYPE = has();
+
+# TODO: https://github.com/libsdl-org/SDL_mixer/blob/8d3c364c7d4cbef2c8e004fad703d841d3272a1c/src/music.c#L61
+    };
+    attach audio => {
+        Mix_OpenAudio => [ [ 'int', 'uint16', 'int', 'int' ], 'int' ],
+		Mix_OpenAudioDevice => [ [ 'int', 'uint16', 'int', 'int', 'string', 'int' ], 'int' ],
+		Mix_AllocateChannels => [['int'], 'int'],
+
+		#
+        Mix_LoadWAV_RW       => [ [ 'SDL_RWops', 'int' ],                     'SDL_Mixer_Chunk' ],
+        Mix_PlayChannelTimed => [ [ 'int', 'SDL_Mixer_Chunk', 'int', 'int' ], 'int' ],
+        Mix_PlayingMusic     => [ [],                                         'int' ],
+        Mix_LoadMUS          => [ ['string'],                                 'SDL_Mixer_Music' ],
+        Mix_PlayMusic        => [ [ 'SDL_Mixer_Music', 'int' ],               'int' ],
+    };
+    define image => [
+        [   Mix_LoadWAV => sub ($file) {
+                Mix_LoadWAV_RW( SDL_RWFromFile( $file, 'rb' ), 1 );
+            }
+        ],
+        [   Mix_PlayChannel => sub ( $channel, $chunk, $loops ) {
+                Mix_PlayChannelTimed( $channel, $chunk, $loops, -1 );
+            }
+        ]
+    ];
+
+=pod
+
+        IMG_Quit => [ [] ],
+        #
+        IMG_LoadTyped_RW => [ [ 'SDL_RWops', 'int', 'string' ], 'SDL_Surface' ],
+        IMG_Load         => [ ['string'],                       'SDL_Surface' ],
+        IMG_Load_RW      => [ [ 'SDL_RWops', 'int' ],           'SDL_Surface' ],
+        #
+        IMG_LoadTexture         => [ [ 'SDL_Renderer', 'string' ], 'SDL_Texture' ],
+        IMG_LoadTexture_RW      => [ [ 'SDL_Renderer', 'SDL_RWops', 'int' ], 'SDL_Texture' ],
+        IMG_LoadTextureTyped_RW =>
+            [ [ 'SDL_Renderer', 'SDL_RWops', 'int', 'string' ], 'SDL_Texture' ],
+
+        # Functions to detect a file type, given a seekable source
+        IMG_isICO  => [ ['SDL_RWops'], 'int' ],
+        IMG_isCUR  => [ ['SDL_RWops'], 'int' ],
+        IMG_isBMP  => [ ['SDL_RWops'], 'int' ],
+        IMG_isGIF  => [ ['SDL_RWops'], 'int' ],
+        IMG_isJPG  => [ ['SDL_RWops'], 'int' ],
+        IMG_isLBM  => [ ['SDL_RWops'], 'int' ],
+        IMG_isPCX  => [ ['SDL_RWops'], 'int' ],
+        IMG_isPNG  => [ ['SDL_RWops'], 'int' ],
+        IMG_isPNM  => [ ['SDL_RWops'], 'int' ],
+        IMG_isSVG  => [ ['SDL_RWops'], 'int' ],
+        IMG_isTIF  => [ ['SDL_RWops'], 'int' ],
+        IMG_isXCF  => [ ['SDL_RWops'], 'int' ],
+        IMG_isXPM  => [ ['SDL_RWops'], 'int' ],
+        IMG_isXV   => [ ['SDL_RWops'], 'int' ],
+        IMG_isWEBP => [ ['SDL_RWops'], 'int' ],
+
+        # Individual loading functions
+        IMG_LoadICO_RW  => [ ['SDL_RWops'], 'SDL_Surface' ],
+        IMG_LoadCUR_RW  => [ ['SDL_RWops'], 'SDL_Surface' ],
+        IMG_LoadBMP_RW  => [ ['SDL_RWops'], 'SDL_Surface' ],
+        IMG_LoadGIF_RW  => [ ['SDL_RWops'], 'SDL_Surface' ],
+        IMG_LoadJPG_RW  => [ ['SDL_RWops'], 'SDL_Surface' ],
+        IMG_LoadLBM_RW  => [ ['SDL_RWops'], 'SDL_Surface' ],
+        IMG_LoadPCX_RW  => [ ['SDL_RWops'], 'SDL_Surface' ],
+        IMG_LoadPNG_RW  => [ ['SDL_RWops'], 'SDL_Surface' ],
+        IMG_LoadPNM_RW  => [ ['SDL_RWops'], 'SDL_Surface' ],
+        IMG_LoadSVG_RW  => [ ['SDL_RWops'], 'SDL_Surface' ],
+        IMG_LoadTGA_RW  => [ ['SDL_RWops'], 'SDL_Surface' ],
+        IMG_LoadTIF_RW  => [ ['SDL_RWops'], 'SDL_Surface' ],
+        IMG_LoadXCF_RW  => [ ['SDL_RWops'], 'SDL_Surface' ],
+        IMG_LoadXPM_RW  => [ ['SDL_RWops'], 'SDL_Surface' ],
+        IMG_LoadXV_RW   => [ ['SDL_RWops'], 'SDL_Surface' ],
+        IMG_LoadWEBP_RW => [ ['SDL_RWops'], 'SDL_Surface' ],
+        #
+        IMG_ReadXPMFromArray => [
+            ['string_array'],
+            'SDL_Surface' => sub ( $inner, @lines ) {
+                $inner->( ref $lines[0] eq 'ARRAY' ? @lines : \@lines );
+            }
+        ],
+
+        # Individual saving functions
+        IMG_SavePNG    => [ [ 'SDL_Surface', 'string' ],                  'int' ],
+        IMG_SavePNG_RW => [ [ 'SDL_Surface', 'SDL_RWops', 'int' ],        'int' ],
+        IMG_SaveJPG    => [ [ 'SDL_Surface', 'string', 'int' ],           'int' ],
+        IMG_SaveJPG_RW => [ [ 'SDL_Surface', 'SDL_RWops', 'int', 'int' ], 'int' ]
+    };
+    if ( SDL_IMAGE_VERSION_ATLEAST( 2, 0, 6 ) ) {
+
+        # Currently on Github but not in a stable dist
+        # https://github.com/libsdl-org/SDL_image/issues/182
+        package SDL2::Image::Animation {
+            use SDL2::Utils;
+            use experimental 'signatures';
+            #
+            our $TYPE = has
+                w       => 'int',
+                h       => 'int',
+                count   => 'int',
+                _frames => 'opaque',    # SDL_Surface **
+                _delays => 'opaque'     # int *
+                ;
+
+            sub frames ($s) {
+                [ map { ffi->cast( 'opaque', 'SDL_Surface', $_ ) }
+                        @{ ffi->cast( 'opaque', 'opaque[' . $s->count . ']', $s->_frames ) } ];
+            }
+
+            sub delays ($s) {
+                ffi->cast( 'opaque', 'int[' . $s->count . ']', $s->_delays );
+            }
+        };
+        attach image => {
+            IMG_LoadAnimation         => [ ['string'],             'SDL_Image_Animation' ],
+            IMG_LoadAnimation_RW      => [ [ 'SDL_RWops', 'int' ], 'SDL_Image_Animation' ],
+            IMG_LoadAnimationTyped_RW =>
+                [ [ 'SDL_RWops', 'int', 'string' ], 'SDL_Image_Animation' ],
+            IMG_FreeAnimation       => [ ['SDL_Image_Animation'] ],
+            IMG_LoadGIFAnimation_RW => [ ['SDL_RWops'], 'SDL_Image_Animation' ]
+        };
+    }
+    define image => [
+        [ IMG_SetError => sub (@args) { SDL2::FFI::SDL_SetError(@args) } ],
+        [ IMG_GetError => sub (@args) { SDL2::FFI::SDL_GetError(@args) } ],
+    ];
+=cut
+
+    # Export symbols!
+    our @EXPORT_OK = map {@$_} values %EXPORT_TAGS;
+
+    #$EXPORT_TAGS{default} = [];             # Export nothing by default
+    $EXPORT_TAGS{all} = \@EXPORT_OK;    # Export everything with :all tag
+
+=encoding utf-8
+
+=head1 NAME
+
+SDL2::Mixer - SDL Audio Library
+
+=head1 SYNOPSIS
+
+    use SDL2::Mixer;
+
+=head1 DESCRIPTION
+
+SDL2::Mixer wraps the C<SDL_mixer> library, a simple multi-channel audio mixer.
+
+It supports 8 channels of 16 bit stereo audio, plus a single channel of music, mixed by the popular MikMod MOD, Timidity MIDI and SMPEG MP3 libraries.
+
+=for :todo See the examples C<eg/playwave.pl> and C<eg/playmus.pl> for documentation on this mixer library.
+
+The mixer can currently load Microsoft WAVE files and Creative Labs VOC files as audio samples, and can load MIDI files via Timidity and the following music formats via MikMod: .MOD .S3M .IT .XM. It can load Ogg Vorbis streams as music if built with the Ogg Vorbis libraries, and finally it can load MP3 music using the SMPEG library.
+
+The process of mixing MIDI files to wave output is very CPU intensive, so if playing regular WAVE files sound great, but playing MIDI files sound choppy, try using 8-bit audio, mono audio, or lower frequencies.
+
+=head2 Conflicts
+
+When using SDL_mixer functions you need to avoid the following functions from SDL:
+
+=over
+
+=item C<SDL_OpenAudio( )>
+
+Use Mix_OpenAudio instead.
+
+=item C<SDL_CloseAudio( )>
+
+Use Mix_CloseAudio instead.
+
+=item C<SDL_PauseAudio( )>
+
+Use C<Mix_Pause( -1 )> and C<Mix_PauseMusic( )> instead, to pause.
+
+Use C<Mix_Resume( -1 )> and C<Mix_ResumeMusic( )> instead, to unpause.
+
+=item C<SDL_LockAudio( )>
+
+This is just not needed since C<SDL_mixer> handles this for you.
+
+Using it may cause problems as well.
+
+=item C<SDL_UnlockAudio( )>
+
+This is just not needed since C<SDL_mixer> handles this for you.
+
+Using it may cause problems as well.
+
+=back
+
+You may call the following functions freely:
+
+=item C<SDL_AudioDriverName( ... )>
+
+This will still work as usual.
+
+=item C<SDL_GetAudioStatus( )>
+
+This will still work, though it will likely return C<SDL_AUDIO_PLAYING> even though C<SDL_mixer> is just playing silence.
+
+=back
+
+It is also a BAD idea to call C<SDL_mixer> and SDL audio functions from a callback. Callbacks include Effects functions and other C<SDL_mixer> audio hooks.
+
+=head1 Functions
+
+These may be imported by name or with the C<:all> tag.
+
+=head2 C<SDL_MIXER_VERSION( ... )>
+
+Macro to determine compile-time version of the C<SDL_mixer> library.
+
+Expected parameters include:
+
+=over
+
+=item C<x> - a pointer to a L<SDL2::Version> struct to initialize
+
+=back
+
+=head2 C<SDL_MIXER_VERSION_ATLEAST( ... )>
+
+Evaluates to true if compiled with C<SDL_mixer> at least C<major.minor.patch>.
+
+	if ( SDL_MIXER_VERSION_ATLEAST( 2, 0, 5 ) ) {
+		# Some feature that requires 2.0.5+
+	}
+
+Expected parameters include:
+
+=over
+
+=item C<major>
+
+=item C<minor>
+
+=item C<patch>
+
+=back
+
+=head2 C<Mix_Linked_Version( )>
+
+This function gets the version of the dynamically linked SDL_image library.
+
+    my $link_version = Mix_Linked_Version();
+    printf "running with SDL_mixer version: %d.%d.%d\n",
+        $link_version->major, $link_version->minor, $link_version->patch;
+
+It should NOT be used to fill a version structure, instead you should use the
+L<< C<SDL_IMAGE_VERSION( ... )>|/C<SDL_IMAGE_VERSION( ... )> >> macro.
+
+Returns a L<SDL2::Version> object.
+
+=head2 C<Mix_Init( ... )>
+
+Loads dynamic libraries and prepares them for use.
+
+    if ( !( Mix_Init(MIX_INIT_MP3) & MIX_INIT_MP3 ) ) {
+        printf( "could not initialize sdl2_image: %s\n", IMG_GetError() );
+        return !1;
+    }
+
+You may call this multiple times, which will actually require you to call
+C<IMG_Quit( )> just once to clean up. You may call this function with a
+C<flags> of C<0> to retrieve whether support was built-in or not loaded yet.
+
+Expected parameters include:
+
+=over
+
+=item C<flags>
+
+Flags should be one or more flags from L<< C<MIX_InitFlags>|/C<MIX_InitFlags>
+>> OR'd together.
+
+=over
+
+=item C<MIX_INIT_FLAC>
+
+=item C<MIX_INIT_FLAC>
+
+=item C<MIX_INIT_MP3>
+
+=item C<MIX_INIT_OGG>
+
+=item C<MIX_INIT_MID>
+
+=item C<MIX_INIT_OPUS>
+
+=back
+
+=back
+
+Returns the flags successfully initialized, or C<0> on failure.
+
+=head2 C<Mix_Quit( )>
+
+Unloads libraries loaded with L<< C<Mix_Init( ... )>|/C<Mix_Init( ... )> >>.
+
+=head2 C<Mix_OpenAudio( ... )>
+
+Initialize the mixer API.
+
+    # start SDL with audio support
+    if ( SDL_Init(SDL_INIT_AUDIO) == -1 ) {
+        printf "SDL_Init: %s\n", SDL_GetError();
+        exit 1;
+    }
+
+    # open 44.1KHz, signed 16bit, system byte order,
+    #      stereo audio, using 1024 byte chunks
+    if ( Mix_OpenAudio( 44100, MIX_DEFAULT_FORMAT, 2, 1024 ) == -1 ) {
+        printf "Mix_OpenAudio: %s\n", Mix_GetError();
+        exit 2;
+    }
+
+This must be called before using other functions in this library.
+
+SDL must be initialized with C<SDL_INIT_AUDIO> before this call. C<frequency> would be 44100 for 44.1KHz,
+which is CD audio rate. Most games use C<22050>, because C<44100> requires too much CPU power on older
+computers. chunksize is the size of each mixed sample. The smaller this is the more your hooks will be
+called. If make this too small on a slow system, sound may skip. If made to large, sound effects will
+lag behind the action more. You want a happy medium for your target computer. You also may make this
+C<4096>, or larger, if you are just playing music. C<MIX_CHANNELS( 8 )> mixing channels will be allocated
+by default. You may call this function multiple times, however you will have to call L<< C<Mix_CloseAudio( ) >|/C<Mix_CloseAudio( ) > >>
+just as many times for the device to actually close. The format will not changed on subsequent calls until fully closed. So you will have to close all the way before trying to open with different format parameters.
+
+Expected parameters include:
+
+=over
+
+=item C<frequency> - output sampling frequency in samples per second (Hz).
+
+You might use C<MIX_DEFAULT_FREQUENCY> (C<22050>) since that is a good value for most games.
+
+=item C<format> - output sample format
+
+This is based on SDL audio support. Here are the values listed in C<SDL_audio.h>:
+
+=over
+
+=item C<AUDIO_U8>
+
+Unsigned 8-bit samples
+
+=item C<AUDIO_S8>
+
+Signed 8-bit samples
+
+=item C<AUDIO_U16LSB>
+
+Unsigned 16-bit samples, in little-endian byte order
+
+=item C<AUDIO_S16LSB>
+
+Signed 16-bit samples, in little-endian byte order
+
+=item C<AUDIO_U16MSB>
+
+Unsigned 16-bit samples, in big-endian byte order
+
+=item C<AUDIO_S16MSB>
+
+Signed 16-bit samples, in big-endian byte order
+
+=item C<AUDIO_U16>
+
+same as C<AUDIO_U16LSB> (for backwards compatability probably)
+
+=item C<AUDIO_S16>
+
+same as C<AUDIO_S16LSB> (for backwards compatability probably)
+
+=item C<AUDIO_U16SYS>
+
+Unsigned 16-bit samples, in system byte order
+
+=item C<AUDIO_S16SYS>
+
+Signed 16-bit samples, in system byte order
+
+=back
+
+C<MIX_DEFAULT_FORMAT> is the same as C<AUDIO_S16SYS>.
+
+=item C<channels> - number of sound channels to output
+
+Set to C<2> for stereo, C<1> for mono. This has nothing to do with mixing channels.
+
+=item C<chunksize> - bytes used per output sample
+
+=back
+
+Returns C<0> on success; C<-1> on errors.
+
+=head2 C<Mix_OpenAudioDevice( ... )>
+
+Open the mixer with specific device and certain audio format
+
+Expected parameters include:
+
+
+=over
+
+=item C<frequency> - output sampling frequency in samples per second (Hz).
+
+You might use C<MIX_DEFAULT_FREQUENCY> (C<22050>) since that is a good value for most games.
+
+=item C<format> - output sample format
+
+=item C<channels> - number of sound channels to output
+
+Set to C<2> for stereo, C<1> for mono. This has nothing to do with mixing channels.
+
+=item C<chunksize> - bytes used per output sample
+
+=item C<device> - name of device to open
+
+=item C<allowed_changes> - C<0> or one or more flags OR'd together
+
+These values include the following:
+
+=over
+
+=item C<SDL_AUDIO_ALLOW_FREQUENCY_CHANGE>
+
+=item C<SDL_AUDIO_ALLOW_FORMAT_CHANGE>
+
+=item C<SDL_AUDIO_ALLOW_CHANNELS_CHANGE>
+
+=item C<SDL_AUDIO_ALLOW_ANY_CHANGE>
+
+=back
+
+=back
+
+Returns a valid device ID that is C<< E<gt> C<0> >> on success or C<0> on failure.
+
+=head2 C<Mix_AllocateChannels( ... )>
+
+Set the number of channels being mixed.
+
+	Mix_AllocateChannels( 16 );
+
+This can be called multiple times, even with sounds playing. If C<numchans> is less than the current number of channels, then the higher channels will be stopped, freed, and therefore not mixed any longer. It's probably not a good idea to change the size 1000 times a second though.
+
+If any channels are deallocated, any callback set by C<Mix_ChannelFinished> will be called when each channel is halted to be freed. Note: passing in zero WILL free all mixing channels, however music will still play.
+
+Expected prameters include:
+
+=over
+
+=item C<numchans> - number of channels to allocate for mixing
+
+A negative number will not do anything. Use this to find out how many channels are currently allocated without modifying the count.
+
+=back
+
+Returns the number of channels allocated. This should never fail but a high number of channels can segfault if you roun out of memory.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+=head2 C<Mix_SetError( ... )>
+
+Wrapper around C<SDL_SetError( ... )>.
+
+=head2 C<Mix_GetError( )>
+
+Wrapper around C<SDL_GetError( )>.
+
+=head1 Defined values and Enumerations
+
+These might actually be useful and may be imported with the listed tags.
+
+=head2 Version information
+
+=over
+
+=item C<SDL_MIXER_MAJOR_VERSION>
+
+=item C<SDL_MIXER_MINOR_VERSION>
+
+=item C<SDL_MIXER_PATCHLEVEL>
+
+=item C<SDL_MIXER_COMPILEDVERSION> - Version number for the current C<SDL_mixer> version
+
+=back
+
+=head2 C<MIX_InitFlags>
+
+=over
+
+=item C<MIX_INIT_FLAC>
+
+=item C<MIX_INIT_MOD>
+
+=item C<MIX_INIT_MP3>
+
+=item C<MIX_INIT_OGG>
+
+=item C<MIX_INIT_MID>
+
+=item C<MIX_INIT_OPUS>
+
+=back
+
+=head2 C<Mix_Fading>
+
+Enumeration of the different fading types supported by C<SDL_mixer>.
+
+=over
+
+=item C<MIX_NO_FADING>
+
+=item C<MIX_FADING_OUT>
+
+=item C<MIX_FADING_IN>
+
+=back
+
+=head2 C<Mix_MusicType>
+
+Enumeration of types of music files (not libraries used to load them).
+
+=over
+
+=item C<MUS_NONE>
+
+=item C<MUS_CMD>
+
+=item C<MUS_WAV>
+
+=item C<MUS_MOD>
+
+=item C<MUS_MID>
+
+=item C<MUS_OGG>
+
+=item C<MUS_MP3>
+
+=item C<MUS_MP3_MAD_UNUSED>
+
+=item C<MUS_FLAC>
+
+=item C<MUS_MODPLUG_UNUSED>
+
+=item C<MUS_OPUS>
+
+=back
+
+=head2 Good default values
+
+These are good default values for a PC soundcard. They may be imported by name or with the C<:defaults> tag.
+
+=over
+
+=item C<MIX_CHANNELS>
+
+The default mixer has 8 simultaneous mixing channels.
+
+=item C<MIX_DEFAULT_FREQUENCY>
+
+C<44100> is a good default value for a PC soundcard.
+
+=item C<MIX_DEFAULT_FORMAT>
+
+Based on your platform, this is C<AUDIO_S16>.
+
+=item C<MIX_DEFAULT_CHANNELS>
+
+=item C<MIX_MAX_VOLUME>
+
+=back
+
+
+=head1 LICENSE
+
+Copyright (C) Sanko Robinson.
+
+This library is free software; you can redistribute it and/or modify it under
+the terms found in the Artistic License 2. Other copyrights, terms, and
+conditions may apply to data transmitted through this module.
+
+=head1 AUTHOR
+
+Sanko Robinson E<lt>sanko@cpan.orgE<gt>
+
+=begin stopwords
+
+chunksize
+
+=end stopwords
+
+=cut
+
+};
+1;
