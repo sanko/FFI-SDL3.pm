@@ -1,4 +1,6 @@
 package SDL2::events 0.01 {
+    use strict;
+    use warnings;
     use SDL2::Utils;
     use experimental 'signatures';
     #
@@ -498,7 +500,10 @@ package SDL2::events 0.01 {
     attach events        => {
         SDL_PeepEvents => [
             [ 'SDL_Event', 'int', 'SDL_eventaction', 'uint32', 'uint32' ] => 'int' =>
-                sub ( $inner, @etc ) { SDL2::FFI::SDL_Yield(); $inner->(@etc) }
+                sub ( $inner, $events, $numevents, $action, $minType, $maxType ) {
+                SDL2::FFI::SDL_Yield();
+                $inner->( $events, $numevents, $action, $minType, $maxType );
+            }
         ],
         SDL_HasEvent => [
             ['uint32'] => 'bool' => sub ( $inner, @etc ) { SDL2::FFI::SDL_Yield(); $inner->(@etc) }

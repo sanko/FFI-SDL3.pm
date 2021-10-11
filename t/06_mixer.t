@@ -7,7 +7,7 @@ use Path::Tiny;
 use lib -d '../t' ? './lib' : 't/lib';
 use lib '../lib', 'lib';
 #
-use SDL2::FFI qw[:init];
+use SDL2::FFI qw[:init :audio SDL_RWFromFile];
 use SDL2::Mixer qw[:all];
 #
 $|++;
@@ -15,170 +15,145 @@ $|++;
 my $mp3 = path( ( -d '../t' ? './' : './t/' ) . 'etc/sample.mp3' );
 my $wav = path( ( -d '../t' ? './' : './t/' ) . 'etc/sample.wav' );
 #
-{
-    # start SDL with audio support
-    if ( SDL_Init(SDL_INIT_AUDIO) == -1 ) {
-        printf "SDL_Init: %s\n", SDL_GetError();
-        exit 1;
-    }
-
-    # open 44.1KHz, signed 16bit, system byte order,
-    #      stereo audio, using 1024 byte chunks
-    if ( Mix_OpenAudio( 44100, MIX_DEFAULT_FORMAT, 2, 1024 ) == -1 ) {
-        printf "Mix_OpenAudio: %s\n", Mix_GetError();
-        exit 2;
-    }
-}
-__END__
-
-warn SDL_Init(SDL_INIT_AUDIO);
-Mix_OpenAudio( 22050, MIX_DEFAULT_FORMAT, 2, 4096 );
-my $wave = Mix_LoadWAV($wav);
-warn $wave;
-warn Mix_PlayChannel( -1, $wave, 0 );
-my $music = Mix_LoadMUS($mp3);
-warn $music;
-warn Mix_PlayMusic( $music, 3 );
-1 while Mix_PlayingMusic();
-done_testing;
-__END__
-my $bmp = path( ( -d '../t' ? './' : './t/' ) . 'etc/sample.bmp' );
-my $ico = path( ( -d '../t' ? './' : './t/' ) . 'etc/sample.ico' );
-my $xpm = path( ( -d '../t' ? './' : './t/' ) . 'etc/sample.xpm' );
-my $xcf = path( ( -d '../t' ? './' : './t/' ) . 'etc/sample.xcf' );
-my $pcx = path( ( -d '../t' ? './' : './t/' ) . 'etc/sample.pcx' );
-my $gif = path( ( -d '../t' ? './' : './t/' ) . 'etc/sample.gif' );
-my $jpg = path( ( -d '../t' ? './' : './t/' ) . 'etc/sample.jpg' );
-my $tif = path( ( -d '../t' ? './' : './t/' ) . 'etc/sample.tif' );
-my $tga = path( ( -d '../t' ? './' : './t/' ) . 'etc/sample.tga' );
-my $cur = path( ( -d '../t' ? './' : './t/' ) . 'etc/tiny.cur' );
-my $pnm = path( ( -d '../t' ? './' : './t/' ) . 'etc/circle.pnm' );
-
-# Files not created by me:
-#   - circle.pnm: https://people.math.sc.edu/Burkardt/data/pnm/pnm.html
-#
 my $compile_version = SDL2::Version->new();
-my $link_version    = IMG_Linked_Version();
-SDL_IMAGE_VERSION($compile_version);
-diag sprintf 'compiled with SDL_image version: %d.%d.%d', $compile_version->major,
+my $link_version    = Mix_Linked_Version();
+SDL_MIXER_VERSION($compile_version);
+diag sprintf 'compiled with SDL_mixer version: %d.%d.%d', $compile_version->major,
     $compile_version->minor, $compile_version->patch;
-diag sprintf 'running with SDL_image version: %d.%d.%d', $link_version->major,
+diag sprintf 'running with SDL_mixer version: %d.%d.%d', $link_version->major,
     $link_version->minor, $link_version->patch;
-IMG_Init( SDL2::Image::IMG_INIT_PNG() );
+is SDL_MIXER_VERSION_ATLEAST( 1, 0, 0 ), 1, 'SDL_MIXER_VERSION_ATLEAST( 1, 0, 0 ) == 1';
+is SDL_MIXER_VERSION_ATLEAST( $link_version->major, $link_version->minor, $link_version->patch ), 1,
+    sprintf( 'SDL_MIXER_VERSION_ATLEAST( %d, %d, %d ) == 1',
+    $link_version->major, $link_version->minor, $link_version->patch );
+is SDL_MIXER_VERSION_ATLEAST(
+    $link_version->major, $link_version->minor, $link_version->patch + 1
+    ),
+    !1,
+    sprintf( 'SDL_MIXER_VERSION_ATLEAST( %d, %d, %d ) != 1',
+    $link_version->major, $link_version->minor, $link_version->patch + 1 );
 #
-is IMG_Init(IMG_INIT_PNG), IMG_INIT_PNG, 'IMG_Init( IMG_INIT_PNG ) returned IMG_INIT_PNG';
-diag 'Calling IMG_Quit()';
-IMG_Quit();
-is IMG_Init(), 0, 'IMG_Init( ) returned 0';
+is Mix_Init(), 0, 'Mix_Init() == 0';
+is Mix_Init(MIX_INIT_MP3),  MIX_INIT_MP3,  'Mix_Init( MIX_INIT_MP3 ) == MIX_INIT_MP3';
+is Mix_Init(MIX_INIT_FLAC), MIX_INIT_FLAC, 'Mix_Init( MIX_INIT_FLAC ) == MIX_INIT_FLAC';
+is Mix_Init( MIX_INIT_MP3 | MIX_INIT_FLAC ), MIX_INIT_MP3 | MIX_INIT_FLAC,
+    'Mix_Init( MIX_INIT_MP3|MIX_INIT_FLAC ) == MIX_INIT_MP3|MIX_INIT_FLAC';
 #
-IMG_SetError( 'myfunc is not implemented! %d was passed in.', 6 );
-is IMG_GetError(), 'myfunc is not implemented! 6 was passed in.',
-    'IMG_SetError( ... ) and IMG_GetError( ... ) work';
+is SDL_Init(SDL_INIT_AUDIO), 0, 'SDL_Init( SDL_INIT_AUDIO ) == 0';
+is Mix_OpenAudio( 44100, MIX_DEFAULT_FORMAT, 2, 1024 ), 0,
+    'Mix_OpenAudio( 44100, MIX_DEFAULT_FORMAT, 2, 1024 ) == 0';
+for my $i ( 0 .. SDL_GetNumAudioDevices(0) - 1 ) {
+    is Mix_OpenAudioDevice( 44100, MIX_DEFAULT_FORMAT, 2, 1024, SDL_GetAudioDeviceName($i), 0 ), 0,
+        sprintf 'Mix_OpenAudioDevice( ..., "%s", 0 ) == 0', SDL_GetAudioDeviceName( $i, 0 );
+}
+
+END {
+    diag 'Closing audio sessions...';
+    Mix_CloseAudio() for 0 .. Mix_QuerySpec( undef, undef, undef );
+}
+is Mix_AllocateChannels(16), 16, 'Mix_AllocateChannels( 16 ) == 16';
+is Mix_AllocateChannels(-1), 16, 'Mix_AllocateChannels( -1 ) == 16 (no change)';
+
+# get and print the audio format in use
+#int numtimesopened, frequency, channels;
+#Uint16 format;
+my $numtimesopened = Mix_QuerySpec( \my $frequency, \my $format, \my $channels );
+
+# XXX: Are we sure we can open *all* audio devices?
+# We called plain ol' Mix_OpenAudio( ... ) first so +1
+is $numtimesopened, SDL_GetNumAudioDevices(0) + 1,
+    sprintf 'Mix_QuerySpec( ... ) claims we have %d open audio sessions', $numtimesopened;
+isa_ok Mix_LoadWAV_RW( SDL_RWFromFile( $wav, 'rb' ), 1 ), ['SDL2::Mixer::Chunk'],
+    "Mix_LoadWAV_RW( SDL_RWFromFile( '$wav', 'rb' ), 1 ) returns a SDL2::Mixer::Chunk";
+isa_ok Mix_LoadWAV($wav), ['SDL2::Mixer::Chunk'],
+    "Mix_LoadWAV( '$wav' ) returns a SDL2::Mixer::Chunk";
+isa_ok Mix_LoadMUS($mp3), ['SDL2::Mixer::Music'],
+    "Mix_LoadWAV( '$mp3' ) returns a SDL2::Mixer::Music";
+isa_ok Mix_LoadMUS_RW( SDL_RWFromFile( $mp3, 'rb' ), 1 ), ['SDL2::Mixer::Music'],
+    "Mix_LoadMUS_RW(SDL_RWFromFile( '$mp3', 'rb' ), 1) returns a SDL2::Mixer::Music";
+isa_ok Mix_LoadMUSType_RW( SDL_RWFromFile( $mp3, 'rb' ), MUS_MP3, 1 ), ['SDL2::Mixer::Music'],
+    "Mix_LoadMUSType_RW(SDL_RWFromFile( '$mp3', 'rb' ), MUS_MP3, 1) returns a SDL2::Mixer::Music";
+isa_ok Mix_LoadMUSType_RW( SDL_RWFromFile( $wav, 'rb' ), MUS_WAV, 1 ), ['SDL2::Mixer::Music'],
+    "Mix_LoadMUSType_RW(SDL_RWFromFile( '$wav', 'rb' ), MUS_WAV, 1) returns a SDL2::Mixer::Music";
+is Mix_LoadMUSType_RW( SDL_RWFromFile( $mp3, 'rb' ), MUS_WAV, 1 ), undef,
+    "Mix_LoadMUSType_RW(SDL_RWFromFile( '$mp3', 'rb' ), MUS_WAV, 1) returns undef: " .
+    Mix_GetError();
+isa_ok Mix_QuickLoad_WAV( $wav->slurp_raw() ), ['SDL2::Mixer::Chunk'],
+    'Mix_QuickLoad_WAV( ... ) returns SDL2::Mixer::Chunk';
+isa_ok Mix_QuickLoad_RAW( $wav->slurp_raw(), -s $wav ), ['SDL2::Mixer::Chunk'],
+    'Mix_QuickLoad_RAW( ... ) returns SDL2::Mixer::Chunk';
 #
-my $surface;
-isa_ok $surface = IMG_Load($png), ['SDL2::Surface'], 'IMG_Load( ... ) returns a SDL2::Surface';
-SDL_FreeSurface($surface);
-is IMG_Load('nope.jpeg'), undef, 'IMG_Load( "nope.jpeg" ) returns undef';
-is IMG_Load_RW( SDL_RWFromFile( 'nope.jpeg', 'rb' ), 1 ), undef,
-    'IMG_Load_RW( ... ) with a fake image does not work';
-isa_ok $surface = IMG_Load_RW( SDL_RWFromFile( $png, 'rb' ), 1 ), ['SDL2::Surface'],
-    'IMG_Load_RW( ... ) with a real PNG works';
-SDL_FreeSurface($surface);
-isa_ok $surface = IMG_LoadTyped_RW( SDL_RWFromFile( $png, 'rb' ), 1, 'PNG' ), ['SDL2::Surface'],
-    'IMG_LoadTyped_RW( ... ) with a real PNG works';
-SDL_FreeSurface($surface);
-isa_ok $surface = IMG_LoadCUR_RW( SDL_RWFromFile( $cur, 'rb' ) ), ['SDL2::Surface'],
-    'IMG_LoadCUR_RW( ... ) with a real CUR works';
-SDL_FreeSurface($surface);
-isa_ok $surface = IMG_LoadICO_RW( SDL_RWFromFile( $ico, 'rb' ) ), ['SDL2::Surface'],
-    'IMG_LoadICO_RW( ... ) with a real ICO works';
-SDL_FreeSurface($surface);
-isa_ok $surface = IMG_LoadBMP_RW( SDL_RWFromFile( $bmp, 'rb' ) ), ['SDL2::Surface'],
-    'IMG_LoadBMP_RW( ... ) with a real BMP works';
-SDL_FreeSurface($surface);
-isa_ok $surface = IMG_LoadPNM_RW( SDL_RWFromFile( $pnm, 'rb' ) ), ['SDL2::Surface'],
-    'IMG_LoadPNM_RW( ... ) with a real PNM works';
-SDL_FreeSurface($surface);
-isa_ok $surface = IMG_LoadXPM_RW( SDL_RWFromFile( $xpm, 'rb' ) ), ['SDL2::Surface'],
-    'IMG_LoadXPM_RW( ... ) with a real XPM works';
-todo 'This dies with an OOM error... weird' => sub {
-    diag IMG_GetError()
-        unless isa_ok $surface = IMG_LoadXCF_RW( SDL_RWFromFile( $xcf, 'rb' ) ), ['SDL2::Surface'],
-        'IMG_LoadXCF_RW( ... ) with a real XCF works';
-    SDL_FreeSurface($surface);
-};
-isa_ok $surface = IMG_LoadPCX_RW( SDL_RWFromFile( $pcx, 'rb' ) ), ['SDL2::Surface'],
-    'IMG_LoadPCX_RW( ... ) with a real PCX works';
-SDL_FreeSurface($surface);
-isa_ok $surface = IMG_LoadGIF_RW( SDL_RWFromFile( $gif, 'rb' ) ), ['SDL2::Surface'],
-    'IMG_LoadGIF_RW( ... ) with a real GIF works';
-SDL_FreeSurface($surface);
-isa_ok $surface = IMG_LoadJPG_RW( SDL_RWFromFile( $jpg, 'rb' ) ), ['SDL2::Surface'],
-    'IMG_LoadJPG_RW( ... ) with a real JPEG works';
-SDL_FreeSurface($surface);
-isa_ok $surface = IMG_LoadTIF_RW( SDL_RWFromFile( $tif, 'rb' ) ), ['SDL2::Surface'],
-    'IMG_LoadTIF_RW( ... ) with a real TIF works';
-SDL_FreeSurface($surface);
-todo 'This dies with an OOM error... weird' => sub {
-    isa_ok $surface = IMG_LoadPNG_RW( SDL_RWFromFile( $png, 'rb' ) ), ['SDL2::Surface'],
-        'IMG_LoadPNG_RW( ... ) with a real PNG works';
-    SDL_FreeSurface($surface);
-};
-isa_ok $surface = IMG_LoadTGA_RW( SDL_RWFromFile( $tga, 'rb' ) ), ['SDL2::Surface'],
-    'IMG_LoadTGA_RW( ... ) with a real TGA works';
-SDL_FreeSurface($surface);
-diag 'I do not have an image to test IMG_LoadLBM_RW( ... )';
-diag 'I do not have an image to test IMG_LoadXV_RW( ... )';
+my $chunk = Mix_QuickLoad_WAV( $wav->slurp_raw() );
+is Mix_FreeChunk($chunk), undef, 'Mix_FreeChunk( ... ) returns void...';
+my $music = Mix_LoadMUS($mp3);
+is Mix_FreeMusic($music), undef, 'Mix_FreeMusic( ... ) returns void...';
 #
-{
-    my @lines = grep {defined} map { /^\"(.*)\",?$/; $1 } $xpm->lines();
-    diag scalar @lines;
-    isa_ok $surface = IMG_ReadXPMFromArray(@lines), ['SDL2::Surface'],
-        'IMG_ReadXPMFromArray( ... ) with a real XPM works';
-    SDL_FreeSurface($surface);
+diag sprintf 'There are %d sample chunk decoders available:', Mix_GetNumChunkDecoders();
+for my $index ( 0 .. Mix_GetNumChunkDecoders() - 1 ) {
+
+    # Mix_HasChunkDecoder( ... ) was defined in SDL_mixer 2.0.5
+    my $has
+        = SDL_MIXER_VERSION_ATLEAST( 2, 0, 5 ) ?
+        Mix_HasChunkDecoder($index) ?
+        'yes' :
+            'no' :
+        'unknown';
+    diag sprintf '    - %-6s %s', Mix_GetChunkDecoder($index), $has;
+}
+diag sprintf 'There are %d music decoders available:', Mix_GetNumMusicDecoders();
+for my $index ( 0 .. Mix_GetNumMusicDecoders() - 1 ) {
+
+    # Mix_HasMusicDecoder( ... ) was defined in SDL_mixer 2.0.5
+    my $has
+        = SDL_MIXER_VERSION_ATLEAST( 2, 0, 5 ) ?
+        Mix_HasMusicDecoder($index) ?
+        'yes' :
+            'no' :
+        'unknown';
+    diag sprintf '    - %-6s %s', Mix_GetMusicDecoder($index), $has;
+}
+is Mix_GetMusicType( Mix_LoadMUS($mp3) ), MUS_MP3,
+    'Mix_GetMusicType( Mix_LoadMUS($mp3) ) == MUS_MP3';
+if ( SDL_MIXER_VERSION_ATLEAST( 2, 0, 5 ) ) {
+    is Mix_GetMusicTitle($mp3),        'Test', 'Mix_GetMusicTitle( ... )';
+    is Mix_GetMusicTitleTag($mp3),     'Test', 'Mix_GetMusicTitleTag( ... )';
+    is Mix_GetMusicArtistTag($mp3),    'Test', 'Mix_GetMusicArtistTag( ... )';
+    is Mix_GetMusicAlbumTag($mp3),     'Test', 'Mix_GetMusicAlbumTag( ... )';
+    is Mix_GetMusicCopyrightTag($mp3), 'Test', 'Mix_GetMusicCopyrightTag( ... )';
 }
 #
-ok IMG_isCUR( SDL_RWFromFile( $cur,  'rb' ) ), 'IMG_isCUR( SDL_RWFromFile( $cur, \'rb\' ) )';
-ok !IMG_isCUR( SDL_RWFromFile( $jpg, 'rb' ) ), 'IMG_isCUR( SDL_RWFromFile( $jpg, \'rb\' ) ) fails';
-ok IMG_isICO( SDL_RWFromFile( $ico,  'rb' ) ), 'IMG_isICO( SDL_RWFromFile( $ico, \'rb\' ) )';
-ok !IMG_isICO( SDL_RWFromFile( $jpg, 'rb' ) ), 'IMG_isICO( SDL_RWFromFile( $jpg, \'rb\' ) ) fails';
-ok IMG_isBMP( SDL_RWFromFile( $bmp,  'rb' ) ), 'IMG_isBMP( SDL_RWFromFile( $bmp, \'rb\' ) )';
-ok !IMG_isBMP( SDL_RWFromFile( $jpg, 'rb' ) ), 'IMG_isBMP( SDL_RWFromFile( $jpg, \'rb\' ) ) fails';
-ok IMG_isPNM( SDL_RWFromFile( $pnm,  'rb' ) ), 'IMG_isPNM( SDL_RWFromFile( $pnm, \'rb\' ) )';
-ok !IMG_isPNM( SDL_RWFromFile( $jpg, 'rb' ) ), 'IMG_isPNM( SDL_RWFromFile( $jpg, \'rb\' ) ) fails';
-ok IMG_isXPM( SDL_RWFromFile( $xpm,  'rb' ) ), 'IMG_isXPM( SDL_RWFromFile( $xpm, \'rb\' ) )';
-ok !IMG_isXPM( SDL_RWFromFile( $jpg, 'rb' ) ), 'IMG_isXPM( SDL_RWFromFile( $jpg, \'rb\' ) ) fails';
-todo 'This dies with an OOM error... weird' => sub {
-    ok IMG_isXCF( SDL_RWFromFile( $xcf, 'rb' ) ), 'IMG_isXCF( SDL_RWFromFile( $xcf, \'rb\' ) )';
-};
-ok !IMG_isXCF( SDL_RWFromFile( $jpg, 'rb' ) ), 'IMG_isXCF( SDL_RWFromFile( $jpg, \'rb\' ) ) fails';
-ok IMG_isPCX( SDL_RWFromFile( $pcx,  'rb' ) ), 'IMG_isPCX( SDL_RWFromFile( $pcx, \'rb\' ) )';
-ok !IMG_isPCX( SDL_RWFromFile( $jpg, 'rb' ) ), 'IMG_isPCX( SDL_RWFromFile( $jpg, \'rb\' ) ) fails';
-ok IMG_isGIF( SDL_RWFromFile( $gif,  'rb' ) ), 'IMG_isGIF( SDL_RWFromFile( $gif, \'rb\' ) )';
-ok !IMG_isGIF( SDL_RWFromFile( $jpg, 'rb' ) ), 'IMG_isGIF( SDL_RWFromFile( $jpg, \'rb\' ) ) fails';
-ok IMG_isJPG( SDL_RWFromFile( $jpg,  'rb' ) ), 'IMG_isJPG( SDL_RWFromFile( $jpg, \'rb\' ) )';
-ok !IMG_isJPG( SDL_RWFromFile( $gif, 'rb' ) ), 'IMG_isJPG( SDL_RWFromFile( $gif, \'rb\' ) ) fails';
-ok IMG_isTIF( SDL_RWFromFile( $tif,  'rb' ) ), 'IMG_isTIF( SDL_RWFromFile( $tif, \'rb\' ) )';
-ok !IMG_isTIF( SDL_RWFromFile( $gif, 'rb' ) ), 'IMG_isTIF( SDL_RWFromFile( $gif, \'rb\' ) ) fails';
-ok IMG_isPNG( SDL_RWFromFile( $png,  'rb' ) ), 'IMG_isPNG( SDL_RWFromFile( $png, \'rb\' ) )';
-ok !IMG_isPNG( SDL_RWFromFile( $gif, 'rb' ) ), 'IMG_isPNG( SDL_RWFromFile( $gif, \'rb\' ) ) fails';
-diag 'I do not have an image to test IMG_isLBM( ... )';
-
-#ok IMG_isLBM( SDL_RWFromFile( $lbm,  'rb' ) ), 'IMG_isLBM( SDL_RWFromFile( $lbm, \'rb\' ) )';
-ok !IMG_isLBM( SDL_RWFromFile( $gif, 'rb' ) ), 'IMG_isLBM( SDL_RWFromFile( $gif, \'rb\' ) ) fails';
-diag 'I do not have an image to test IMG_isXV( ... )';
-
-#ok IMG_isXV( SDL_RWFromFile( $xv,  'rb' ) ), 'IMG_isXV( SDL_RWFromFile( $xv, \'rb\' ) )';
-ok !IMG_isXV( SDL_RWFromFile( $gif, 'rb' ) ), 'IMG_isXV( SDL_RWFromFile( $gif, \'rb\' ) ) fails';
+#Mix_SetPostMix(sub {use Data::Dump; ddx \@_; warn 'done!'} );
+Mix_PlayMusic( Mix_LoadMUS($mp3) );
 #
 can_ok $_ for qw[
-    SDL_IMG_MAJOR_VERSION
-    SDL_IMG_MINOR_VERSION
-    SDL_IMG_PATCHLEVEL
-    IMG_INIT_JPG
-    IMG_INIT_PNG
-    IMG_INIT_TIF
-    IMG_INIT_WEBP
+    SDL_MIXER_MAJOR_VERSION
+    SDL_MIXER_MINOR_VERSION
+    SDL_MIXER_PATCHLEVEL
+    SDL_MIXER_VERSION
+    SDL_MIXER_COMPILEDVERSION
+    SDL_MIXER_VERSION_ATLEAST
+    MIX_INIT_FLAC
+    MIX_INIT_MOD
+    MIX_INIT_MP3
+    MIX_INIT_OGG
+    MIX_INIT_MID
+    MIX_INIT_OPUS
+    MIX_CHANNELS
+    MIX_DEFAULT_FREQUENCY
+    MIX_DEFAULT_FORMAT
+    MIX_DEFAULT_CHANNELS
+    MIX_MAX_VOLUME
+    MUS_NONE
+    MUS_CMD
+    MUS_WAV
+    MUS_MOD
+    MUS_MID
+    MUS_OGG
+    MUS_MP3
+    MUS_MP3_MAD_UNUSED
+    MUS_FLAC
+    MUS_MODPLUG_UNUSED
+    MUS_OPUS
 ];
 #
 done_testing;

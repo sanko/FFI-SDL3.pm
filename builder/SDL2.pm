@@ -14,6 +14,8 @@ package builder::SDL2 {
     use Carp::Always;
     use Alien::gmake;
     #
+    use FFI::Build;
+    #
     $|++;
     #
     #$ENV{TSDL2} = './temp/';
@@ -58,15 +60,19 @@ package builder::SDL2 {
         ();
     #
     sub SDL_Build () {
-        if (
-            !$sharedir->is_dir
-
-            #|| $sharedir->child('lib')->children < 4
-        ) {
+        my $action = @ARGV && $ARGV[0] =~ /\A\w+\z/ ? shift @ARGV : 'build';
+        if ( $action eq 'build' ) {
             my $x64 = $Config{ptrsize} == 8;
-            $x64 = 1;
-            buildDLLs( $^O, $x64 );
-            build_thread_wrapper( $^O, $x64 );
+            if (
+                !$sharedir->is_dir
+
+                #|| $sharedir->child('lib')->children < 4
+            ) {
+                buildDLLs( $^O, $x64 );
+
+                #build_api_wrappers( $^O, $x64 );
+            }
+            build_api_wrappers( $^O, $x64 );    # Always build it while testing...
         }
         Module::Build::Tiny::Build();
     }
@@ -375,34 +381,42 @@ package builder::SDL2 {
         }
     }
 
-    sub build_thread_wrapper ( $platform_name, $x64 ) {
-        my $c = $basedir->child( 'src', 'thread_wrapper.c' );
-        use FFI::Build;
-        my $build = FFI::Build->new(
-            'thread_wrapper',
-            cflags => $cflags,
-            dir    => $sharedir->child('lib')->absolute->stringify,
-            export => [
-                qw[
-                    Bundle_SDL_Wrap_BEGIN Bundle_SDL_Wrap_END DisplayOrientationName Bundle_SDL_PrintEvent
-                    Bundle_SDL_Yield
-                    c_callback
-                    Bundle_SDL_AddTimer
-                    Bundle_SDL_RemoveTimer]
-            ],
-            libs    => $lflags,
-            source  => [ $c->absolute->stringify ],
-            verbose => $quiet ? 0 : 2
+    sub build_api_wrappers ( $platform_name, $x64 ) {
+        my $libs = $basedir->child('src')->visit(
+            sub ( $path, $state ) {
+                return if $path !~ /\.c(?:pp)?$/i;
+                my $build = FFI::Build->new(
+
+                    #'api_wrapper',
+                    $path->basename(qr/\.c(?:pp)?$/i),
+                    cflags => $cflags,
+                    dir    => $sharedir->child('lib')->absolute->stringify,
+
+     #export => [
+     #    qw[
+     #        Bundle_SDL_Wrap_BEGIN Bundle_SDL_Wrap_END DisplayOrientationName Bundle_SDL_PrintEvent
+     #        Bundle_SDL_Yield
+     #        c_callback
+     #        Bundle_SDL_AddTimer
+     #        Bundle_SDL_RemoveTimer]
+     #],
+                    libs    => $lflags,
+                    source  => [ $path->absolute->stringify ],
+                    verbose => $quiet ? 0 : 2
+                );
+
+                # $lib is an instance of FFI::Build::File::Library
+                my $lib = $build->build;
+                warn $lib;
+
+          #my $ffi = FFI::Platypus->new( api => 1 );
+          # The filename will be platform dependant, but something like libfrooble.so or frooble.dll
+          #$ffi->lib( $lib->path );
+                warn $lib;
+                $state->{$path} = $lib;
+            },
         );
-
-        # $lib is an instance of FFI::Build::File::Library
-        my $lib = $build->build;
-
-        #my $ffi = FFI::Platypus->new( api => 1 );
-        # The filename will be platform dependant, but something like libfrooble.so or frooble.dll
-        #$ffi->lib( $lib->path );
-        warn $lib;
-        return $lib;
+        return $libs;
     }
 }
 1;

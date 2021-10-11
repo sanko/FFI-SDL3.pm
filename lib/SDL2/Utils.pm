@@ -47,11 +47,19 @@ package SDL2::Utils {
         SDL2_image     => [qw[SDL2 jpeg png16 tiff webp zlib1]],
         SDL2_ttf       => [qw[SDL2 freetype]],
         thread_wrapper => [qw[SDL2]],
+        mixer_wrapper  => [qw[SDL2_mixer]],
+        SDL2_mixer     => [qw[]],                                  # TODO
         freetype       => [qw[zlib1]]
     );
 
     sub load_lib ($name) {
-        $libs{all}{$name} // return;                # This should be a fatal error
+        warn $name;
+        use Data::Dump;
+        ddx \%libs;
+        $libs{all}{$name} // die;
+
+        #return;                # This should be a fatal error
+        warn $name;
         load_lib($_) for @{ $prereq{$name} // [] }; # Recurse!
         my $_cdd = "\0" x 1024;                     # for Windows and SDL2_ttf
         CORE::state $SetDllDirectoryA;              # https://github.com/BindBC/bindbc-sdl/issues/10
@@ -112,6 +120,8 @@ package SDL2::Utils {
                 },
                 thread_wrapper =>
                     [ sort map { /thread_wrapper/ ? $loaded_libs{$_} : () } keys %loaded_libs ],
+                mixer_wrapper =>
+                    [ sort map { /mixer_wrapper/ ? $loaded_libs{$_} : () } keys %loaded_libs ],
                 pre => [
                     sort map { /^(?:lib)?(?!.*(SDL|thread).+).+$/ ? $loaded_libs{$_} : () }
                         keys %loaded_libs
@@ -259,9 +269,11 @@ package SDL2::Utils {
         for my $tag ( sort keys %args ) {
             for my $func ( sort keys %{ $args{$tag} } ) {
 
+                #use Data::Dump;
                 #warn sprintf 'ffi->attach( %s => %s);', $func,
                 #    Data::Dump::dump( @{ $args{$tag}{$func} } )
-                #    if ref $args{$tag}{$func}[1] && ref $args{$tag}{$func}[1] eq 'ARRAY';
+                #    if ref $args{$tag}{$func}[1] && ref $args{$tag}{$func}[1] eq 'ARRAY'
+                #;
                 my $perl = $func;
                 $perl =~ s[^Bundle_][];
                 ffi->attach( [ $func => $package . '::' . $perl ] => @{ $args{$tag}{$func} } );

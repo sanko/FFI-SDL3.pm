@@ -125,19 +125,15 @@ package SDL2::FFI 0.08 {
         has;
     };
 
-
     package SDL2::Mixer::Mix::MusicType {
         use SDL2::Utils;
         has;
     };
 
-
-
     package SDL2::Mixer::Fading {
         use SDL2::Utils;
         has;
     };
-
 
     package SDL2::Net {
         use SDL2::Utils;

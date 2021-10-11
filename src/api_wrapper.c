@@ -8,23 +8,36 @@
 SDL_bool done = SDL_FALSE;
 Uint32 _interval = 0;
 void *_param = 0;
-SDL_TimerCallback cb;
-SDL_mutex *lock;
-SDL_cond *cond;
+
+SDL_TimerCallback timer_cb;
+SDL_mutex *timer_lock, *mixer_lock;
+SDL_cond *timer_cond, *mixer_cond;
+
+// #include <SDL_mixer.h>
+// Implicit declaration of Mix_SetPostMix?
+typedef void my_mix_func(void *, Uint8 *, int);
+my_mix_func *mixer_cb;
+Uint8 *_streamX;
 
 void Bundle_SDL_Wrap_BEGIN(const char *package, int argc, const char *argv[]) {
   // fprintf(stderr, "# Bundle_SDL_Wrap_BEGIN( %s, ... )", package);
-
-  if (lock == NULL)
-    lock = SDL_CreateMutex();
-  if (cond == NULL)
-    cond = SDL_CreateCond();
+  if (timer_lock == NULL)
+    timer_lock = SDL_CreateMutex();
+  if (timer_cond == NULL)
+    timer_cond = SDL_CreateCond();
+  if (mixer_lock == NULL)
+    mixer_lock = SDL_CreateMutex();
+  if (mixer_cond == NULL)
+    mixer_cond = SDL_CreateCond();
 }
 void Bundle_SDL_Wrap_END(const char *package) {
   // fprintf(stderr, "# Bundle_SDL_Wrap_END( %s )", package);
 
-  SDL_DestroyMutex(lock);
-  SDL_DestroyCond(cond);
+  SDL_DestroyMutex(timer_lock);
+  SDL_DestroyCond(timer_cond);
+
+  SDL_DestroyMutex(mixer_lock);
+  SDL_DestroyCond(mixer_cond);
 }
 
 static const char *DisplayOrientationName(int orientation) {
@@ -336,21 +349,21 @@ void Bundle_SDL_Yield() {
           return;
   if (cond == NULL)
           return;*/
-  if (cb == NULL)
-    return;
+  if (timer_cb != NULL) {
 
-  // SDL_Log("<Bundle_SDL_Yield> (%u)", _interval);
-  SDL_LockMutex(lock);
-  // SDL_Log("399");
-  _interval = cb(_interval, NULL); // Call cb and set global int for other
-  // thread
-  // SDL_Log("402");
-  cb = NULL; // Clear it so we don't repeat this cb without cause
-  // SDL_Log("404");
-  SDL_UnlockMutex(lock);
-  // SDL_Log("406");
-  SDL_CondSignal(cond);
-  // SDL_Log("</Bundle_SDL_Yield>");
+    // SDL_Log("<Bundle_SDL_Yield> (%u)", _interval);
+    SDL_LockMutex(timer_lock);
+    // SDL_Log("399");
+    _interval = timer_cb(_interval, NULL); // Call cb and set global int for other
+    // thread
+    // SDL_Log("402");
+    timer_cb = NULL; // Clear it so we don't repeat this cb without cause
+    // SDL_Log("404");
+    SDL_UnlockMutex(timer_lock);
+    // SDL_Log("406");
+    SDL_CondSignal(timer_cond);
+    // SDL_Log("</Bundle_SDL_Yield>");
+  }
 }
 
 Uint32 c_callback(Uint32 interval, void *param) {
@@ -365,17 +378,17 @@ Uint32 c_callback(Uint32 interval, void *param) {
           return 0;*/
   done = SDL_FALSE;
   // SDL_Log("420");
-  SDL_LockMutex(lock);
+  SDL_LockMutex(timer_lock);
   // SDL_Log("422");
-  cb = (SDL_TimerCallback)param;
+  timer_cb = (SDL_TimerCallback)param;
   // SDL_Log("424");
   _interval = interval;
   //_param = param;
-  SDL_CondWait(cond, lock); // Wait for main thread to return from callback
+  SDL_CondWait(timer_cond, timer_lock); // Wait for main thread to return from callback
   // SDL_Log("428");
-  SDL_UnlockMutex(lock);
+  SDL_UnlockMutex(timer_lock);
   // SDL_Log("430");
-  SDL_CondSignal(cond);
+  SDL_CondSignal(timer_cond);
   // SDL_Log("</c_callback> (%u)", _interval);
   done = SDL_TRUE;
   return _interval;
@@ -389,4 +402,23 @@ SDL_TimerID Bundle_SDL_AddTimer(int delay, SDL_TimerCallback cb, void *params) {
 SDL_bool Bundle_SDL_RemoveTimer(SDL_TimerID id) {
   // fprintf(stderr, "# Bundle_SDL_RemoveTimer( %d )", id);
   return SDL_RemoveTimer(id);
+}
+
+void wrap_mix_func(void *udata, Uint8 *_stream, int len) {
+  if (mixer_cb != NULL) {
+    _streamX = (Uint8 *)SDL_realloc(_stream, len);
+    mixer_cb(udata, _stream, len);
+    for (int i = 0; i < len; i++)
+      _stream[i] = _streamX[i];
+  }
+}
+
+void Bundle_Mix_mix_cb_return(Uint8 *sample, int len) {
+  for (int i = 0; i < len; i++)
+    _streamX[i] = sample[i];
+}
+
+void Bundle_Mix_SetPostMix(my_mix_func mix_func, void *arg) {
+  mixer_cb = mix_func;
+  Mix_SetPostMix(wrap_mix_func, arg);
 }

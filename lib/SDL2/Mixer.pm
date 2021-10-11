@@ -19,7 +19,8 @@ package SDL2::Mixer 0.01 {
         $version;
     }
     #
-    load_lib('SDL2_mixer');
+	#load_lib('SDL2_mixer');
+    load_lib('mixer_wrapper');
     #
     define version => [
         [ SDL_MIXER_MAJOR_VERSION => sub () { SDL2::Mixer::_ver()->major } ],
@@ -51,10 +52,7 @@ package SDL2::Mixer 0.01 {
         [ MIX_INIT_MID  => 0x00000020 ],
         [ MIX_INIT_OPUS => 0x00000040 ]
     ];
-    attach mixer => {
-        Mix_Init      => [ ['int'], 'int' ],
-        Mix_Quit      => [ [] ]
-    };
+    attach mixer    => { Mix_Init => [ ['int'], 'int' ], Mix_Quit => [ [] ] };
     define defaults => [
         [ MIX_CHANNELS          => 8 ],
         [ MIX_DEFAULT_FREQUENCY => 44100 ],
@@ -88,23 +86,89 @@ package SDL2::Mixer 0.01 {
     package SDL2::Mixer::Music {
         use warnings;
         use SDL2::Utils qw[has];
-        our $TYPE = has();
+        our $TYPE = has(
+            interface  => 'opaque',      # Mix_MusicInterface *
+            context    => 'opaque',      # void *
+            playing    => 'bool',        # SDL_bool
+            fading     => 'opaque',      # Mix_Fading
+            fade_step  => 'int',
+            fade_steps => 'int',
+            filename   => 'char[1024]'
+        );
 
 # TODO: https://github.com/libsdl-org/SDL_mixer/blob/8d3c364c7d4cbef2c8e004fad703d841d3272a1c/src/music.c#L61
     };
     attach audio => {
-        Mix_OpenAudio => [ [ 'int', 'uint16', 'int', 'int' ], 'int' ],
-		Mix_OpenAudioDevice => [ [ 'int', 'uint16', 'int', 'int', 'string', 'int' ], 'int' ],
-		Mix_AllocateChannels => [['int'], 'int'],
+        Mix_OpenAudio        => [ [ 'int', 'uint16', 'int', 'int' ],                  'int' ],
+        Mix_OpenAudioDevice  => [ [ 'int', 'uint16', 'int', 'int', 'string', 'int' ], 'int' ],
+        Mix_AllocateChannels => [ ['int'],                                            'int' ],
+        Mix_QuerySpec        => [ [ 'int*', 'int*', 'int*' ],                         'int' ],
+        Mix_LoadWAV_RW       => [ [ 'SDL_RWops', 'int' ],                  'SDL_Mixer_Chunk' ],
+        Mix_LoadMUS          => [ ['string'],                              'SDL_Mixer_Music' ],
+        Mix_LoadMUS_RW       => [ [ 'SDL_RWops', 'int' ],                  'SDL_Mixer_Music' ],
+        Mix_LoadMUSType_RW   => [ [ 'SDL_RWops', 'Mix_MusicType', 'int' ], 'SDL_Mixer_Music' ],
+        Mix_QuickLoad_WAV    => [ ['string'],                              'SDL_Mixer_Chunk' ],
+        Mix_QuickLoad_RAW    => [ [ 'string', 'uint32' ],                  'SDL_Mixer_Chunk' ],
+        Mix_FreeChunk        => [ ['SDL_Mixer_Chunk'] ],
+        Mix_FreeMusic        => [ ['SDL_Mixer_Music'] ],
+        #
+        Mix_GetNumChunkDecoders => [ [],      'int' ],
+        Mix_GetChunkDecoder     => [ ['int'], 'string' ], (
+            SDL_MIXER_VERSION_ATLEAST( 2, 0, 5 ) ?
+                ( Mix_HasChunkDecoder => [ ['string'], 'bool' ] ) : ()
+        ),
+        Mix_GetNumMusicDecoders => [ [],      'int' ],
+        Mix_GetMusicDecoder     => [ ['int'], 'string' ], (
+            SDL_MIXER_VERSION_ATLEAST( 2, 0, 5 ) ?
+                ( Mix_HasMusicDecoder => [ ['string'], 'bool' ] ) : ()
+        ),
+        #
+        Mix_GetMusicType => [ ['SDL_Mixer_Music'], 'int' ],    #'Mix_MusicType'
+        (
+            SDL_MIXER_VERSION_ATLEAST( 2, 0, 5 ) ?
 
-		#
-        Mix_LoadWAV_RW       => [ [ 'SDL_RWops', 'int' ],                     'SDL_Mixer_Chunk' ],
+                # Introduced in 2019 but SDL_mixer hasn't had a stable release since 2017
+                (
+                Mix_GetMusicTitle        => [ ['SDL_Mixer_Music'], 'string' ],
+                Mix_GetMusicTitleTag     => [ ['SDL_Mixer_Music'], 'string' ],
+                Mix_GetMusicArtistTag    => [ ['SDL_Mixer_Music'], 'string' ],
+                Mix_GetMusicAlbumTag     => [ ['SDL_Mixer_Music'], 'string' ],
+                Mix_GetMusicCopyrightTag => [ ['SDL_Mixer_Music'], 'string' ],
+                ) :
+                ()
+        )
+    };
+    #
+    ffi->type( '(opaque,opaque,int)->void' => 'Mix_Func' );
+    ffi->type( '(opaque,opaque,int)->opaque' => 'Mix_FuncRet' );
+
+    attach audio => {
+        XXMix_SetPostMix => [
+            [ 'Mix_Func', 'opaque' ] => sub ( $inner, $callback, $arg = () ) {
+                my $closure = ffi->closure(
+                    sub ( $udata, $stream, $len ) {
+					#use Data::Dump;
+                        #my @list = ffi->cast('opaque', 'uint8[' . ($len -1)  . ']', $stream);
+                        $callback->( $arg,
+						$stream,
+						#ffi->cast( 'opaque', 'uint8*', $stream )
+						#ffi->cast( 'opaque', 'uint8*', $stream )
+						, $len );
+                    }
+                );
+                $closure->sticky;
+                $inner->( $closure, $arg );
+            }
+        ]
+    };
+    attach audio => {
+        #
         Mix_PlayChannelTimed => [ [ 'int', 'SDL_Mixer_Chunk', 'int', 'int' ], 'int' ],
         Mix_PlayingMusic     => [ [],                                         'int' ],
-        Mix_LoadMUS          => [ ['string'],                                 'SDL_Mixer_Music' ],
         Mix_PlayMusic        => [ [ 'SDL_Mixer_Music', 'int' ],               'int' ],
+        Mix_CloseAudio       => [ [] ]
     };
-    define image => [
+    define audio => [
         [   Mix_LoadWAV => sub ($file) {
                 Mix_LoadWAV_RW( SDL_RWFromFile( $file, 'rb' ), 1 );
             }
@@ -210,11 +274,13 @@ package SDL2::Mixer 0.01 {
             IMG_LoadGIFAnimation_RW => [ ['SDL_RWops'], 'SDL_Image_Animation' ]
         };
     }
-    define image => [
-        [ IMG_SetError => sub (@args) { SDL2::FFI::SDL_SetError(@args) } ],
-        [ IMG_GetError => sub (@args) { SDL2::FFI::SDL_GetError(@args) } ],
-    ];
+
 =cut
+
+    define image => [
+        [ Mix_SetError => sub (@args) { SDL2::FFI::SDL_SetError(@args) } ],
+        [ Mix_GetError => sub (@args) { SDL2::FFI::SDL_GetError(@args) } ],
+    ];
 
     # Export symbols!
     our @EXPORT_OK = map {@$_} values %EXPORT_TAGS;
@@ -280,6 +346,8 @@ Using it may cause problems as well.
 
 You may call the following functions freely:
 
+=over
+
 =item C<SDL_AudioDriverName( ... )>
 
 This will still work as usual.
@@ -330,14 +398,14 @@ Expected parameters include:
 
 =head2 C<Mix_Linked_Version( )>
 
-This function gets the version of the dynamically linked SDL_image library.
+This function gets the version of the dynamically linked C<SDL_mixer> library.
 
     my $link_version = Mix_Linked_Version();
     printf "running with SDL_mixer version: %d.%d.%d\n",
         $link_version->major, $link_version->minor, $link_version->patch;
 
 It should NOT be used to fill a version structure, instead you should use the
-L<< C<SDL_IMAGE_VERSION( ... )>|/C<SDL_IMAGE_VERSION( ... )> >> macro.
+L<< C<SDL_MIXER_VERSION( ... )>|/C<SDL_MIXER_VERSION( ... )> >> macro.
 
 Returns a L<SDL2::Version> object.
 
@@ -524,7 +592,7 @@ These values include the following:
 
 =back
 
-Returns a valid device ID that is C<< E<gt> C<0> >> on success or C<0> on failure.
+Returns a valid device ID that is C<<E<gt>0>> on success or C<0> on failure.
 
 =head2 C<Mix_AllocateChannels( ... )>
 
@@ -547,6 +615,463 @@ A negative number will not do anything. Use this to find out how many channels a
 =back
 
 Returns the number of channels allocated. This should never fail but a high number of channels can segfault if you roun out of memory.
+
+=head2 C<Mix_QuerySpec( ... )>
+
+Find out what the actual audio device parameters are.
+
+This may or may not match the parameters you passed to L<< C<Mix_OpenAudio( ... )>|/C<Mix_OpenAudio( ... )> >>.
+
+    # get and print the audio format in use
+    my $numtimesopened = Mix_QuerySpec( \my ( $frequency, $format, $channels ) );
+    if ( !$numtimesopened ) {
+        printf( "Mix_QuerySpec: %s\n", Mix_GetError() );
+    }
+    else {
+        my $format_str
+            = $format == AUDIO_U8   ? 'U8' :
+            $format == AUDIO_S8     ? 'S8' :
+            $format == AUDIO_U16LSB ? 'U16LSB' :
+            $format == AUDIO_S16LSB ? 'S16LSB' :
+            $format == AUDIO_U16MSB ? 'U16MSB' :
+            $format == AUDIO_S16MSB ? 'S16MSB' :
+            'Unknown';
+        printf( "opened=%d times  frequency=%dHz  format=%s  channels=%d",
+            $numtimesopened, $frequency, $format_str, $channels );
+    }
+
+Expected parameters include:
+
+=over
+
+=item C<frequency> - pointer to an int where the frequency actually used by the opened audio device will be stored
+
+=item C<format> - pointer to a Uint16 where the output format actually being used by the audio device will be stored
+
+=item C<channels> - pointer to an int where the number of audio channels will be stored
+
+C<2> will mean stereo, C<1> will mean mono
+
+=back
+
+Returns C<0> on error. If the device was open, the number of times it was opened will be returned. The values of the arguments variables are not set on an error.
+
+=head2 C<Mix_LoadWAV_RW( ... )>
+
+Load C<src> for use as a sample.
+
+    my $sample = Mix_LoadWAV_RW( SDL_RWFromFile( $wav, 'rb' ), 1 );
+    if ( !$sample ) {
+        printf( "Mix_LoadWAV_RW: %s\n", Mix_GetError() );
+        # handle error
+    }
+
+This can load WAVE, AIFF, RIFF, OGG, and VOC formats. Using L<SDL2::RWops> is not covered
+here, but they enable you to load from almost any source.
+
+Note: You must call L<< C<SDL_OpenAudio( )>|/C<SDL_OpenAudio( )> >> before this. It must know the output characteristics so it can convert the sample for playback, it does this conversion at load time.
+
+Expected parameters include:
+
+=over
+
+=item C<src> - the source L<SDL2::RWops> to load the sample from
+
+=item C<freesrc> - a non-zero value means we will automatically close/free the C<src> for you
+
+=back
+
+Returns a pointer to the sample as a L<SDL2::Mixer::Chunk> object. C<undef> is returned on errors.
+
+=head2 C<Mix_LoadWAV( ... )>
+
+Load C<file> for use as a sample.
+
+	# load sample.wav in to sample
+	my $sample = Mix_LoadWAV( 'sample.wav' );
+	if( !$sample ) {
+		printf( "Mix_LoadWAV: %s\n", Mix_GetError() );
+		# handle error
+	}
+
+This is actually L<< C<Mix_LoadWAV_RW( SDL_RWFromFile( $file, 'rb' ), 1 )>|/C<Mix_LoadWAV_RW( ... )> >>. This can load WAVE, AIFF, RIFF, OGG, and VOC files.
+
+Note: You must call L<< C<SDL_OpenAudio( )>|/C<SDL_OpenAudio( )> >> before this. It must know the output characteristics so it can convert the sample for playback, it does this conversion at load time.
+
+Returns a pointer to the sample as a L<SDL2::Mixer::Chunk> object. C<undef> is returned on errors.
+
+=head2 C<Mix_LoadMUS( ... )>
+
+Load music file to use.
+
+	# load the MP3 file "music.mp3" to play as music
+	my $music = Mix_LoadMUS( 'music.mp3' );
+	if( !$music ) {
+		printf( "Mix_LoadMUS( 'music.mp3' ): %s\n", Mix_GetError() );
+		# this might be a critical error...
+	}
+
+This can load WAVE, MOD, MIDI, OGG, MP3, FLAC, and any file that you use a command to play with.
+If you are using an external command to play the music, you must call
+L<< C<Mix_SetMusicCMD( ... )>|/ C<Mix_SetMusicCMD( ... )> >> before this,
+otherwise the internal players will be used. Alternatively, if you have set
+an external command up and don't want to use it, you must call
+C<Mix_SetMusicCMD( undef )> to use the built-in players again.
+
+Expected prameters include:
+
+=over
+
+=item C<file> - name of music file to use
+
+=back
+
+Returns a pointer to the sample as a L<SDL2::Mixer::Music> object. C<undef> is returned on errors.
+
+=head2 C<Mix_LoadMUS_RW( ... )>
+
+Load a music C<src> from an L<SDL2::RWops> object.
+
+    my $music = Mix_LoadMUS_RW( SDL_RWFromFile( $mp3, 'rb' ), 1 );
+    if ( !$music ) {
+        printf( "Mix_LoadMUS_RW: %s\n", Mix_GetError() );
+        # handle error
+    }
+
+This can load WAVE, MOD, MIDI, OGG, MP3, FLAC, and any file that you use a command to play with.
+If you are using an external command to play the music, you must call
+L<< C<Mix_SetMusicCMD( ... )>|/ C<Mix_SetMusicCMD( ... )> >> before this,
+otherwise the internal players will be used. Alternatively, if you have set
+an external command up and don't want to use it, you must call
+C<Mix_SetMusicCMD( undef )> to use the built-in players again.
+
+Expected parameters include:
+
+=over
+
+=item C<src> - the source L<SDL2::RWops> to load the music from
+
+=item C<freesrc> - a non-zero value means we will automatically close/free the C<src> for you
+
+=back
+
+Returns a pointer to the music as a L<SDL2::Mixer::Music> object. C<undef> is returned on errors.
+
+=head2 C<Mix_LoadMUSType_RW( ... )>
+
+Load a music C<src> from an L<SDL2::RWops> object assuming a specific format.
+
+    my $music = Mix_LoadMUSType_RW( SDL_RWFromFile( $mp3, 'rb' ), MUS_MP3, 1 );
+    if ( !$music ) {
+        printf( "Mix_LoadMUSType_RW: %s\n", Mix_GetError() );
+        # handle error
+    }
+
+This can load WAVE, MOD, MIDI, OGG, MP3, FLAC, and any file that you use a command to play with.
+If you are using an external command to play the music, you must call
+L<< C<Mix_SetMusicCMD( ... )>|/ C<Mix_SetMusicCMD( ... )> >> before this,
+otherwise the internal players will be used. Alternatively, if you have set
+an external command up and don't want to use it, you must call
+C<Mix_SetMusicCMD( undef )> to use the built-in players again.
+
+Expected parameters include:
+
+=over
+
+=item C<src> - the source L<SDL2::RWops> to load the music from
+
+=item C<type> - a L<< specific format|/C<Mix_MusicType> >>
+
+=item C<freesrc> - a non-zero value means we will automatically close/free the C<src> for you
+
+=back
+
+Returns a pointer to the music as a L<SDL2::Mixer::Music> object. C<undef> is returned on errors.
+
+=head2 C<Mix_QuickLoad_WAV( ... )>
+
+Load C<mem> as a WAVE/RIFF file into a new sample.
+
+    # quick-load a wave from memory
+    my $wave = ...; # I assume you have the wave loaded raw,
+					# or compiled in the program...
+					# or otherwise generated...
+    if ( !( my $wave_chunk = Mix_QuickLoad_WAV($wave) ) ) {
+        printf( "Mix_QuickLoad_WAV: %s\n", Mix_GetError() );
+
+        # handle error
+    }
+
+The WAVE in C<mem> must be already in the output format. It would be better to use
+L<< C<Mix_LoadWAV_RW( ... )>|/C<Mix_LoadWAV_RW( ... )> >> if you aren't sure.
+
+Note: This function does very little checking. If the format mismatches the output format, or if the buffer is not a WAVE, it will not return an error. This is probably a dangerous function to use.
+
+Returns a pointer to the sample as a L<SDL2::Mixer::Chunk> object. C<undef> is returned on errors.
+
+=head2 C<Mix_QuickLoad_RAW( ... )>
+
+Load C<mem> as a raw sample.
+
+    # quick-load a wave from memory
+    my $wave = ...; # I assume you have the wave loaded raw,
+					# or compiled in the program...
+					# or otherwise generated...
+    if ( !( my $wave_chunk = Mix_QuickLoad_RAW($wave, length $wave) ) ) {
+        printf( "Mix_QuickLoad_RAW: %s\n", Mix_GetError() );
+
+        # handle error
+    }
+
+The data in C<mem> must be already in the output format. If you aren't sure what you are doing, this is not a good function for you!
+
+Note: This function does very little checking. If the format mismatches the output format, or if the buffer is not a WAVE, it will not return an error. This is probably a dangerous function to use.
+
+Returns a pointer to the sample as a L<SDL2::Mixer::Chunk> object. C<undef> is returned on errors.
+
+=head2 C<Mix_FreeChunk( ... )>
+
+Free the memory used in C<chunk>, and free C<chunk> itself as well. Do not use C<chunk> after this without loading a new sample to it. Note: It's a bad idea to free a chunk that is still being played...
+
+	# free the sample
+	Mix_FreeChunk( $sample );
+	$sample = undef; # to be safe..
+
+Expected parameters include:
+
+=over
+
+=item C<chunk> - pointer to the L<SDL2::Mixer::Chunk> to free
+
+=back
+
+=head2 C<Mix_FreeMusic( ... )>
+
+Free the loaded C<music>. If C<music> is playing it will be halted. If C<music> is fading out, then this function will wait (blocking) until the fade out is complete.
+
+	# free music
+	Mix_FreeMusic( $music );
+	$music = undef; # to be safe..
+
+Expected parameters include:
+
+=over
+
+=item C<music> - pointer to the L<SDL2::Mixer::Music> to free
+
+=back
+
+=head2 C<Mix_GetNumChunkDecoders( )>
+
+Get the number of sample chunk decoders available from the L<< C<Mix_GetChunkDecoder( ... )>|/C<Mix_GetChunkDecoder( ... )> >> function. This number can be different for each run of a program, due to the change in availability of shared libraries that support each format.
+
+	printf("There are %d sample chunk deocoders available\n", Mix_GetNumChunkDecoders());
+
+Returns the number of sample chunk decoders available.
+
+=head2 C<Mix_GetChunkDecoder( ... )>
+
+Get the name of the C<index>ed sample chunk decoder. You need to get the number of sample chunk decoders available using the L<< C<Mix_GetNumChunkDecoders( )>|/C<Mix_GetNumChunkDecoders( )> >> function.
+
+	# print sample chunk decoders available
+	for my $i ( 0 .. Mix_GetNumChunkDecoders() - 1 ) {
+		printf( "Sample chunk decoder %d is for %s", Mix_GetChunkDecoder($i) );
+	}
+
+Appearing in this list doesn't promise your specific audio file will
+decode but it's handy to know if you have, say, a functioning Timidity
+install.
+
+Expected parameters include:
+
+=over
+
+=item C<index> - the index number of sample chunk decoder to get
+
+In the range from C<0 .. Mix_GetNumChunkDecoders()-1>, inclusive.
+
+=back
+
+Returns the name of the C<index>ed sample chunk decoder. This string is owned by the C<SDL_mixer> library, do not modify or free it. It is valid until you call L<< C<Mix_CloseAudio( )>|/C<Mix_CloseAudio( )> >> the final time.
+
+=head2 C<Mix_HasChunkDecoder( ... )>
+
+Find out if you have a C<name>d chunk decoder.
+
+Expected parameters include:
+
+=over
+
+=item C<name> - decoder name to query
+
+=back
+
+Returns a true value if the given decoder is defined.
+
+
+
+
+
+
+
+
+=head2 C<Mix_GetNumMusicDecoders( )>
+
+Get the number of music decoders available from the L<< C<Mix_GetMusicDecoder( ... )>|/C<Mix_GetMusicDecoder( ... )> >> function. This number can be different for each run of a program, due to the change in availability of shared libraries that support each format.
+
+	printf("There are %d music deocoders available\n", Mix_GetNumMusicDecoders());
+
+Returns the number of music decoders available.
+
+=head2 C<Mix_GetMusicDecoder( ... )>
+
+Get the name of the C<index>ed sample music decoder. You need to get the number of sample music decoders available using the L<< C<Mix_GetNumMusicDecoders( )>|/C<Mix_GetNumMusicDecoders( )> >> function.
+
+	# print sample music decoders available
+	for my $i ( 0 .. Mix_GetNumMusicDecoders() - 1 ) {
+		printf( "Music decoder %d is for %s", Mix_GetMusicDecoder($i) );
+	}
+
+Appearing in this list doesn't promise your specific audio file will
+decode but it's handy to know if you have, say, a functioning Timidity
+install.
+
+Expected parameters include:
+
+=over
+
+=item C<index> - the index number of sample music decoder to get
+
+In the range from C<0 .. Mix_GetNumMusicDecoders()-1>, inclusive.
+
+=back
+
+Returns the name of the C<index>ed sample music decoder. This string is owned by the C<SDL_mixer> library, do not modify or free it. It is valid until you call L<< C<Mix_CloseAudio( )>|/C<Mix_CloseAudio( )> >> the final time.
+
+=head2 C<Mix_HasMusicDecoder( ... )>
+
+Find out if you have a C<name>d music decoder.
+
+Expected parameters include:
+
+=over
+
+=item C<name> - decoder name to query
+
+=back
+
+Returns a true value if the given decoder is defined.
+
+=head2 C<Mix_GetMusicTitle( ... )>
+
+Get C<music> title from meta-tag if possible. If title tag is empty, filename will be returned.
+
+	my $title = Mix_GetMusicTitle( $music );
+
+Expected parameters include:
+
+=over
+
+=item C<music> - L<SDL2::Mixer::Music> structure to query
+
+=back
+
+Returns the title as a string.
+
+=head2 C<Mix_GetMusicTitleTag( ... )>
+
+Get C<music> title from meta-tag if possible.
+
+	my $title = Mix_GetMusicTitleTag( $music );
+
+Expected parameters include:
+
+=over
+
+=item C<music> - L<SDL2::Mixer::Music> structure to query
+
+=back
+
+Returns the title as a string.
+
+=head2 C<Mix_GetMusicArtistTag( ... )>
+
+Get C<music> artist from meta-tag if possible.
+
+	my $artist = Mix_GetMusicArtistTag( $music );
+
+Expected parameters include:
+
+=over
+
+=item C<music> - L<SDL2::Mixer::Music> structure to query
+
+=back
+
+Returns the artist as a string.
+
+=head2 C<Mix_GetMusicAlbumTag( ... )>
+
+Get C<music> album from meta-tag if possible.
+
+	my $album = Mix_GetMusicAlbumTag( $music );
+
+Expected parameters include:
+
+=over
+
+=item C<music> - L<SDL2::Mixer::Music> structure to query
+
+=back
+
+Returns the artist as a string.
+
+=head2 C<Mix_GetMusicCopyrightTag( ... )>
+
+Get C<music> copyright from meta-tag if possible.
+
+	my $copyright = Mix_GetMusicCopyrightTag( $music );
+
+Expected parameters include:
+
+=over
+
+=item C<music> - L<SDL2::Mixer::Music> structure to query
+
+=back
+
+Returns the artist as a string.
+
+=head2 C<Mix_SetPostMix( ... )>
+
+Set a function that is called after all mixing is performed.
+
+    Mix_SetPostMix(
+        sub {
+            my ( $udata, $stream, $len ) = @_;
+            print '=' x ( ($$stream) / 10 );
+            print "|\n";
+        },
+        undef
+    );
+
+This can be used to provide real-time visual display of the audio stream
+or add a custom mixer filter for the stream data.
+
+Expected parameters include:
+
+=over
+
+=item C<mix_func> - a callback
+
+=item C<args>
+
+=back
+
+
+
+
+
 
 
 
@@ -692,6 +1217,19 @@ Based on your platform, this is C<AUDIO_S16>.
 
 =back
 
+=head2 C<Mix_Func>
+
+This is a callback which must expect the following parameters:
+
+=over
+
+=item C<udata>
+
+=item C<stream> - pointer to the stream data
+
+=item C<len> - length of the stream
+
+=back
 
 =head1 LICENSE
 
@@ -707,7 +1245,7 @@ Sanko Robinson E<lt>sanko@cpan.orgE<gt>
 
 =begin stopwords
 
-chunksize
+chunksize unknown
 
 =end stopwords
 

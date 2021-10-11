@@ -5,8 +5,7 @@ package SDL2::TTF 0.01 {
     use base 'Exporter::Tiny';
     use SDL2::Utils qw[attach define load_lib];
     use SDL2::FFI;
-
-	#
+    #
     our %EXPORT_TAGS;
     #
     sub _ver() {
