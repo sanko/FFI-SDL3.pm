@@ -1,0 +1,49 @@
+---
+# Align parameters on the open bracket
+AlignAfterOpenBracket: Align
+
+# Allows contracting simple braced statements to a single line
+AllowShortBlocksOnASingleLine: 'true'
+
+# Short case labels wont't be contracted to a single line
+AllowShortCaseLabelsOnASingleLine: 'false'
+
+# Merge all inline functions fitting on a single line
+AllowShortFunctionsOnASingleLine: 'Inline'
+
+# If (a) return; can be put on a single line
+AllowShortIfStatementsOnASingleLine: 'true'
+
+# Configure each individual brace in BraceWrapping
+BreakBeforeBraces: 'Custom'
+
+# Control of individual brace wrapping cases
+BraceWrapping: {
+    AfterClass: 'true'
+    AfterControlStatement: 'false'
+    AfterEnum : 'true'
+    AfterFunction : 'false'
+    AfterNamespace : 'true'
+    AfterStruct : 'true'
+    AfterUnion : 'true'
+    BeforeCatch : 'false'
+    BeforeElse : 'true'
+    IndentBraces : 'false'
+}
+
+# The column limit
+ColumnLimit: '70'
+
+# The number of columns to use for indentation.
+IndentWidth: '4'
+
+# Targeted language
+Language: Cpp
+
+# Pointer is aligned to right side
+PointerAlignment: Right
+
+# High penalty to avoid line break just after return type
+PenaltyReturnTypeOnItsOwnLine: 10000
+
+SortIncludes: 'false'

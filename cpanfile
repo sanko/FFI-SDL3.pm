@@ -49,6 +49,7 @@ on development => sub {
     requires 'Code::TidyAll::Plugin::PodTidy';
     requires 'Perl::Tidy';
     requires 'Pod::Tidy';
+    requires 'Code::TidyAll::Plugin::ClangFormat';
     requires 'Test::CPAN::Meta';
     requires 'Test::MinimumVersion::Fast';
     requires 'Test::PAUSE::Permissions';

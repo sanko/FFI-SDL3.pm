@@ -26,3 +26,6 @@ select = **/*.{pl,pm,pod}
 
 ;[PodSpell]
 ;select = **/*.{pl,pl.in,pm,pod}
+
+[ClangFormat]
+select = **/*.{c}
