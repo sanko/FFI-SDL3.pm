@@ -15,6 +15,7 @@ package builder::SDL2 {
     use Alien::gmake;
     #
     use FFI::Build;
+    use Config;
     #
     $|++;
     #
@@ -200,10 +201,10 @@ package builder::SDL2 {
                 #    die 'oops!';
                 #}
             }
-            $cflags
-                = ( $x64 ? '-m64' : '-m32' ) .
-                ' -Dmain=SDL_main -I' . $sharedir->child('include')->absolute .
-                ' -I' . $sharedir->child( 'include', 'SDL2' )->absolute;
+            $cflags = ( $x64 ? '-m64' : '-m32' ) .
+                ' -Dmain=SDL_main -I' . $sharedir->child('include')->absolute->stringify;
+
+            #.' -I' . $sharedir->child( 'include', 'SDL2' )->absolute;
             $lflags = ( $x64 ? '-m64' : '-m32' ) .
                 ' -L' . $sharedir->child('lib')->absolute . ' -lSDL2main -lSDL2 -mwindows ';
 
@@ -308,7 +309,7 @@ package builder::SDL2 {
             #warn `./sdl2_config --prefix=%s --libs`;
             chdir $sharedir->child( 'lib', 'pkgconfig' );
             $ENV{PKG_CONFIG_PATH} .= $sharedir->child( 'lib', 'pkgconfig' )->absolute;
-            $cflags = $sharedir->child('include')->absolute . ' ' .
+            $cflags = '-I' . $sharedir->child('include')->absolute . ' ' .
                 `pkg-config sdl2.pc SDL2_gfx.pc SDL2_image.pc SDL2_mixer.pc SDL2_ttf.pc --cflags`;
             chomp $cflags;
             $lflags
@@ -389,7 +390,7 @@ package builder::SDL2 {
 
                     #'api_wrapper',
                     $path->basename(qr/\.c(?:pp)?$/i),
-                    cflags => $cflags,
+                    cflags => $cflags . ' -I' . path( $Config{archlibexp}, 'CORE' ),
                     dir    => $sharedir->child('lib')->absolute->stringify,
 
      #export => [
@@ -400,12 +401,18 @@ package builder::SDL2 {
      #        Bundle_SDL_AddTimer
      #        Bundle_SDL_RemoveTimer]
      #],
-                    libs    => $lflags,
+                    libs =>    #[
+                        $lflags
+
+                        #, `perl -MExtUtils::Embed -e ccopts`]
+                    ,
                     source  => [ $path->absolute->stringify ],
                     verbose => $quiet ? 0 : 2
                 );
 
-                # $lib is an instance of FFI::Build::File::Library
+#warn $cflags . ' -I' . path($Config{archlibexp}, 'CORE')->absolute->stringify;
+#warn $lflags . ' -L' . path($Config{archlibexp}, 'CORE')->absolute->stringify . ' -lperl'; #' -L' . path($Config{libperl})->absolute->stringify . ' -lperl ';
+# $lib is an instance of FFI::Build::File::Library
                 my $lib = $build->build;
                 warn $lib;
 

@@ -19,8 +19,8 @@ package SDL2::Mixer 0.01 {
         $version;
     }
     #
-	#load_lib('SDL2_mixer');
-    load_lib('mixer_wrapper');
+    #load_lib('SDL2_mixer');
+     load_lib('api_wrapper');
     #
     define version => [
         [ SDL_MIXER_MAJOR_VERSION => sub () { SDL2::Mixer::_ver()->major } ],
@@ -140,33 +140,55 @@ package SDL2::Mixer 0.01 {
     };
     #
     ffi->type( '(opaque,opaque,int)->void' => 'Mix_Func' );
-    ffi->type( '(opaque,opaque,int)->opaque' => 'Mix_FuncRet' );
 
     attach audio => {
-        XXMix_SetPostMix => [
-            [ 'Mix_Func', 'opaque' ] => sub ( $inner, $callback, $arg = () ) {
-                my $closure = ffi->closure(
-                    sub ( $udata, $stream, $len ) {
-					#use Data::Dump;
-                        #my @list = ffi->cast('opaque', 'uint8[' . ($len -1)  . ']', $stream);
-                        $callback->( $arg,
-						$stream,
-						#ffi->cast( 'opaque', 'uint8*', $stream )
-						#ffi->cast( 'opaque', 'uint8*', $stream )
-						, $len );
+		Bundle_set_stream => [ ['uint8[]', 'int'] ],
+
+		#Bundle_Mix_SetPostMix => [
+        #    [ 'Mix_Func', 'opaque' ],
+        #    => sub ( $inner, $callback, $arg = () ) {
+		#		warn;
+        #        my $closure = ffi->closure(
+        #            sub ( $udata, $stream, $len ) {
+		#				warn 'test';
+		#				my $_stream = ffi->cast('opaque', 'uint8[' . $len . ']', $stream);
+ 		#				#$callback->( $arg, \$_stream, $len );
+		#				#Mix_mix_cb_return($_stream, $len);
+		#				my $ret = $callback->( $arg, $_stream, $len );
+		#				Mix_mix_cb_return($ret, $len);
+        #            }
+        #        );
+        #        $closure->sticky;
+        #        $inner->( $closure, $arg );
+        #    }
+        #],
+		Bundle_Mix_SetPostMix => [
+            [ 'Mix_Func', 'opaque' ],
+            sub ( $inner, $code, $params = () ) {
+                my $cb = ffi->closure(
+                    sub {
+                        my ( $etc, $stream, $len ) = @_;
+						#warn  '$len == ' . $len;
+						($stream) = ffi->cast('opaque', 'uint8[' . $len . ']', $stream);
+                        $code->( $params, \$stream, $len );
+ 						set_stream($stream, $len);
                     }
                 );
-                $closure->sticky;
-                $inner->( $closure, $arg );
+                $inner->( $cb, undef );
+				$cb->sticky;
+                #$_timers{$id} = $cb;    # Store reference
+                #$_timers{$id}->sticky;
+                return;
             }
-        ]
+        ],
     };
     attach audio => {
         #
         Mix_PlayChannelTimed => [ [ 'int', 'SDL_Mixer_Chunk', 'int', 'int' ], 'int' ],
         Mix_PlayingMusic     => [ [],                                         'int' ],
         Mix_PlayMusic        => [ [ 'SDL_Mixer_Music', 'int' ],               'int' ],
-        Mix_CloseAudio       => [ [] ]
+        Mix_CloseAudio       => [ [] ],
+		Mix_Playing => [[], 'int']
     };
     define audio => [
         [   Mix_LoadWAV => sub ($file) {
@@ -178,6 +200,7 @@ package SDL2::Mixer 0.01 {
             }
         ]
     ];
+
 
 =pod
 
@@ -1049,8 +1072,6 @@ Set a function that is called after all mixing is performed.
     Mix_SetPostMix(
         sub {
             my ( $udata, $stream, $len ) = @_;
-            print '=' x ( ($$stream) / 10 );
-            print "|\n";
         },
         undef
     );

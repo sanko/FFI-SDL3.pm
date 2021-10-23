@@ -5,7 +5,7 @@ package SDL2::timer 0.01 {
     use SDL2::stdinc;
     use SDL2::error;
     #
-    load_lib('thread_wrapper');
+    load_lib('api_wrapper');
     #
     #
     ffi->type( '(uint32,opaque)->uint32' => 'SDL_TimerCallback' );
@@ -13,32 +13,41 @@ package SDL2::timer 0.01 {
     my %_timers;
     END { %_timers = () }
     attach timer => {
-        SDL_GetTicks                                            => [ [], 'uint32' ],
-        SDL_GetPerformanceCounter                               => [ [], 'uint64' ],
-        SDL_GetPerformanceFrequency                             => [ [], 'uint64' ],
-        SDL_Delay                                               => [ ['uint32'] ],
-        ( threads_wrapped() ? 'Bundle_' : '' ) . 'SDL_AddTimer' => [
+        SDL_GetTicks                => [ [], 'uint32' ],
+        SDL_GetPerformanceCounter   => [ [], 'uint64' ],
+        SDL_GetPerformanceFrequency => [ [], 'uint64' ],
+        SDL_Delay                   => [
+            ['uint32'] => sub ( $inner, $ticks ) {
+                SDL2::FFI::SDL_Yield();
+                $inner->($ticks);
+                SDL2::FFI::SDL_Yield();
+            }
+        ],
+        Bundle_SDL_AddTimer => [
             [ 'uint32', 'SDL_TimerCallback', 'opaque' ],
             'SDL_TimerID',
             sub ( $inner, $delay, $code, $params = () ) {
                 my $cb = ffi->closure(
                     sub {
                         my ( $delay, $etc ) = @_;
-                        my $retval = $code->( $delay, $params );
-                        $retval;
+                        return $code->( $delay, $params );
                     }
                 );
                 my $id = $inner->( $delay, $cb, undef );
                 $_timers{$id} = $cb;    # Store reference
                 $_timers{$id}->sticky;
+
+                #$cb->sticky;
                 return $id;
             }
         ],
-        ( threads_wrapped() ? 'Bundle_' : '' ) . 'SDL_RemoveTimer' => [
+        Bundle_SDL_RemoveTimer => [
             ['SDL_TimerID'] => 'SDL_bool' => sub ( $inner, $id ) {
                 my $retval = $inner->($id);
-                $_timers{$id}->unstick;
-                delete $_timers{$id};
+                if ( defined $_timers{$id} ) {
+                    $_timers{$id}->unstick;
+                    delete $_timers{$id};
+                }
                 return $retval;
             }
         ]

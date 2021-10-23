@@ -33,7 +33,9 @@ package SDL2::Utils {
     #    $ver;
     #}
     sub threads_wrapped () {    # Fake thread safe
-        loaded_libs('thread_wrapper');
+
+        #loaded_libs('api_wrapper');
+        1;
     }
     my $loaded_libs;
 
@@ -44,22 +46,15 @@ package SDL2::Utils {
     my %prereq = (
 
         # Windows... this matters in Windows...
-        SDL2_image     => [qw[SDL2 jpeg png16 tiff webp zlib1]],
-        SDL2_ttf       => [qw[SDL2 freetype]],
-        thread_wrapper => [qw[SDL2]],
-        mixer_wrapper  => [qw[SDL2_mixer]],
-        SDL2_mixer     => [qw[]],                                  # TODO
-        freetype       => [qw[zlib1]]
+        SDL2_image  => [qw[SDL2 jpeg png16 tiff webp zlib1]],
+        SDL2_ttf    => [qw[SDL2 freetype]],
+        api_wrapper => [qw[SDL2 SDL2_mixer]],
+        SDL2_mixer  => [qw[]],                                  # TODO
+        freetype    => [qw[zlib1]]
     );
 
     sub load_lib ($name) {
-        warn $name;
-        use Data::Dump;
-        ddx \%libs;
-        $libs{all}{$name} // die;
-
-        #return;                # This should be a fatal error
-        warn $name;
+        $libs{all}{$name} // return;                # This should be a fatal error
         load_lib($_) for @{ $prereq{$name} // [] }; # Recurse!
         my $_cdd = "\0" x 1024;                     # for Windows and SDL2_ttf
         CORE::state $SetDllDirectoryA;              # https://github.com/BindBC/bindbc-sdl/issues/10
@@ -93,15 +88,8 @@ package SDL2::Utils {
     sub ffi () {
         CORE::state $ffi;
         if ( !defined $ffi ) {
-            use FFI::Build;
-            use FFI::Build::File::C;
             my $distdir = Path::Tiny->new( dist_dir('SDL2-FFI') );
             my $root    = path(__FILE__)->absolute->parent(3)->realpath;
-            my $lines   = $distdir->child('config.ini');
-            my ( $cflags, $lflags )
-                = $lines->is_file ? $lines->lines_raw( { chomp => 1 } ) :
-                ( '', '' );    # hope for the best!
-
             #
             my @libs = (
                 $distdir->child('lib')->children(qr[\.(so|dylib|dll)$]),
@@ -118,10 +106,8 @@ package SDL2::Utils {
                         $2 => $_
                     } map { /SDL/ ? $loaded_libs{$_} : () } keys %loaded_libs
                 },
-                thread_wrapper =>
-                    [ sort map { /thread_wrapper/ ? $loaded_libs{$_} : () } keys %loaded_libs ],
-                mixer_wrapper =>
-                    [ sort map { /mixer_wrapper/ ? $loaded_libs{$_} : () } keys %loaded_libs ],
+                api_wrapper =>
+                    [ sort map { /api_wrapper/ ? $loaded_libs{$_} : () } keys %loaded_libs ],
                 pre => [
                     sort map { /^(?:lib)?(?!.*(SDL|thread).+).+$/ ? $loaded_libs{$_} : () }
                         keys %loaded_libs
@@ -130,9 +116,13 @@ package SDL2::Utils {
             );
 
             #$lines // return;
-            $cflags = '-I' . $distdir->child( 'include', 'SDL2' )->relative . ' ' . $cflags;
-            $lflags = '-L' . $distdir->child('lib')->absolute . ' ' . $lflags;
             if ( defined(&Test2::V0::diag) ) {
+                my $lines = $distdir->child('config.ini');
+                my ( $cflags, $lflags )
+                    = $lines->is_file ? $lines->lines_raw( { chomp => 1 } ) :
+                    ( '', '' );    # hope for the best!
+                $cflags = '-I' . $distdir->child( 'include', 'SDL2' )->relative . ' ' . $cflags;
+                $lflags = '-L' . $distdir->child('lib')->absolute . ' ' . $lflags;
                 my $Win32 = $^O eq 'MSWin32';
                 #
                 eval { Test2::V0::diag( 'dist_dir: ' . $distdir ) };

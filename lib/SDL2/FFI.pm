@@ -100,8 +100,7 @@ package SDL2::FFI 0.08 {
     #die;
     if ( threads_wrapped() ) {
         attach
-            debug   => { Bundle_SDL_PrintEvent => [ ['SDL_Event'] ], },
-            events  => { Bundle_SDL_Yield      => [ [] ] },
+            events  => { Bundle_SDL_Yield => [ [] ] },
             threads => {
             Bundle_SDL_Wrap_BEGIN => [ [ 'string', 'int', 'opaque' ] ],
             Bundle_SDL_Wrap_END   => [ ['string'] ]
