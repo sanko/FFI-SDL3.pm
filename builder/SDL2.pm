@@ -14,9 +14,6 @@ package builder::SDL2 {
     use Carp::Always;
     use Alien::gmake;
     #
-    use FFI::Build;
-    use Config;
-    #
     $|++;
     #
     #$ENV{TSDL2} = './temp/';
@@ -70,10 +67,9 @@ package builder::SDL2 {
                 #|| $sharedir->child('lib')->children < 4
             ) {
                 buildDLLs( $^O, $x64 );
-
-                #build_api_wrappers( $^O, $x64 );
+                build_api_wrapper( $^O, $x64 );
             }
-            build_api_wrappers( $^O, $x64 );    # Always build it while testing...
+            build_api_wrapper( $^O, $x64 ) if -d '.git';    # Always build during dev...
         }
         Module::Build::Tiny::Build();
     }
@@ -201,12 +197,12 @@ package builder::SDL2 {
                 #    die 'oops!';
                 #}
             }
-            $cflags = ( $x64 ? '-m64' : '-m32' ) .
-                ' -Dmain=SDL_main -I' . $sharedir->child('include')->absolute->stringify;
-
-            #.' -I' . $sharedir->child( 'include', 'SDL2' )->absolute;
-            $lflags = ( $x64 ? '-m64' : '-m32' ) .
-                ' -L' . $sharedir->child('lib')->absolute . ' -lSDL2main -lSDL2 -mwindows ';
+            $cflags
+                = ( $x64 ? '-m64' : '-m32' ) .
+                ' -Dmain=SDL_main -I' . $sharedir->child('include')->absolute .
+                ' -I' . $sharedir->child( 'include', 'SDL2' )->absolute;
+            $lflags = ( $x64 ? '-m64' : '-m32' ) . ' -L' .
+                $sharedir->child('lib')->absolute . ' -lSDL2main -lSDL2 -lSDL2_mixer -mwindows ';
 
 #' -Wl,--dynamicbase -Wl,--nxcompat -lm -ldinput8 -ldxguid -ldxerr8 -luser32 -lgdi32 -lwinmm -limm32 -lole32 -loleaut32 -lshell32 -lsetupapi -lversion -luuid ';
 # TODO: store in config file:
@@ -309,7 +305,7 @@ package builder::SDL2 {
             #warn `./sdl2_config --prefix=%s --libs`;
             chdir $sharedir->child( 'lib', 'pkgconfig' );
             $ENV{PKG_CONFIG_PATH} .= $sharedir->child( 'lib', 'pkgconfig' )->absolute;
-            $cflags = '-I' . $sharedir->child('include')->absolute . ' ' .
+            $cflags = $sharedir->child('include')->absolute . ' ' .
                 `pkg-config sdl2.pc SDL2_gfx.pc SDL2_image.pc SDL2_mixer.pc SDL2_ttf.pc --cflags`;
             chomp $cflags;
             $lflags
@@ -376,54 +372,33 @@ package builder::SDL2 {
         }
         else {
             CORE::say 'oops!';
-            warn $liburl;
-            use Data::Dump;
-            ddx($response);
+
+            #warn $liburl;
+            #use Data::Dump;
+            #ddx($response);
         }
     }
 
-    sub build_api_wrappers ( $platform_name, $x64 ) {
-        my $libs = $basedir->child('src')->visit(
-            sub ( $path, $state ) {
-                return if $path !~ /\.c(?:pp)?$/i;
-                my $build = FFI::Build->new(
-
-                    #'api_wrapper',
-                    $path->basename(qr/\.c(?:pp)?$/i),
-                    cflags => $cflags . ' -I' . path( $Config{archlibexp}, 'CORE' ),
-                    dir    => $sharedir->child('lib')->absolute->stringify,
-
-     #export => [
-     #    qw[
-     #        Bundle_SDL_Wrap_BEGIN Bundle_SDL_Wrap_END DisplayOrientationName Bundle_SDL_PrintEvent
-     #        Bundle_SDL_Yield
-     #        c_callback
-     #        Bundle_SDL_AddTimer
-     #        Bundle_SDL_RemoveTimer]
-     #],
-                    libs =>    #[
-                        $lflags
-
-                        #, `perl -MExtUtils::Embed -e ccopts`]
-                    ,
-                    source  => [ $path->absolute->stringify ],
-                    verbose => $quiet ? 0 : 2
-                );
-
-#warn $cflags . ' -I' . path($Config{archlibexp}, 'CORE')->absolute->stringify;
-#warn $lflags . ' -L' . path($Config{archlibexp}, 'CORE')->absolute->stringify . ' -lperl'; #' -L' . path($Config{libperl})->absolute->stringify . ' -lperl ';
-# $lib is an instance of FFI::Build::File::Library
-                my $lib = $build->build;
-                warn $lib;
-
-          #my $ffi = FFI::Platypus->new( api => 1 );
-          # The filename will be platform dependant, but something like libfrooble.so or frooble.dll
-          #$ffi->lib( $lib->path );
-                warn $lib;
-                $state->{$path} = $lib;
-            },
+    sub build_api_wrapper ( $platform_name, $x64 ) {
+        my $c = $basedir->child( 'src', 'api_wrapper.c' );
+        use FFI::Build;
+        my $build = FFI::Build->new(
+            'api_wrapper',
+            cflags  => $cflags,
+            dir     => $sharedir->child('lib')->absolute->stringify,
+            libs    => $lflags,
+            source  => [ $c->absolute->stringify ],
+            verbose => $quiet ? 0 : 2
         );
-        return $libs;
+
+        # $lib is an instance of FFI::Build::File::Library
+        my $lib = $build->build;
+
+        #my $ffi = FFI::Platypus->new( api => 1 );
+        # The filename will be platform dependant, but something like libfrooble.so or frooble.dll
+        #$ffi->lib( $lib->path );
+        warn $lib;
+        return $lib;
     }
 }
 1;

@@ -1,10 +1,10 @@
-#include <SDL2/SDL_events.h>
-#include <SDL2/SDL_mixer.h>
-#include <SDL2/SDL_stdinc.h>
+#include <SDL_events.h>
+#include <SDL_mixer.h>
+#include <SDL_stdinc.h>
 
-#include <SDL2/SDL.h>
-#include <SDL2/SDL_thread.h>
-#include <SDL2/SDL_timer.h>
+#include <SDL.h>
+#include <SDL_thread.h>
+#include <SDL_timer.h>
 /*
 #define PERL_NO_GET_CONTEXT
 #include <EXTERN.h>

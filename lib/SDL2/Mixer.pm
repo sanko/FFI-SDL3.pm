@@ -546,11 +546,11 @@ Signed 16-bit samples, in big-endian byte order
 
 =item C<AUDIO_U16>
 
-same as C<AUDIO_U16LSB> (for backwards compatability probably)
+same as C<AUDIO_U16LSB> (for backwards compatibility probably)
 
 =item C<AUDIO_S16>
 
-same as C<AUDIO_S16LSB> (for backwards compatability probably)
+same as C<AUDIO_S16LSB> (for backwards compatibility probably)
 
 =item C<AUDIO_U16SYS>
 
@@ -627,7 +627,7 @@ This can be called multiple times, even with sounds playing. If C<numchans> is l
 
 If any channels are deallocated, any callback set by C<Mix_ChannelFinished> will be called when each channel is halted to be freed. Note: passing in zero WILL free all mixing channels, however music will still play.
 
-Expected prameters include:
+Expected parameters include:
 
 =over
 
@@ -637,7 +637,7 @@ A negative number will not do anything. Use this to find out how many channels a
 
 =back
 
-Returns the number of channels allocated. This should never fail but a high number of channels can segfault if you roun out of memory.
+Returns the number of channels allocated. This should never fail but a high number of channels can segfault if you run out of memory.
 
 =head2 C<Mix_QuerySpec( ... )>
 
@@ -741,7 +741,7 @@ otherwise the internal players will be used. Alternatively, if you have set
 an external command up and don't want to use it, you must call
 C<Mix_SetMusicCMD( undef )> to use the built-in players again.
 
-Expected prameters include:
+Expected parameters include:
 
 =over
 
@@ -1266,7 +1266,7 @@ Sanko Robinson E<lt>sanko@cpan.orgE<gt>
 
 =begin stopwords
 
-chunksize unknown
+chunksize little-endian soundcard
 
 =end stopwords
 
