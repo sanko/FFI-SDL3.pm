@@ -139,6 +139,33 @@ todo 'These are platform specific and might fail depending on how SDL_mixer was 
         SDL_AddTimer( 1000, sub { $done++ if !Mix_PlayingMusic(); return shift; } );  # Just in case
         SDL_Delay(1) while !$done;
     }
+    {
+        my $done = 0;
+        my @ff   = map { int rand(20) } 0 .. 5000;    # Some predefined music
+        Mix_HookMusic(
+            sub {
+                my ( $udata, $stream, $len ) = @_;
+
+                # fill buffer with...uh...music...
+                $$stream->[$_] = $ff[ ( $_ + $udata->{pos} ) % ( scalar @ff ) ] // 0 for 0 .. $len;
+
+                # set udata for next time
+                if ( $udata->{pos} >= 50000 ) {
+                    pass 'Mix_SetPostMix( ... ) callback';
+                    ok $udata->{pos}, '   userdata is defined (and sticky)';
+                    $done++;
+                }
+                $udata->{pos} += $len;
+            },
+            { pos => 0 }
+        );
+
+        #Mix_PlayMusic( Mix_LoadMUS($mp3), 1 );    # Only play it once
+        SDL_AddTimer( 1000, sub { $done++ if !Mix_PlayingMusic(); return shift; } );  # Just in case
+        SDL_Delay(1) while !$done;
+        my $data = Mix_GetMusicHookData();
+        ok $data->{pos}, 'Mix_GetMusicHookData()';
+    }
 };
 #
 can_ok $_ for qw[

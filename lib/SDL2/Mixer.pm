@@ -20,7 +20,7 @@ package SDL2::Mixer 0.01 {
     }
     #
     #load_lib('SDL2_mixer');
-     load_lib('api_wrapper');
+    load_lib('api_wrapper');
     #
     define version => [
         [ SDL_MIXER_MAJOR_VERSION => sub () { SDL2::Mixer::_ver()->major } ],
@@ -140,55 +140,81 @@ package SDL2::Mixer 0.01 {
     };
     #
     ffi->type( '(opaque,opaque,int)->void' => 'Mix_Func' );
-
+    my ( $post_mix, $hook_music, $hook_music_finished );
+    my $hook_music_data;
     attach audio => {
-		Bundle_set_stream => [ ['uint8[]', 'int'] ],
-
-		#Bundle_Mix_SetPostMix => [
-        #    [ 'Mix_Func', 'opaque' ],
-        #    => sub ( $inner, $callback, $arg = () ) {
-		#		warn;
-        #        my $closure = ffi->closure(
-        #            sub ( $udata, $stream, $len ) {
-		#				warn 'test';
-		#				my $_stream = ffi->cast('opaque', 'uint8[' . $len . ']', $stream);
- 		#				#$callback->( $arg, \$_stream, $len );
-		#				#Mix_mix_cb_return($_stream, $len);
-		#				my $ret = $callback->( $arg, $_stream, $len );
-		#				Mix_mix_cb_return($ret, $len);
-        #            }
-        #        );
-        #        $closure->sticky;
-        #        $inner->( $closure, $arg );
-        #    }
-        #],
-		Bundle_Mix_SetPostMix => [
+        Bundle_set_stream     => [ [ 'uint8[]', 'int' ] ],
+        Bundle_Mix_SetPostMix => [
             [ 'Mix_Func', 'opaque' ],
             sub ( $inner, $code, $params = () ) {
+                if ( !defined $code ) {
+                    undef $post_mix;
+                    return $inner->( undef, undef );
+                }
                 my $cb = ffi->closure(
                     sub {
                         my ( $etc, $stream, $len ) = @_;
-						#warn  '$len == ' . $len;
-						($stream) = ffi->cast('opaque', 'uint8[' . $len . ']', $stream);
+
+                        #warn  '$len == ' . $len;
+                        ($stream) = ffi->cast( 'opaque', 'uint8[' . $len . ']', $stream );
                         $code->( $params, \$stream, $len );
- 						set_stream($stream, $len);
+                        set_stream( $stream, $len );
                     }
                 );
                 $inner->( $cb, undef );
-				$cb->sticky;
-                #$_timers{$id} = $cb;    # Store reference
-                #$_timers{$id}->sticky;
+                $post_mix = $cb;
+                return;
+            }
+        ],
+        Bundle_Mix_HookMusic => [
+            [ 'Mix_Func', 'opaque' ],
+            sub ( $inner, $code, $params = () ) {
+                if ( !defined $code ) {
+                    undef $hook_music;
+                    undef $hook_music_data;
+                    return $inner->( undef, undef );
+                }
+                $hook_music_data = $params;
+                my $cb = ffi->closure(
+                    sub {
+                        my ( $etc, $stream, $len ) = @_;
+
+                        #warn  '$len == ' . $len;
+                        ($stream) = ffi->cast( 'opaque', 'uint8[' . $len . ']', $stream );
+                        $code->( $params, \$stream, $len );
+                        set_stream( $stream, $len );
+                    }
+                );
+                $inner->( $cb, undef );
+                $hook_music = $cb;
+                return;
+            }
+        ],
+        Bundle_Mix_HookMusicFinished => [
+            [ 'Mix_Func', 'opaque' ],
+            sub ( $inner, $code = () ) {
+                if ( !defined $code ) {
+                    undef $hook_music_finished;
+                    return $inner->($code);
+                }
+                my $cb = ffi->closure($code);
+                $inner->($cb);
+                $hook_music_finished = $cb;
                 return;
             }
         ],
     };
+    define audio => [
+        [ Mix_GetMusicHookData => sub () {$hook_music_data}
+        ]    # Do not call lib version of this as we do not pass an SV*
+    ];
     attach audio => {
         #
         Mix_PlayChannelTimed => [ [ 'int', 'SDL_Mixer_Chunk', 'int', 'int' ], 'int' ],
         Mix_PlayingMusic     => [ [],                                         'int' ],
         Mix_PlayMusic        => [ [ 'SDL_Mixer_Music', 'int' ],               'int' ],
         Mix_CloseAudio       => [ [] ],
-		Mix_Playing => [[], 'int']
+        Mix_Playing          => [ [], 'int' ]
     };
     define audio => [
         [   Mix_LoadWAV => sub ($file) {
@@ -200,7 +226,6 @@ package SDL2::Mixer 0.01 {
             }
         ]
     ];
-
 
 =pod
 
@@ -1070,43 +1095,102 @@ Returns the artist as a string.
 Set a function that is called after all mixing is performed.
 
     Mix_SetPostMix(
-        sub {
+        sub { # Add a little background white noise to whatever is playing
             my ( $udata, $stream, $len ) = @_;
+            $$stream->[$_] += rand $udata->{amp} for 0 .. $len;
         },
-        undef
+        { amp => 10 }
     );
 
 This can be used to provide real-time visual display of the audio stream
-or add a custom mixer filter for the stream data.
+or altering the stream to add an echo or other effects.
 
 Expected parameters include:
 
 =over
 
-=item C<mix_func> - a callback
+=item C<mix_func> - a L<< function pointer|/C<Mix_Func> >> for the postmix processor; C<undef> unregisters the current postmixer
 
-=item C<args>
+=item C<args> -  a pointer to data to pass into the C<mix_func>'s C<udata> parameter.
+
+It is a good place to keep the state data for the processor, especially if the processor is made to handle multiple channels at the same time.
+
+This may be C<undef>, depending on the processor.
 
 =back
 
+There can only be one postmix function used at a time through this method. Use
+L<< C<Mix_RegisterEffect( MIX_CHANNEL_POST, mix_func, undef, arg )>|/C<Mix_RegisterEffect( ... )> >> to use multiple postmix processors.
 
+Note: This postmix processor is run B<after> all the registered postmixers set up by C<Mix_RegisterEffect( ... )>.
 
+=head2 C<Mix_HookMusic( ... )>
 
+Set a custom music player function.
 
+	my @ff = ...; # Some predefined music
+    Mix_HookMusic(
+        sub {
+            my ( $udata, $stream, $len ) = @_;
 
+            # fill buffer with...uh...music...
+            $$stream->[$_] = $ff[ $_ + $udata->{pos} ] for 0 .. $len;
 
+            # set udata for next time
+            $udata->{pos} += $len;
+        },
+        { pos => 0 }
+    );
 
+This can be used to provide real-time visual display of the audio stream
+or altering the stream to add an echo or other effects.
 
+Expected parameters include:
 
+=over
 
+=item C<mix_func> - a L<< function pointer|/C<Mix_Func> >> for the postmix processor; C<undef> unregisters the current postmixer
 
+=item C<args> -  a pointer to data to pass into the C<mix_func>'s C<udata> parameter.
 
+It is a good place to keep the state data for the processor, especially if the processor is made to handle multiple channels at the same time.
 
+This may be C<undef>, depending on the processor.
 
+=back
 
+The function will be called with C<args> passed into the C<udata> parameter when the
+L<< mix_func|/C<Mix_Func> >> is called. The C<stream> parameter passes in the audio stream buffer to be
+filled with C<len> bytes of music. The music player will then be called automatically when the mixer
+needs it. Music playing will start as soon as this is called. All the music playing and stopping
+functions have no effect on music after this. Pause and resume will work. Using a custom music
+player and the internal music player is not possible, the custom music player takes priority. To
+stop the custom music player call C<Mix_HookMusic(undef, undef)>.
 
+=head2 C<Mix_HookMusicFinished( ... )>
 
+Add your own callback for when the music has finished playing or when it is
+stopped from a call to L<< C<Mix_HaltMusic( )>|/C<Mix_HaltMusic( )> >>.
 
+    Mix_HookMusicFinished( sub { print "Music stopped.\n" } );
+
+Any time music stops, the C<music_finished> function will be called. Call with C<undef> to remove the callback.
+
+Expected parameters include:
+
+=over
+
+=item C<music_finished> - a function that should not expect any parameters or return anything
+
+=back
+
+=head2 C<Mix_GetMusicHookData( )>
+
+Get the C<arg> passed into L<< C<Mix_HookMusic( ... )>|/C<Mix_HookMusic( ... )> >>.
+
+	my $data = Mix_GetMusicHookData( );
+
+Returns the C<arg> pointer.
 
 
 

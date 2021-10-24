@@ -17,9 +17,11 @@ Uint32 callbackEventType;
 SDL_bool mixer_done = SDL_FALSE;
 int timer_done;
 typedef void(SDLCALL *mix_func)(void *, Uint8 *, int);
+typedef void(SDLCALL *music_finished)( );
 Uint8 *_stream;
 SDL_mutex *timer_lock, *mixer_lock;
 SDL_cond *timer_cond, *mixer_cond;
+music_finished music_finished_cb;
 
 void Bundle_SDL_Wrap_BEGIN(const char *package, int argc,
                            const char *argv[]) {
@@ -28,9 +30,10 @@ void Bundle_SDL_Wrap_BEGIN(const char *package, int argc,
     if (timer_cond == NULL) timer_cond = SDL_CreateCond();
     if (mixer_lock == NULL) mixer_lock = SDL_CreateMutex();
     if (mixer_cond == NULL) mixer_cond = SDL_CreateCond();
-    callbackEventType = SDL_RegisterEvents(2);
+    callbackEventType = SDL_RegisterEvents(3);
     // 1: timer callback
     // 2: mixer callback
+    // 3: music finished callback
 }
 void Bundle_SDL_Wrap_END(const char *package) {
     // fprintf(stderr, "# Bundle_SDL_Wrap_END( %s )", package);
@@ -65,6 +68,10 @@ void Bundle_SDL_Yield() {
             mix_func cb = (mix_func)event_in.user.data2;
             cb(NULL, event_in.user.data1, event_in.user.code);
             SDL_CondBroadcast(mixer_cond);
+        }
+        else if( event_in.type == callbackEventType + 2 ){
+            if (music_finished_cb != NULL)
+                music_finished_cb();
         }
         else {
             SDL_Log("Unhandled callback! Type: %d",
@@ -122,9 +129,9 @@ void wrap_mix_func(void *udata, Uint8 *stream, int len) {
     else if (sizeof(_stream) != len)
         _stream = SDL_realloc(_stream, len);
     SDL_memcpy(_stream, stream, len);
-    //
-    SDL_Event event_out, event_in;
 
+    //
+    SDL_Event event_out;
     event_out.type = callbackEventType + 1;
     event_out.user.code = len;
     event_out.user.data1 = (void *)stream;
@@ -154,6 +161,22 @@ void wrap_mix_func(void *udata, Uint8 *stream, int len) {
     return;
 }
 
+void music_finished_func() {
+    SDL_Event event_out;
+    event_out.type = callbackEventType + 2;
+    SDL_PushEvent(&event_out);
+    return;
+}
+
 void Bundle_Mix_SetPostMix(mix_func cb, void *arg) {
-    Mix_SetPostMix(wrap_mix_func, cb);
+    Mix_SetPostMix(cb == NULL ? cb : wrap_mix_func, cb);
+}
+
+void Bundle_Mix_HookMusic(mix_func cb, void *arg) {
+    Mix_HookMusic(cb == NULL ? cb : wrap_mix_func, cb);
+}
+
+void Bundle_Mix_HookMusicFinished(music_finished cb) {
+    music_finished_cb = cb;
+    Mix_HookMusicFinished(cb == NULL ? cb : music_finished_func);
 }
