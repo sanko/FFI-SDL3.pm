@@ -1,6 +1,6 @@
 package SDL2::TTF 0.01 {
     use strict;
-    use warnings;
+    use SDL2::Utils;
     use experimental 'signatures';
     use base 'Exporter::Tiny';
     use SDL2::Utils qw[attach define load_lib];

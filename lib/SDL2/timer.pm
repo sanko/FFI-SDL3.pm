@@ -1,4 +1,5 @@
 package SDL2::timer 0.01 {
+    use strict;
     use SDL2::Utils qw[attach define ffi load_lib threads_wrapped];
     use experimental 'signatures';
     #

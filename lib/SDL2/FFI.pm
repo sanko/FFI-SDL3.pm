@@ -105,7 +105,7 @@ package SDL2::FFI 0.08 {
             Bundle_SDL_Wrap_BEGIN => [ [ 'string', 'int', 'opaque' ] ],
             Bundle_SDL_Wrap_END   => [ ['string'] ]
             };
-        SDL_Wrap_BEGIN( __PACKAGE__, scalar @ARGV, @ARGV );
+        SDL_Wrap_BEGIN( __PACKAGE__, scalar(@ARGV), \@ARGV );
         END { SDL_Wrap_END(__PACKAGE__) if threads_wrapped() }
     }
     else {

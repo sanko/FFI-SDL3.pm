@@ -1,6 +1,6 @@
 package SDL2::Image 0.01 {
     use strict;
-    use warnings;
+    use SDL2::Utils;
     use experimental 'signatures';
     use base 'Exporter::Tiny';
     use SDL2::Utils qw[attach define enum load_lib];
@@ -110,6 +110,7 @@ package SDL2::Image 0.01 {
         # Currently on Github but not in a stable dist
         # https://github.com/libsdl-org/SDL_image/issues/182
         package SDL2::Image::Animation {
+            use strict;
             use SDL2::Utils;
             use experimental 'signatures';
             #

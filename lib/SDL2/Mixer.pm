@@ -1,6 +1,6 @@
 package SDL2::Mixer 0.01 {
     use strict;
-    use warnings;
+    use SDL2::Utils;
     use experimental 'signatures';
     use base 'Exporter::Tiny';
     use SDL2::Utils qw[attach define enum load_lib];
@@ -52,8 +52,8 @@ package SDL2::Mixer 0.01 {
         [ MIX_INIT_MID  => 0x00000020 ],
         [ MIX_INIT_OPUS => 0x00000040 ]
     ];
-    attach mixer    => { Mix_Init => [ ['int'], 'int' ], Mix_Quit => [ [] ] };
-    define defaults => [
+    attach mixer   => { Mix_Init => [ ['int'], 'int' ], Mix_Quit => [ [] ] };
+    define default => [
         [ MIX_CHANNELS          => 8 ],
         [ MIX_DEFAULT_FREQUENCY => 44100 ],
         [   MIX_DEFAULT_FORMAT => SDL2::FFI::SDL_BYTEORDER() eq SDL2::FFI::SDL_LIL_ENDIAN() ?
@@ -67,12 +67,16 @@ package SDL2::Mixer 0.01 {
     package SDL2::Mixer::Chunk {
         use strict;
         use warnings;
-        use SDL2::Utils qw[has];
+        use SDL2::Utils qw[has ffi];
         our $TYPE = has
             allocated => 'int',
-            abuf      => 'opaque',         # uint8*
+            _abuf     => 'opaque',         # uint8*
             alen      => 'uint32',
             volume    => 'uint8';          # Per-sample volume, 0-128
+
+        sub abuf ($s) {
+            ffi->cast( 'opaque', 'uint8[' . $s->alen . ']', $s->_abuf );
+        }
     };
     enum
         Mix_Fading    => [qw[MIX_NO_FADING MIX_FADING_OUT MIX_FADING_IN]],
@@ -140,7 +144,9 @@ package SDL2::Mixer 0.01 {
     };
     #
     ffi->type( '(opaque,opaque,int)->void' => 'Mix_Func' );
-    my ( $post_mix, $hook_music, $hook_music_finished );
+    ffi->type( '()->void'                  => 'music_finished' );
+    ffi->type( '(int)->void'               => 'channel_finished' );
+    my ( $post_mix, $hook_music, $hook_music_finished, $hook_channel_finished );
     my $hook_music_data;
     attach audio => {
         Bundle_set_stream     => [ [ 'uint8[]', 'int' ] ],
@@ -154,8 +160,6 @@ package SDL2::Mixer 0.01 {
                 my $cb = ffi->closure(
                     sub {
                         my ( $etc, $stream, $len ) = @_;
-
-                        #warn  '$len == ' . $len;
                         ($stream) = ffi->cast( 'opaque', 'uint8[' . $len . ']', $stream );
                         $code->( $params, \$stream, $len );
                         set_stream( $stream, $len );
@@ -178,8 +182,6 @@ package SDL2::Mixer 0.01 {
                 my $cb = ffi->closure(
                     sub {
                         my ( $etc, $stream, $len ) = @_;
-
-                        #warn  '$len == ' . $len;
                         ($stream) = ffi->cast( 'opaque', 'uint8[' . $len . ']', $stream );
                         $code->( $params, \$stream, $len );
                         set_stream( $stream, $len );
@@ -191,7 +193,7 @@ package SDL2::Mixer 0.01 {
             }
         ],
         Bundle_Mix_HookMusicFinished => [
-            [ 'Mix_Func', 'opaque' ],
+            [ 'music_finished', 'opaque' ],
             sub ( $inner, $code = () ) {
                 if ( !defined $code ) {
                     undef $hook_music_finished;
@@ -203,8 +205,22 @@ package SDL2::Mixer 0.01 {
                 return;
             }
         ],
+        Bundle_Mix_ChannelFinished => [
+            [ 'channel_finished', 'opaque' ],
+            sub ( $inner, $code = () ) {
+                if ( !defined $code ) {
+                    undef $hook_channel_finished;
+                    return $inner->($code);
+                }
+                my $cb = ffi->closure($code);
+                $inner->($cb);
+                $hook_channel_finished = $cb;
+                return;
+            }
+        ],
     };
     define audio => [
+        [ MIX_CHANNEL_POST => -2 ],
         [ Mix_GetMusicHookData => sub () {$hook_music_data}
         ]    # Do not call lib version of this as we do not pass an SV*
     ];
@@ -214,7 +230,8 @@ package SDL2::Mixer 0.01 {
         Mix_PlayingMusic     => [ [],                                         'int' ],
         Mix_PlayMusic        => [ [ 'SDL_Mixer_Music', 'int' ],               'int' ],
         Mix_CloseAudio       => [ [] ],
-        Mix_Playing          => [ [], 'int' ]
+        Mix_Playing          => [ [],      'int' ],
+        Mix_HaltChannel      => [ ['int'], 'int' ],
     };
     define audio => [
         [   Mix_LoadWAV => sub ($file) {
@@ -226,6 +243,31 @@ package SDL2::Mixer 0.01 {
             }
         ]
     ];
+    attach todo => {
+        Mix_SetReverseStereo => [ [ 'int', 'int' ],             'int' ],
+        Mix_SetPanning       => [ [ 'int', 'uint8', 'uint8', ], 'int' ],
+        Mix_SetDistance      => [ [ 'int', 'uint8' ],           'int' ],
+        Mix_SetPosition      => [ [ 'int', 'sint16', 'uint8' ], 'int' ],
+        Mix_GetChunk         => [ ['int'],                      'SDL_Mixer_Chunk' ],
+        Mix_VolumeMusic      => [ ['int'],                      'int' ],
+        Mix_SetMusicCMD      => [ ['string'],                   'int' ],
+
+        # Requires higher version of lib
+        #Mix_GetMusicTitleTag => [['SDL_Mixer_Music'], 'string'],
+        #Mix_GetMusicArtistTag => [['SDL_Mixer_Music'], 'string'],
+        #Mix_GetMusicTitle => [['SDL_Mixer_Music'], 'string'],
+        #Mix_GetMusicAlbumTag => [['SDL_Mixer_Music'], 'string'],
+        #Mix_GetMusicCopyrightTag => [['SDL_Mixer_Music'], 'string'],
+        #Mix_GetMusicLoopStartTime=>[['SDL_Mixer_Music'], 'double'],
+        #Mix_GetMusicPosition => [['SDL_Mixer_Music'], 'double'],
+        Mix_FadeInMusic      => [ [ 'SDL_Mixer_Music', 'int', 'int' ], 'int' ],
+        Mix_SetMusicPosition => [ ['double'],                          'int' ],
+        Mix_PauseMusic       => [ [] ],
+        Mix_ResumeMusic      => [ [] ],
+        Mix_HaltMusic        => [ [] ],
+        Mix_VolumeMusic      => [ ['int'], 'int' ],
+        Mix_PausedMusic      => [ [],      'int' ],
+    };
 
 =pod
 
@@ -1350,7 +1392,7 @@ Sanko Robinson E<lt>sanko@cpan.orgE<gt>
 
 =begin stopwords
 
-chunksize little-endian soundcard
+chunksize little-endian soundcard unregisters postmixer postmixers postmix postmixes
 
 =end stopwords
 

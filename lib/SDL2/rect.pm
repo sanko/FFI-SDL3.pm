@@ -1,6 +1,5 @@
 package SDL2::rect {
     use strict;
-    use warnings;
     use SDL2::Utils;
     use experimental 'signatures';
     use FFI::C::ArrayDef;
