@@ -28,4 +28,4 @@ select = **/*.{pl,pm,pod}
 ;select = **/*.{pl,pl.in,pm,pod}
 
 [ClangFormat]
-select = **/*.{c,h}
+select = **/*.{cpp,h}

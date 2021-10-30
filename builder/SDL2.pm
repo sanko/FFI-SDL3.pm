@@ -380,13 +380,17 @@ package builder::SDL2 {
     }
 
     sub build_api_wrapper ( $platform_name, $x64 ) {
-        my $c = $basedir->child( 'src', 'api_wrapper.c' );
+        my $c = $basedir->child( 'src', 'api_wrapper.cpp' );
         use FFI::Build;
+        my $libperl = `perl -MExtUtils::Embed -e ldopts`;
+        chomp $libperl;
+        my $idk = `perl -MExtUtils::Embed -e ccopts`;
+        chomp $idk;
         my $build = FFI::Build->new(
             'api_wrapper',
-            cflags  => $cflags,
+            cflags  => $idk . $cflags . ' -fPIC -I' . path( $Config{archlibexp}, 'CORE' ),
             dir     => $sharedir->child('lib')->absolute->stringify,
-            libs    => $lflags,
+            libs    => $lflags . ( $platform_name eq 'MSWin32' ? $libperl : '' ),
             source  => [ $c->absolute->stringify ],
             verbose => $quiet ? 0 : 2
         );

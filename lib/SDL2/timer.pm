@@ -25,33 +25,13 @@ package SDL2::timer 0.01 {
             }
         ],
         Bundle_SDL_AddTimer => [
-            [ 'uint32', 'SDL_TimerCallback', 'opaque' ],
+            [ 'uint32', 'opaque', 'opaque' ],
             'SDL_TimerID',
             sub ( $inner, $delay, $code, $params = () ) {
-                my $cb = ffi->closure(
-                    sub {
-                        my ( $delay, $etc ) = @_;
-                        return $code->( $delay, $params );
-                    }
-                );
-                my $id = $inner->( $delay, $cb, undef );
-                $_timers{$id} = $cb;    # Store reference
-                $_timers{$id}->sticky;
-
-                #$cb->sticky;
-                return $id;
+                $inner->( $delay, $code, \$params );
             }
         ],
-        Bundle_SDL_RemoveTimer => [
-            ['SDL_TimerID'] => 'SDL_bool' => sub ( $inner, $id ) {
-                my $retval = $inner->($id);
-                if ( defined $_timers{$id} ) {
-                    $_timers{$id}->unstick;
-                    delete $_timers{$id};
-                }
-                return $retval;
-            }
-        ]
+        SDL_RemoveTimer => [ ['SDL_TimerID'] => 'SDL_bool' ]
     };
     define timer => [ [ SDL_TICKS_PASSED => sub ( $A, $B ) { ( $B - $A ) <= 0 } ] ];
 

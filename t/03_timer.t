@@ -1,48 +1,75 @@
 use strict;
 use warnings;
 use Test2::V0;
+use Test2::Tools::ClassicCompare qw[is_deeply];
 use lib -d '../t' ? './lib' : 't/lib';
 use lib '../lib', 'lib';
 use SDL2::FFI qw[:all];
+use experimental 'signatures';
 $|++;
 #
 needs_display();
 
 END {
-    diag(__LINE__);
     SDL_Quit();
-    diag(__LINE__);
 }
 bail_out 'Error initializing SDL: ' . SDL_GetError()
     unless SDL_Init( SDL_INIT_VIDEO | SDL_INIT_TIMER ) == 0;
-my $done;
-#
-diag(__LINE__);
-my $id = SDL_AddTimer(
+my $done = 0;
+my $id_1 = SDL_AddTimer(
     2000,
-    sub {
-        diag(__LINE__);
-        pass('Timer triggered');
-        diag(__LINE__);
+    sub ( $delay, $args ) {
+        pass 'timer triggered without args';
+        ok !defined $args, 'lack of timer args is correct';
         $done++;
         0;
     }
 );
-diag(__LINE__);
-ok $id, 'SDL_AddTimer( ... ) returned id == ' . $id;
-diag(__LINE__);
-for ( 1 .. 5 ) {
-    diag( __LINE__ . '|' . $_ );
-    SDL_PollEvent( my $event = SDL2::Event->new() );
-    diag( __LINE__ . '|' . $_ );
-    last if $done;
-    diag( __LINE__ . '|' . $_ );
-    sleep 1;
-    diag( __LINE__ . '|' . $_ );
+ok $id_1, 'SDL_AddTimer( ... ) without args returned id == ' . $id_1;
+my $id_2 = SDL_AddTimer(
+    2000,
+    sub ( $delay, $args ) {
+        use Data::Dump;
+        pass('timer triggered with args');
+        is $args, 'Yes!', 'timer args are correct';
+        $done++;
+        0;
+    },
+    'Yes!'
+);
+ok $id_2, 'SDL_AddTimer( ... ) with args returned id == ' . $id_2;
+my $id_3 = SDL_AddTimer(
+    2000,
+    sub ( $delay, $args ) {
+        use Data::Dump;
+        pass('timer triggered with list of args');
+        is_deeply( $args, [ 'a', 'list' ], 'list of args are correct ([ \'a\', \'list\' ])' );
+        $done++;
+        0;
+    },
+    [qw[a list]]
+);
+ok $id_3, 'SDL_AddTimer( ... ) with list of args returned id == ' . $id_3;
+my $id_4 = SDL_AddTimer(
+    2000,
+    sub ( $delay, $args ) {
+        pass('timer triggered with list of args');
+        is_deeply(
+            $args,
+            { a => 'list', time => 5 },
+            'list of args are correct ({ a => \'list\', time => 5 })'
+        );
+        $done++;
+        0;
+    },
+    { a => 'list', time => 5 }
+);
+ok $id_4, 'SDL_AddTimer( ... ) with hash args returned id == ' . $id_4;
+while (1) {
+    SDL_Delay(1);
+    last if $done == 4;
 }
-diag(__LINE__);
-SDL_RemoveTimer($id);
-diag(__LINE__);
+SDL_RemoveTimer($_) for $id_1, $id_2, $id_3, $id_4;
 #
 done_testing;
 

@@ -43,7 +43,7 @@ package SDL2::Mixer 0.01 {
             }
         ]
     ];
-    attach version     => { Mix_Linked_Version => [ [], 'SDL_Version' ] };
+    attach version => { Mix_Linked_Version => [ [], 'SDL_Version' ] };
     enum MIX_InitFlags => [
         [ MIX_INIT_FLAC => 0x00000001 ],
         [ MIX_INIT_MOD  => 0x00000002 ],
@@ -52,7 +52,7 @@ package SDL2::Mixer 0.01 {
         [ MIX_INIT_MID  => 0x00000020 ],
         [ MIX_INIT_OPUS => 0x00000040 ]
     ];
-    attach mixer   => { Mix_Init => [ ['int'], 'int' ], Mix_Quit => [ [] ] };
+    attach mixer => { Mix_Init => [ ['int'], 'int' ], Mix_Quit => [ [] ] };
     define default => [
         [ MIX_CHANNELS          => 8 ],
         [ MIX_DEFAULT_FREQUENCY => 44100 ],
@@ -149,81 +149,61 @@ package SDL2::Mixer 0.01 {
     my ( $post_mix, $hook_music, $hook_music_finished, $hook_channel_finished );
     my $hook_music_data;
     attach audio => {
-        Bundle_set_stream     => [ [ 'uint8[]', 'int' ] ],
         Bundle_Mix_SetPostMix => [
-            [ 'Mix_Func', 'opaque' ],
-            sub ( $inner, $code, $params = () ) {
-                if ( !defined $code ) {
-                    undef $post_mix;
-                    return $inner->( undef, undef );
-                }
-                my $cb = ffi->closure(
-                    sub {
-                        my ( $etc, $stream, $len ) = @_;
-                        ($stream) = ffi->cast( 'opaque', 'uint8[' . $len . ']', $stream );
-                        $code->( $params, \$stream, $len );
-                        set_stream( $stream, $len );
-                    }
-                );
-                $inner->( $cb, undef );
-                $post_mix = $cb;
-                return;
+            [ 'opaque', 'opaque' ] => sub ( $inner, $code, $params = () ) {
+                $inner->( $code, \$params );
             }
         ],
         Bundle_Mix_HookMusic => [
-            [ 'Mix_Func', 'opaque' ],
-            sub ( $inner, $code, $params = () ) {
-                if ( !defined $code ) {
-                    undef $hook_music;
-                    undef $hook_music_data;
-                    return $inner->( undef, undef );
-                }
-                $hook_music_data = $params;
-                my $cb = ffi->closure(
-                    sub {
-                        my ( $etc, $stream, $len ) = @_;
-                        ($stream) = ffi->cast( 'opaque', 'uint8[' . $len . ']', $stream );
-                        $code->( $params, \$stream, $len );
-                        set_stream( $stream, $len );
-                    }
-                );
-                $inner->( $cb, undef );
-                $hook_music = $cb;
-                return;
+            [ 'opaque', 'opaque' ] => sub ( $inner, $code, $params = () ) {
+				$hook_music_data = $params;
+                $inner->( $code, \$params );
             }
         ],
-        Bundle_Mix_HookMusicFinished => [
-            [ 'music_finished', 'opaque' ],
-            sub ( $inner, $code = () ) {
-                if ( !defined $code ) {
-                    undef $hook_music_finished;
-                    return $inner->($code);
-                }
-                my $cb = ffi->closure($code);
-                $inner->($cb);
-                $hook_music_finished = $cb;
-                return;
-            }
-        ],
-        Bundle_Mix_ChannelFinished => [
-            [ 'channel_finished', 'opaque' ],
-            sub ( $inner, $code = () ) {
-                if ( !defined $code ) {
-                    undef $hook_channel_finished;
-                    return $inner->($code);
-                }
-                my $cb = ffi->closure($code);
-                $inner->($cb);
-                $hook_channel_finished = $cb;
-                return;
-            }
-        ],
+        Bundle_Mix_HookMusicFinished => [ [ 'opaque' ] ],
+        Bundle_Mix_ChannelFinished   => [ [ 'opaque' ] ],
     };
     define audio => [
         [ MIX_CHANNEL_POST => -2 ],
         [ Mix_GetMusicHookData => sub () {$hook_music_data}
         ]    # Do not call lib version of this as we do not pass an SV*
     ];
+    ffi->type( '(int,opaque,int,opaque)->void' => 'Mix_EffectFunc' );
+    ffi->type( '(int,opaque)->void'            => 'Mix_EffectDone' );
+    my %_effects;
+    attach effects => {
+        Bundle_Mix_RegisterEffect => [
+            [ 'int', 'Mix_EffectFunc', 'Mix_EffectDone', 'opaque' ],
+            'int',
+            sub ( $inner, $chan, $f, $d, $arg = () ) {
+                my $cb_f = ffi->closure(
+                    sub {
+                        my ( $_chan, $_stream, $_len, $args ) = @_;
+                        use Data::Dump;
+                        ddx \@_;
+                        my ($stream) = ffi->cast( 'opaque', 'uint8[' . $_len . ']', $_stream );
+                        $f->( $chan, \$stream, $_len, $arg );
+
+                        #set_stream( $stream, $_len );
+                    }
+                );
+                $cb_f->sticky;
+                my $cb_d = ffi->closure(
+                    sub {
+                        warn;
+                        my ($chan) = @_;
+                        $d->( $chan, $arg );
+                    }
+                );
+                $cb_d->sticky;
+                my $id = $inner->( $chan, $cb_f, $cb_d, $arg );
+                warn $id;
+
+                #$_effects{$id} = [ $cb_f, $cb_d, $arg];
+                $id;
+            }
+        ],
+    };
     attach audio => {
         #
         Mix_PlayChannelTimed => [ [ 'int', 'SDL_Mixer_Chunk', 'int', 'int' ], 'int' ],
@@ -265,8 +245,10 @@ package SDL2::Mixer 0.01 {
         Mix_PauseMusic       => [ [] ],
         Mix_ResumeMusic      => [ [] ],
         Mix_HaltMusic        => [ [] ],
-        Mix_VolumeMusic      => [ ['int'], 'int' ],
-        Mix_PausedMusic      => [ [],      'int' ],
+        Mix_VolumeMusic      => [ ['int'],                      'int' ],
+        Mix_PausedMusic      => [ [],                           'int' ],
+        Mix_Volume           => [ [ 'int', 'int' ],             'int' ],
+        Mix_VolumeChunk      => [ [ 'SDL_Mixer_Chunk', 'int' ], 'int' ],
     };
 
 =pod
@@ -998,13 +980,6 @@ Expected parameters include:
 
 Returns a true value if the given decoder is defined.
 
-
-
-
-
-
-
-
 =head2 C<Mix_GetNumMusicDecoders( )>
 
 Get the number of music decoders available from the L<< C<Mix_GetMusicDecoder( ... )>|/C<Mix_GetMusicDecoder( ... )> >> function. This number can be different for each run of a program, due to the change in availability of shared libraries that support each format.
@@ -1234,7 +1209,73 @@ Get the C<arg> passed into L<< C<Mix_HookMusic( ... )>|/C<Mix_HookMusic( ... )> 
 
 Returns the C<arg> pointer.
 
+=head2 C<Mix_ChannelFinished( ... )>
 
+When C<channel> playback is halted, then the specified L<< C<channel_finished>|/C<channel_finished> >> function is called. The
+channel parameter will contain the channel number that has finished.
+
+Expected parameters include:
+
+=over
+
+=item C<channel_finished> - function to call when any channel finishes playback
+
+Pass C<undef> to disable callback.
+
+=back
+
+The callback may be called from the mixer's audio
+callback or it could be called as a result of Mix_HaltChannel(), etc.
+do not call C<SDL_LockAudio( )> from this callback; you will either be
+inside the audio callback, or C<SDL_mixer> will explicitly lock the audio
+before calling your callback.
+
+=head1 Effects Functions
+
+These functions are for special effects processing. Not all effects are all that special. All effects are post processing routines that are either built-in to SDL_mixer or created by you. Effects can be applied to individual channels, or to the final mixed stream which contains all the channels including music.
+
+The built-in processors: L<< C<Mix_SetPanning( ... )>|/C<Mix_SetPanning( ... )> >>,
+L<< C<Mix_SetPosition( ... )>|/C<Mix_SetPosition( ... )> >>,
+L<< C<Mix_SetDistance( ... )>|/C<Mix_SetDistance( ... )> >>, and
+L<< C<Mix_SetReverseStereo( ... )>|/C<Mix_SetReverseStereo( ... )> >>, all look for an environment
+variable, C<MIX_EFFECTSMAXSPEED> to be defined. If the environment variable is defined these
+processors may use more memory or reduce the quality of the effects, all for better speed.
+
+These functions may be imported by name or with the C<:effects> tag.
+
+=head2 C<Mix_RegisterEffect( ... )>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+=head1 Effects
+
+These functions are for special effects processing. Not all effects are all that special. All effects are post processing routines that are either built-in to SDL_mixer or created by you. Effects can be applied to individual channels, or to the final mixed stream which contains all the channels including music.
+
+=head2 C<>
 
 
 
@@ -1377,6 +1418,70 @@ This is a callback which must expect the following parameters:
 =item C<len> - length of the stream
 
 =back
+
+=head2 C<channel_finished>
+
+This is a callback which must expect the following parameters:
+
+=over
+
+=item C<channel> - the channel number that has finished
+
+=back
+
+=head2 C<MIX_CHANNEL_POST>
+
+In some built-in effects, setting C<channel> to C<MIX_CHANNEL_POST> registers the effect as a posteffect where
+it will be applied to the final mixed stream before passing it on to the audio device.
+
+=head2 C<Mix_EffectFunc>
+
+This is the format of a special effect callback:
+
+	sub myeffect($chan, $stream, $len, $udata) { ... }
+
+The callback should expecte the following parameters:
+
+=over
+
+=item C<chan> - the channel number that your effect is affecting.
+
+=item C<stream> - the buffer of data to work upon
+
+=item C<len> - the size of C<stream>
+
+=item C<udata> - a user-defined bit of data, which you pass as the last arg of C<Mix_RegisterEffect( ... )>, and is passed back unmolested to your callback
+
+=back
+
+Your effect changes the contents of C<stream> based on whatever parameters
+are significant, or just leaves it be, if you prefer. You can do whatever
+you like to the buffer, though, and it will continue in its changed state
+down the mixing pipeline, through any other effect functions, then finally
+to be mixed with the rest of the channels and music for the final output
+stream.
+
+DO NOT EVER call C<SDL_LockAudio( )> from your callback function!
+
+=head2 C<Mix_EffectDone>
+
+This is a callback that signifies that a channel has finished all its
+loops and has completed playback. This gets called if the buffer
+plays out normally, or if you call C<Mix_HaltChannel( ... )>, implicitly stop
+a channel via C<Mix_AllocateChannels( ... )>, or unregister a callback while
+it's still playing.
+
+Your callback should expect the following parameters:
+
+=over
+
+=item C<chan> - the channel number that this effect is effecting now
+
+=item C<udata> - user data pointer that was passed in to C<Mix_RegisterEffect( ... )> when registering this effect processor function
+
+=back
+
+DO NOT EVER call SDL_LockAudio() from your callback function!
 
 =head1 LICENSE
 

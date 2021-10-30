@@ -32,7 +32,7 @@ BraceWrapping: {
 }
 
 # The column limit
-ColumnLimit: '70'
+ColumnLimit: '100'
 
 # The number of columns to use for indentation.
 IndentWidth: '4'
