@@ -1440,7 +1440,7 @@ This is the format of a special effect callback:
 
 	sub myeffect($chan, $stream, $len, $udata) { ... }
 
-The callback should expecte the following parameters:
+The callback should expect the following parameters:
 
 =over
 
@@ -1498,6 +1498,7 @@ Sanko Robinson E<lt>sanko@cpan.orgE<gt>
 =begin stopwords
 
 chunksize little-endian soundcard unregisters postmixer postmixers postmix postmixes
+unregister posteffect arg
 
 =end stopwords
 

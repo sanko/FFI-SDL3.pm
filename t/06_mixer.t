@@ -3,6 +3,7 @@ use warnings;
 use Test2::V0;
 use Test2::Tools::Class qw[isa_ok can_ok];
 use Test2::Tools::Exception qw[try_ok];
+use Test2::Tools::ClassicCompare qw[is_deeply];
 use Path::Tiny;
 use lib -d '../t' ? './lib' : 't/lib';
 use lib '../lib', 'lib';
@@ -149,7 +150,7 @@ todo 'These are platform specific and might fail depending on how SDL_mixer was 
                 my ( $udata, $stream, $len ) = @_;
                 $$stream = [ map { int rand 5 } 0 .. $len - 1 ];    # hiss
                 pass 'Mix_SetPostMix( ... ) callback';
-                is $udata->{test}, 'yep', '   userdata is correct';
+                is_deeply $udata, { test => 'yep' }, '   userdata is correct';
                 $done++;
             },
             { test => 'yep' }

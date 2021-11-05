@@ -16,8 +16,9 @@ END {
 bail_out 'Error initializing SDL: ' . SDL_GetError()
     unless SDL_Init( SDL_INIT_VIDEO | SDL_INIT_TIMER ) == 0;
 my $done = 0;
-my $id_1 = SDL_AddTimer(
-    2000,
+my %timers;
+$timers{1} = SDL_AddTimer(
+    1000,
     sub ( $delay, $args ) {
         pass 'timer triggered without args';
         ok !defined $args, 'lack of timer args is correct';
@@ -25,51 +26,83 @@ my $id_1 = SDL_AddTimer(
         0;
     }
 );
-ok $id_1, 'SDL_AddTimer( ... ) without args returned id == ' . $id_1;
-my $id_2 = SDL_AddTimer(
-    2000,
+ok $timers{1}, 'SDL_AddTimer( ... ) without args returned id == ' . $timers{1};
+#
+$timers{2} = SDL_AddTimer(
+    1000,
     sub ( $delay, $args ) {
-        use Data::Dump;
-        pass('timer triggered with args');
+        pass 'timer triggered with args';
         is $args, 'Yes!', 'timer args are correct';
         $done++;
         0;
     },
     'Yes!'
 );
-ok $id_2, 'SDL_AddTimer( ... ) with args returned id == ' . $id_2;
-my $id_3 = SDL_AddTimer(
-    2000,
+ok $timers{2}, 'SDL_AddTimer( ... ) with args returned id == ' . $timers{2};
+#
+$timers{3} = SDL_AddTimer(
+    1000,
     sub ( $delay, $args ) {
         use Data::Dump;
-        pass('timer triggered with list of args');
-        is_deeply( $args, [ 'a', 'list' ], 'list of args are correct ([ \'a\', \'list\' ])' );
+        pass 'timer triggered with list of args';
+        is_deeply $args, [ 'a', 'list' ], 'list of args are correct ([ \'a\', \'list\' ])';
         $done++;
         0;
     },
     [qw[a list]]
 );
-ok $id_3, 'SDL_AddTimer( ... ) with list of args returned id == ' . $id_3;
-my $id_4 = SDL_AddTimer(
-    2000,
+ok $timers{3}, 'SDL_AddTimer( ... ) with list of args returned id == ' . $timers{3};
+#
+$timers{4} = SDL_AddTimer(
+    1000,
     sub ( $delay, $args ) {
-        pass('timer triggered with list of args');
-        is_deeply(
-            $args,
-            { a => 'list', time => 5 },
-            'list of args are correct ({ a => \'list\', time => 5 })'
-        );
+        pass 'timer triggered with hashref of args';
+        is_deeply $args, { a => 'list', time => 5 },
+            'list of args are correct ({ a => \'list\', time => 5 })';
         $done++;
         0;
     },
     { a => 'list', time => 5 }
 );
-ok $id_4, 'SDL_AddTimer( ... ) with hash args returned id == ' . $id_4;
+ok $timers{4}, 'SDL_AddTimer( ... ) with hash args returned id == ' . $timers{4};
+#
+$timers{5} = SDL_AddTimer(
+    500,
+    sub ( $delay, $args ) {
+        fail 'timer triggered after being removed';
+    },
+    { a => 'list', time => 5 }
+);
+ok $timers{5}, 'SDL_AddTimer( ... ) with hash args returned id == ' . $timers{5};
+diag 'Removing timer #5';
+SDL_RemoveTimer( $timers{5} );
+#
+my $ping = 0;
+$timers{6} = SDL_AddTimer(
+    1,
+    sub ( $delay, $args ) {
+        if ( $ping == 0 ) {
+            pass 'triggered 1 time';
+            $ping++;
+        }
+        elsif ( $ping == 1 ) {
+            pass 'triggered 2 times';
+            $ping++;
+            $done++;
+            return 0;
+        }
+        else { fail 'triggered 3 times' }
+        shift;
+    }
+);
+ok $timers{6}, 'SDL_AddTimer( ... ) with hash args returned id == ' . $timers{6};
+#
 while (1) {
     SDL_Delay(1);
-    last if $done == 4;
+    last if $done == 5;
 }
-SDL_RemoveTimer($_) for $id_1, $id_2, $id_3, $id_4;
+#
+SDL_RemoveTimer($_) for sort values %timers;
 #
 done_testing;
 
