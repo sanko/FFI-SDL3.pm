@@ -2,7 +2,13 @@ Revision history for Perl extension SDL2::FFI
 
 {{$NEXT}}
 
-    - not for broad use
+    - Core SDL2 is "ready"
+      - callbacks (timers, etc) work but could use more real world testing (perl really hates threadsl...)
+      - test suite is not even close to being complete
+    - SDL2::Mixer is incomplete but core functionality is there
+    - SDL2::TTF is ready
+    - SDL2::Image is ready
+    - Please submit issues with tests
 
 0.07 2021-09-07T17:41:51Z
 

@@ -84,3 +84,16 @@ eg/glyph-*.bmp
 
 builder/_alien
 builder/stage
+
+_Inline/
+eg/*.ttf
+eg/eyes.gif
+eg/gradient.pl
+eg/gradient.xpm
+eg/inline.pl
+eg/out.jpg
+eg/sample.png
+eg/shuttle.tga
+eg/teapot.xpm
+eg/thread_com.pl
+*.orig

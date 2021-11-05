@@ -90,11 +90,9 @@ SDL_FreeSurface($surface);
 isa_ok $surface = IMG_LoadTIF_RW( SDL_RWFromFile( $tif, 'rb' ) ), ['SDL2::Surface'],
     'IMG_LoadTIF_RW( ... ) with a real TIF works';
 SDL_FreeSurface($surface);
-todo 'This dies with an OOM error... weird' => sub {
-    isa_ok $surface = IMG_LoadPNG_RW( SDL_RWFromFile( $png, 'rb' ) ), ['SDL2::Surface'],
-        'IMG_LoadPNG_RW( ... ) with a real PNG works';
-    SDL_FreeSurface($surface);
-};
+isa_ok $surface = IMG_LoadPNG_RW( SDL_RWFromFile( $png, 'rb' ) ), ['SDL2::Surface'],
+    'IMG_LoadPNG_RW( ... ) with a real PNG works';
+SDL_FreeSurface($surface);
 isa_ok $surface = IMG_LoadTGA_RW( SDL_RWFromFile( $tga, 'rb' ) ), ['SDL2::Surface'],
     'IMG_LoadTGA_RW( ... ) with a real TGA works';
 SDL_FreeSurface($surface);
