@@ -2,6 +2,8 @@ Revision history for Perl extension SDL2::FFI
 
 {{$NEXT}}
 
+0.08 2021-11-29T01:56:01Z
+
     - Core SDL2 is "ready"
       - callbacks (timers, etc) work but could use more real world testing (perl really hates threadsl...)
       - test suite is not even close to being complete
