@@ -2,7 +2,7 @@ use strict;
 use warnings;
 use experimental 'signatures';
 use lib '../lib';
-use SDL2::FFI qw[:all -assert=3];
+use SDL3 qw[:all -assert=3];
 $|++;
 #
 if ( @ARGV < 2 ) {

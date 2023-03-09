@@ -12,10 +12,6 @@
 #include "XSUB.h"
 #include "ppport.h"
 
-#ifdef USE_ITHREADS
-static PerlInterpreter *my_perl; /***    The Perl interpreter    ***/
-#endif
-
 /* Very cheap system to prevent accessing perl
 context concurrently in multiple threads */
 typedef void(SDLCALL *mix_func)(void *, Uint8 *, int);
@@ -66,18 +62,16 @@ typedef struct Effect
 
 //
 extern "C" void Bundle_SDL_Wrap_BEGIN(const char *package, int argc, const char *argv[]) {
+    dTHX;
     // fprintf(stderr, "# Bundle_SDL_Wrap_BEGIN( %s, ... )", package);
     for (int i = 0; i < CALLBACK_TYPES; i++) {
         cond[i] = SDL_CreateCond();
         mutex[i] = SDL_CreateMutex();
     }
     callbackEventType = SDL_RegisterEvents(CALLBACK_TYPES);
-#ifdef USE_ITHREADS
-    my_perl = (PerlInterpreter *)PERL_GET_CONTEXT;
-    SDL_Log("ITHREADS!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
-#endif
 }
 extern "C" void Bundle_SDL_Wrap_END(const char *package) {
+    dTHX;
     // fprintf(stderr, "# Bundle_SDL_Wrap_END( %s )", package);
     for (int i = 0; i < CALLBACK_TYPES; i++) {
         SDL_DestroyMutex(mutex[i]);
@@ -87,9 +81,6 @@ extern "C" void Bundle_SDL_Wrap_END(const char *package) {
 }
 extern "C" void Bundle_SDL_Yield() {
     dTHX;
-#ifdef USE_ITHREADS
-    PERL_SET_CONTEXT(my_perl);
-#endif
     SDL_Event event_in;
     SDL_PumpEvents();
     // example taken from https://wiki.libsdl.org/SDL_AddTimer to deal
@@ -141,9 +132,9 @@ extern "C" void Bundle_SDL_Yield() {
                 SV *ref = newRV_inc(newRV_inc((SV *)sva));
                 PUSHMARK(SP);
                 {
-                    XPUSHs(sv_2mortal(SvRV(args)));
-                    XPUSHs(sv_2mortal(ref));
-                    XPUSHs(sv_2mortal(newSViv(len)));
+                    XPUSHs((SvRV(args)));
+                    XPUSHs((ref));
+                    XPUSHs((newSViv(len)));
                 }
                 PUTBACK;
                 SDL_Log("idk at %s line %d.", __FILE__, __LINE__);
@@ -224,9 +215,7 @@ extern "C" void Bundle_SDL_Yield() {
             }
             SDL_CondBroadcast(cond[4]);
         }
-        else {
-            SDL_Log("Unhandled callback! Type: %d", event_in.user.code);
-        }
+        else { SDL_Log("Unhandled callback! Type: %d", event_in.user.code); }
     }
     // SDL_Log("idk at %s line %d.", __FILE__, __LINE__);
 
@@ -235,9 +224,6 @@ extern "C" void Bundle_SDL_Yield() {
 
 Uint32 timer_callback(Uint32 interval, void *param) {
     dTHX;
-#ifdef USE_ITHREADS
-    PERL_SET_CONTEXT(my_perl);
-#endif
     SDL_LockMutex(mutex[0]);
     SDL_Event event;
     TimerCallbackContainer *container = (TimerCallbackContainer *)param;
@@ -256,9 +242,6 @@ Uint32 timer_callback(Uint32 interval, void *param) {
 }
 extern "C" SDL_TimerID Bundle_SDL_AddTimer(int interval, SV *cb, SV *params) {
     dTHX;
-#ifdef USE_ITHREADS
-    PERL_SET_CONTEXT(my_perl);
-#endif
     CallbackContainer *container = (CallbackContainer *)SDL_malloc(sizeof(CallbackContainer));
     if (!container) {
         SDL_OutOfMemory();
@@ -271,6 +254,8 @@ extern "C" SDL_TimerID Bundle_SDL_AddTimer(int interval, SV *cb, SV *params) {
 }
 
 void wrap_mix_func(void *udata, Uint8 *stream, int len) {
+    dTHX;
+
     SDL_Event event;
     EffectContainer *container = (EffectContainer *)udata;
     SDL_LockMutex(mutex[container->code]);
@@ -292,6 +277,7 @@ void wrap_mix_func(void *udata, Uint8 *stream, int len) {
     return;
 }
 extern "C" void Bundle_Mix_SetPostMix(SV *cb, SV *params) {
+    dTHX;
     EffectContainer *container = (EffectContainer *)SDL_malloc(sizeof(EffectContainer));
     if (!container) {
         SDL_OutOfMemory();
@@ -311,6 +297,7 @@ extern "C" void Bundle_Mix_SetPostMix(SV *cb, SV *params) {
     //    Mix_SetPostMix(NULL, NULL);
 }
 extern "C" void Bundle_Mix_HookMusic(SV *cb, SV *params) {
+    dTHX;
     EffectContainer *container = (EffectContainer *)SDL_malloc(sizeof(EffectContainer));
     if (!container) {
         SDL_OutOfMemory();
@@ -340,12 +327,15 @@ extern "C" void Bundle_Mix_HookMusic(SV *cb, SV *params) {
 }
 
 void music_finished_func() {
+    dTHX;
+
     SDL_Event event_out;
     event_out.type = callbackEventType + 2;
     SDL_PushEvent(&event_out);
     return;
 }
 extern "C" void Bundle_Mix_HookMusicFinished(SV *cb) {
+    dTHX;
     SDL_Log("idk at %s line %d.", __FILE__, __LINE__);
     if (cb == &PL_sv_undef) {
         SDL_Log("ACK!!!!!!!!!!!!!!!!!!!!! at %s line %d.", __FILE__, __LINE__);
@@ -362,6 +352,8 @@ extern "C" void Bundle_Mix_HookMusicFinished(SV *cb) {
 }
 
 void channel_finished_func(int channel) {
+    dTHX;
+
     SDL_Log("idk at %s line %d.", __FILE__, __LINE__);
     SDL_Event event_out;
     event_out.type = callbackEventType + 3;
@@ -370,6 +362,7 @@ void channel_finished_func(int channel) {
     SDL_Log("idk at %s line %d.", __FILE__, __LINE__);
 }
 extern "C" void Bundle_Mix_ChannelFinished(SV *cb) {
+    dTHX;
     SDL_Log("idk at %s line %d.", __FILE__, __LINE__);
     if (cb == &PL_sv_undef) {
         SDL_Log("UNDEF!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! at %s line %d.", __FILE__, __LINE__);
@@ -378,7 +371,6 @@ extern "C" void Bundle_Mix_ChannelFinished(SV *cb) {
     }
     else {
         SDL_Log("YAY! at %s line %d.", __FILE__, __LINE__);
-
         channel_finished_cb = SvREFCNT_inc(cb);
         Mix_ChannelFinished(channel_finished_func);
     }
@@ -386,6 +378,8 @@ extern "C" void Bundle_Mix_ChannelFinished(SV *cb) {
 }
 
 void mix_effect_func(int chan, void *stream, int len, Effect *udata) {
+    dTHX;
+
     SDL_LockMutex(mutex[4]);
 
     SDL_Log("mix_effect_func | %d", chan);
@@ -410,10 +404,14 @@ void mix_effect_func(int chan, void *stream, int len, Effect *udata) {
 }
 
 void mix_effect_done_func(int chan, void *udata) {
+    dTHX;
+
     SDL_Log("mix_effect_done_func");
 }
 extern "C" int Bundle_Mix_RegisterEffect(int chan, Mix_EffectFunc_t f, Mix_EffectDone_t d,
                                          void *args) {
+    dTHX;
+
     Effect *real = (Effect *)SDL_malloc(sizeof(Effect));
     real->f = f;
     real->d = d;

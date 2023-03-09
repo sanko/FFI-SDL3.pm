@@ -97,3 +97,5 @@ eg/shuttle.tga
 eg/teapot.xpm
 eg/thread_com.pl
 *.orig
+
+*.tar.gz

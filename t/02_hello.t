@@ -1,7 +1,7 @@
 use strict;
 use warnings;
 use Test2::V0;
-use SDL2::FFI qw[:all];
+use SDL3 qw[:all];
 #
 ok !SDL_Delay(1), 'SDL_Delay(1)';
 #

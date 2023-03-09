@@ -1,5 +1,5 @@
 use lib '../lib', './lib';
-use SDL2::FFI qw[:all];
+use SDL3 qw[:all];
 SDL_Init( SDL_INIT_VIDEO | SDL_INIT_AUDIO );
 warn SDL_WasInit(SDL_INIT_TIMER);                     # false
 warn SDL_WasInit(SDL_INIT_VIDEO);                     # true (32 == SDL_INIT_VIDEO)

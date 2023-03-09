@@ -1,16 +1,16 @@
-[![Actions Status](https://github.com/sanko/SDL2.pm/actions/workflows/linux.yaml/badge.svg)](https://github.com/sanko/SDL2.pm/actions) [![Actions Status](https://github.com/sanko/SDL2.pm/actions/workflows/windows.yaml/badge.svg)](https://github.com/sanko/SDL2.pm/actions) [![Actions Status](https://github.com/sanko/SDL2.pm/actions/workflows/osx.yaml/badge.svg)](https://github.com/sanko/SDL2.pm/actions) [![MetaCPAN Release](https://badge.fury.io/pl/SDL2-FFI.svg)](https://metacpan.org/release/SDL2-FFI)
+[![Actions Status](https://github.com/sanko/SDL3.pm/actions/workflows/linux.yaml/badge.svg)](https://github.com/sanko/SDL3.pm/actions) [![Actions Status](https://github.com/sanko/SDL3.pm/actions/workflows/windows.yaml/badge.svg)](https://github.com/sanko/SDL3.pm/actions) [![Actions Status](https://github.com/sanko/SDL3.pm/actions/workflows/osx.yaml/badge.svg)](https://github.com/sanko/SDL3.pm/actions) [![MetaCPAN Release](https://badge.fury.io/pl/SDL3.svg)](https://metacpan.org/release/SDL3)
 # NAME
 
-SDL2::FFI - FFI Wrapper for SDL (Simple DirectMedia Layer) Development Library
+SDL3 - FFI Wrapper for Simple DirectMedia Layer (SDL) Version 3.0
 
 # SYNOPSIS
 
-    use SDL2::FFI qw[:all];
+    use SDL3 qw[:all];
     die 'Error initializing SDL: ' . SDL_GetError() unless SDL_Init(SDL_INIT_VIDEO) == 0;
     my $win = SDL_CreateWindow( 'Example window!',
         SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 640, 480, SDL_WINDOW_RESIZABLE );
     die 'Could not create window: ' . SDL_GetError() unless $win;
-    my $event = SDL2::Event->new;
+    my $event = SDL3::Event->new;
     SDL_Init(SDL_INIT_VIDEO);
     my $renderer = SDL_CreateRenderer( $win, -1, 0 );
     SDL_SetRenderDrawColor( $renderer, 242, 242, 242, 255 );
@@ -25,10 +25,9 @@ SDL2::FFI - FFI Wrapper for SDL (Simple DirectMedia Layer) Development Library
 
 # DESCRIPTION
 
-SDL2::FFI is an [FFI::Platypus](https://metacpan.org/pod/FFI%3A%3APlatypus) backed bindings to the **S**imple
-**D**irectMedia **L**ayer - a cross-platform development library designed to
-provide low level access to audio, keyboard, mouse, joystick, and graphics
-hardware.
+SDL3 is a [FFI::Platypus](https://metacpan.org/pod/FFI%3A%3APlatypus) backed bindings to the **S**imple **D**irectMedia
+**L**ayer - a cross-platform development library designed to provide low level
+access to audio, keyboard, mouse, joystick, and graphics hardware.
 
 # Initialization and Shutdown
 
@@ -59,7 +58,7 @@ Logging (such as `SDL_Log( ... )`) works without initialization, too.
 
 Expected parameters include:
 
-- `flags` which may be any be imported with the [`:init`](https://metacpan.org/pod/SDL2%3A%3AEnum#init) tag and may be OR'd together
+- `flags` which may be any be imported with the [`:init`](https://metacpan.org/pod/SDL3%3A%3AEnum#init) tag and may be OR'd together
 
 Subsystem initialization is ref-counted, you must call [`SDL_QuitSubSystem(
 ... )`](#sdl_quitsubsystem) for each [`SDL_InitSubSystem( ...
@@ -82,7 +81,7 @@ interchangeable.
 
 Expected parameters include:
 
-- `flags` which may be any be imported with the [`:init`](https://metacpan.org/pod/SDL2%3A%3AEnum#init) tag and may be OR'd together.
+- `flags` which may be any be imported with the [`:init`](https://metacpan.org/pod/SDL3%3A%3AEnum#init) tag and may be OR'd together.
 
 Returns `0` on success or a negative error code on failure; call
 `SDL_GetError( )` for more information.
@@ -103,7 +102,7 @@ all open subsystems with [`SDL_QuitSubSystem( ... )`](#sdl_quitsubsystem).
 
 Expected parameters include:
 
-- `flags` which may be any be imported with the [`:init`](https://metacpan.org/pod/SDL2%3A%3AEnum#init) tag and may be OR'd together.
+- `flags` which may be any be imported with the [`:init`](https://metacpan.org/pod/SDL3%3A%3AEnum#init) tag and may be OR'd together.
 
 ## `SDL_WasInit( ... )`
 
@@ -118,7 +117,7 @@ Get a mask of the specified subsystems which are currently initialized.
 
 Expected parameters include:
 
-- `flags` which may be any be imported with the [`:init`](https://metacpan.org/pod/SDL2%3A%3AEnum#init) tag and may be OR'd together.
+- `flags` which may be any be imported with the [`:init`](https://metacpan.org/pod/SDL3%3A%3AEnum#init) tag and may be OR'd together.
 
 If `flags` is `0`, it returns a mask of all initialized subsystems, otherwise
 it returns the initialization status of the specified subsystems.
@@ -164,6 +163,10 @@ be imported with the `:init` or `:default` tag.
 - `SDL_INIT_SENSOR`
 - `SDL_INIT_NOPARACHUTE` - compatibility; this flag is ignored
 - `SDL_INIT_EVERYTHING`
+
+# See Also
+
+https://github.com/libsdl-org/SDL
 
 # LICENSE
 

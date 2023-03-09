@@ -1,8 +1,8 @@
 use strict;
 use warnings;
 use lib '../lib';
-use SDL2::FFI qw[SDL_Log :init :version :audio SDL_GetTicks SDL_Delay];
-use SDL2::Mixer qw[:all];
+use SDL3        qw[:all];
+use SDL3::Mixer qw[:all];
 use experimental 'signatures';
 use Getopt::Long qw[GetOptions :config no_ignore_case bundling];
 
@@ -55,7 +55,7 @@ sub output_versions ( $libname, $linked ) {
 }
 
 sub test_versions() {
-    my $linked = SDL2::Version->new;
+    my $linked = SDL3::Version->new;
     SDL_GetVersion($linked);
     output_versions( 'SDL', $linked );
     $linked = Mix_Linked_Version();

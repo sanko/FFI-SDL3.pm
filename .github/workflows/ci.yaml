@@ -9,21 +9,134 @@ on:
         - cron: '42 5 * * 0'
 
 jobs:
-  build:
-    runs-on: ${{ matrix.os }}
+  install_perl:
+    runs-on: "${{ matrix.os }}"
     strategy:
       fail-fast: false
       matrix:
-        os: ['ubuntu-latest', 'macos-latest', 'windows-latest']
-        perl: [ 'latest' ]
-    name: Perl ${{ matrix.perl }} on ${{ matrix.os }}
+        exclude:
+          - os: macos-latest
+            flags: -Dusequadmath
+        os:
+          - ubuntu-latest
+          - macos-latest
+          - windows-latest
+        perl:
+          - 5.36.0
+          - 5.34.1
+          - 5.32.1
+          - 5.30.3
+          - 5.28.3
+          - 5.26.3
+        flags:
+          - --64int
+          - --thread
+          - --ld
+          - --multi
+          - -Dusequadmath
+          - ""
+    name: "${{ matrix.os }}-${{ matrix.perl }}${{ matrix.flags }}"
     steps:
-      - uses: actions/checkout@v2
-      - name: Setup Perl environment
-        uses: shogo82148/actions-setup-perl@v1.12.3
+      - uses: actions/checkout@v3
+
+      - name: Cache perl
+        uses: actions/cache@v3
+        id: cache-perl
         with:
-          perl-version: ${{ matrix.perl }}
-      - run: perl -V
-      - run: cpanm --installdeps -v -n .
-      - run: cpanm -v -n .
-      - run: prove -lv t
+          path: ~/perl5/perlbrew/
+          key: ${{ matrix.os }}-perl-v${{ matrix.perl }}${{ matrix.flags }}
+
+      - name: "Init dev env on Windows"
+        if: ${{  steps.cache-perl.outputs.cache-hit != 'true' && matrix.os == 'windows-latest' }}
+        run: |
+          # skip installing perl if it is already installed.
+          if (!(Test-Path "C:\strawberry\perl\bin")) {
+            choco install strawberryperl
+          }
+          echo @"
+          C:\strawberry\c\bin
+          C:\strawberry\perl\site\bin
+          C:\strawberry\perl\bin
+          "@ |
+            Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+      - name: "Build perl ${{ matrix.perl }} directly on Windows"
+        if: ${{ steps.cache-perl.outputs.cache-hit != 'true' && matrix.os == 'windows-latest' }}
+        shell: cmd
+        run: >
+            git clone --depth 1 --branch v${{matrix.perl}} https://github.com/Perl/perl5.git
+
+            pushd perl5\win32
+
+            gmake CCHOME=C:\strawberry\c INST_TOP="C:\Users\runneradmin\perl5\perlbrew"  ^
+                ${{ matrix.flags == '--64int'        && 'USE_64_BIT_INT=define'                   || '' }} ^
+                ${{ matrix.flags == '--thread'       && 'USE_ITHREADS=define    USE_MULTI=define' || '' }} ^
+                ${{ matrix.flags == '--ld'           && 'USE_LONG_DOUBLE=define'                  || '' }} ^
+                ${{ matrix.flags == '--multi'        && 'USE_MULTI=define'                        || '' }} ^
+                ${{ matrix.flags == '-Dusequadmath'  && 'USE_QUADMATH=define'                     || '' }} ^
+                -f GNUMakefile -j2 install
+
+            popd
+
+            set PATH=C:\Users\runneradmin\perl5\perlbrew\bin;%PATH%
+
+      - name: "Install deps"
+        if: ${{ matrix.os == 'windows-latest' }}
+        shell: cmd
+        run: |
+             set PATH=C:\Users\runneradmin\perl5\perlbrew\bin;%PATH%
+
+             perl -V
+
+             cpanm --installdeps --notest .
+
+      - name: "Testing on chached perl ${{ matrix.os }}-${{ matrix.perl }}(${{ matrix.flags }})"
+        if: ${{ matrix.os == 'windows-latest' }}
+        shell: cmd
+        run: |
+             set PATH=C:\Users\runneradmin\perl5\perlbrew\bin;%PATH%
+
+             perl -V
+
+             cpanm --test-only -v .
+
+      - name: "Build perl ${{ matrix.perl }} with perlbrew"
+        if: ${{ steps.cache-perl.outputs.cache-hit != 'true' && matrix.os != 'windows-latest' }}
+        shell: bash
+        run: >
+             \curl -L https://install.perlbrew.pl | bash
+
+             source ~/perl5/perlbrew/etc/bashrc
+
+             perlbrew available
+
+             perlbrew install-cpanm
+
+             perlbrew install --switch --verbose --as cache-${{ matrix.os }}${{ matrix.perl }}${{ matrix.flags }} -j 12 --notest --noman ${{ matrix.flags }} perl-${{ matrix.perl }}
+
+      - name: "Install deps"
+        if: ${{ matrix.os != 'windows-latest' }}
+        shell: bash
+        run: |
+             source ~/perl5/perlbrew/etc/bashrc
+
+             perlbrew list
+
+             perlbrew switch cache-${{ matrix.os }}${{ matrix.perl }}${{ matrix.flags }}
+
+             perl -V
+
+             cpanm --installdeps --notest .
+
+      - name: "Testing on chached perl ${{ matrix.os }}-${{ matrix.perl }}(${{ matrix.flags }})"
+        if: ${{ matrix.os != 'windows-latest' }}
+        shell: bash
+        run: |
+             source ~/perl5/perlbrew/etc/bashrc
+
+             perlbrew list
+
+             perlbrew switch cache-${{ matrix.os }}${{ matrix.perl }}${{ matrix.flags }}
+
+             perl -V
+
+             cpanm --test-only -v .

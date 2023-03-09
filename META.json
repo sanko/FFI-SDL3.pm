@@ -1,10 +1,10 @@
 {
-   "abstract" : "FFI Wrapper for SDL (Simple DirectMedia Layer) Development Library",
+   "abstract" : "FFI Wrapper for Simple DirectMedia Layer (SDL) Version 3.0",
    "author" : [
       "Sanko Robinson <sanko@cpan.org>"
    ],
    "dynamic_config" : 0,
-   "generated_by" : "Minilla/v3.1.12, CPAN::Meta::Converter version 2.150010",
+   "generated_by" : "Minilla/v3.1.21, CPAN::Meta::Converter version 2.150010",
    "license" : [
       "artistic_2"
    ],
@@ -12,7 +12,7 @@
       "url" : "http://search.cpan.org/perldoc?CPAN::Meta::Spec",
       "version" : 2
    },
-   "name" : "SDL2-FFI",
+   "name" : "SDL3",
    "no_index" : {
       "directory" : [
          "t",
@@ -36,7 +36,7 @@
             "Devel::CheckBin" : "0",
             "ExtUtils::CBuilder" : "0",
             "FFI::Build" : "0",
-            "FFI::ExtractSymbols" : "0.06",
+            "FFI::ExtractSymbols" : "0",
             "HTTP::Tiny" : "0",
             "IO::Socket::SSL" : "0",
             "Module::Build::Tiny" : "0.039",
@@ -60,8 +60,8 @@
             "Data::Dump" : "0",
             "Exporter::Tiny" : "0",
             "FFI::C" : "0",
-            "FFI::ExtractSymbols" : "0.06",
-            "FFI::Platypus" : "1.55",
+            "FFI::ExtractSymbols" : "0",
+            "FFI::Platypus" : "2.00",
             "File::Share" : "0",
             "Path::Tiny" : "0",
             "Try::Tiny" : "0",
@@ -79,17 +79,17 @@
    "release_status" : "unstable",
    "resources" : {
       "bugtracker" : {
-         "web" : "https://github.com/sanko/SDL2.pm/issues"
+         "web" : "https://github.com/sanko/SDL3.pm/issues"
       },
-      "homepage" : "https://github.com/sanko/SDL2.pm",
+      "homepage" : "https://github.com/sanko/SDL3.pm",
       "repository" : {
          "type" : "git",
-         "url" : "git://github.com/sanko/SDL2.pm.git",
-         "web" : "https://github.com/sanko/SDL2.pm"
+         "url" : "https://github.com/sanko/SDL3.pm.git",
+         "web" : "https://github.com/sanko/SDL3.pm"
       }
    },
-   "version" : "0.08",
+   "version" : "0.09",
    "x_authority" : "cpan:SANKO",
-   "x_serialization_backend" : "JSON::PP version 4.06",
+   "x_serialization_backend" : "JSON::PP version 4.16",
    "x_static_install" : 0
 }

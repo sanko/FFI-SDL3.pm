@@ -1,6 +1,7 @@
 use strict;
 use warnings;
-use SDL2::FFI qw[:all];
+use SDL3        qw[:all];
+use SDL3::Image qw[:all];
 #
 SDL_Init(SDL_INIT_VIDEO) == 0 || die 'Could not initialize SDL2: ' . SDL_GetError();
 my $window

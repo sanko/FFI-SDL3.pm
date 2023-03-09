@@ -1,13 +1,14 @@
 use strictures 2;
 use lib '../lib';
-use SDL2::FFI qw[:all];
-use SDL2::Utils qw[enum];
+use SDL3 qw[:all];
+use SDL3::Utils qw[enum];
+use SDL3::TTF qw[:all];
 use Object::Pad;
 use experimental 'signatures';
 use Data::Dump;
 $|++;
 #
-@ARGV = ( '/home/sanko/Projects/SDL2.pm/eg/KohSantepheap-Regular.ttf', 'test' );
+@ARGV = ( '/usr/share/fonts/TTF/DejaVuSans.ttf', 'test' );
 #
 sub DEFAULT_PTSIZE () {18}
 sub DEFAULT_TEXT ()   {'The quick brown fox jumped over the lazy dog'}
@@ -19,10 +20,10 @@ sub TTF_SHOWFONT_USAGE () {
 }
 enum TextRenderMethod => [ 'TextRenderSolid', 'TextRenderShaded', 'TextRenderBlended' ];
 class Scene {
-    has $caption     : reader : writer = SDL2::Texture->new;    # SDL_Texture
-    has $captionRect : reader = SDL2::Rect->new;                # SDL_Rect
-    has $message     : reader : writer = SDL2::Texture->new;    # SDL_Texture
-    has $messageRect : reader = SDL2::Rect->new;                # SDL_Rect
+    has $caption     : reader : writer = SDL3::Texture->new;    # SDL_Texture
+    has $captionRect : reader = SDL3::Rect->new;                # SDL_Rect
+    has $message     : reader : writer = SDL3::Texture->new;    # SDL_Texture
+    has $messageRect : reader = SDL3::Rect->new;                # SDL_Rect
 };
 
 sub draw_scene ( $renderer, $scene ) {
@@ -51,12 +52,12 @@ sub cleanup ($exitcode) {
 #SDL_Surface *text = NULL;
 #int ptsize;
 #int i, done;
-my $white = SDL2::Color->new( { r => 0xFF, g => 0xFF, b => 0xFF, a => 0xFF } );
-my $black = SDL2::Color->new( { r => 0x00, g => 0x00, b => 0x00, a => 0x00 } );
+my $white = SDL3::Color->new( { r => 0xFF, g => 0xFF, b => 0xFF, a => 0xFF } );
+my $black = SDL3::Color->new( { r => 0x00, g => 0x00, b => 0x00, a => 0x00 } );
 
 #SDL_Color *forecol;
 #SDL_Color *backcol;
-my $event = SDL2::Event->new();
+my $event = SDL3::Event->new();
 
 #TextRenderMethod rendermethod;
 my ( $renderstyle, $outline, $hinting, $kerning, $dump );
@@ -67,9 +68,9 @@ my ( $message, $string );
 $dump = 0;
 
 # Look for special rendering types
-my $rendermethod = SDL2::FFI::TextRenderSolid();
+my $rendermethod = SDL3::TextRenderSolid();
 $renderstyle = TTF_STYLE_NORMAL;
-my $rendertype = SDL2::FFI::RENDER_LATIN1();
+my $rendertype = SDL3::RENDER_LATIN1();
 $outline = 0;
 $hinting = TTF_HINTING_NORMAL;
 $kerning = 0;
@@ -79,13 +80,13 @@ my $forecol = $black;
 my $backcol = $white;
 for ( my $i = 1; $ARGV[$i] && substr( $ARGV[$i], 0, 1 ) eq '-'; ++$i ) {
     if ( $ARGV[$i] eq '-solid' ) {
-        $rendermethod = SDL2::FFI::TextRenderSolid();
+        $rendermethod = SDL3::TextRenderSolid();
     }
     elsif ( $ARGV[$i] eq '-shaded' ) {
-        $rendermethod = SDL2::FFI::TextRenderShaded();
+        $rendermethod = SDL3::TextRenderShaded();
     }
     elsif ( $ARGV[$i] eq '-blended' ) {
-        $rendermethod = SDL2::FFI::TextRenderBlended();
+        $rendermethod = SDL3::TextRenderBlended();
     }
     elsif ( $ARGV[$i] eq '-utf8' ) {
         $rendertype = RENDER_UTF8();
@@ -218,13 +219,13 @@ if ( SDL_CreateWindowAndRenderer( WIDTH, HEIGHT, 0, $window, $renderer ) < 0 ) {
 # Show which font file we're looking at
 $string = 'Font file: ' . $ARGV[0];
 my $text;
-if ( $rendermethod == SDL2::FFI::TextRenderSolid() ) {
+if ( $rendermethod == SDL3::TextRenderSolid() ) {
     $text = TTF_RenderText_Solid( $font, $string, $forecol );
 }
-elsif ( $rendermethod == SDL2::FFI::TextRenderShaded() ) {
+elsif ( $rendermethod == SDL3::TextRenderShaded() ) {
     $text = TTF_RenderText_Shaded( $font, $string, $forecol, $backcol );
 }
-elsif ( $rendermethod == SDL2::FFI::TextRenderBlended() ) {
+elsif ( $rendermethod == SDL3::TextRenderBlended() ) {
     $text = TTF_RenderText_Blended( $font, $string, $forecol );
 }
 my $scene = Scene->new();
@@ -245,37 +246,37 @@ else {
     $message = DEFAULT_TEXT;
 }
 #
-if ( $rendertype == SDL2::FFI::RENDER_LATIN1() ) {
-    if ( $rendermethod == SDL2::FFI::TextRenderSolid() ) {
+if ( $rendertype == SDL3::RENDER_LATIN1() ) {
+    if ( $rendermethod == SDL3::TextRenderSolid() ) {
         $text = TTF_RenderText_Solid( $font, $message, $forecol );
     }
-    elsif ( $rendermethod == SDL2::FFI::TextRenderShaded() ) {
+    elsif ( $rendermethod == SDL3::TextRenderShaded() ) {
         $text = TTF_RenderText_Shaded( $font, $message, $forecol, $backcol );
     }
-    elsif ( $rendermethod == SDL2::FFI::TextRenderBlended() ) {
+    elsif ( $rendermethod == SDL3::TextRenderBlended() ) {
         $text = TTF_RenderText_Blended( $font, $message, $forecol );
     }
 }
-elsif ( $rendertype == SDL2::FFI::RENDER_UTF8() ) {
-    if ( $rendermethod == SDL2::FFI::TextRenderSolid() ) {
+elsif ( $rendertype == SDL3::RENDER_UTF8() ) {
+    if ( $rendermethod == SDL3::TextRenderSolid() ) {
         $text = TTF_RenderUTF8_Solid( $font, $message, $forecol );
     }
-    elsif ( $rendermethod == SDL2::FFI::TextRenderShaded() ) {
+    elsif ( $rendermethod == SDL3::TextRenderShaded() ) {
         $text = TTF_RenderUTF8_Shaded( $font, $message, $forecol, $backcol );
     }
-    elsif ( $rendermethod == SDL2::FFI::TextRenderBlended() ) {
+    elsif ( $rendermethod == SDL3::TextRenderBlended() ) {
         $text = TTF_RenderUTF8_Blended( $font, $message, $forecol );
     }
 }
-elsif ( $rendertype == SDL2::FFI::RENDER_UNICODE() ) {
+elsif ( $rendertype == SDL3::RENDER_UNICODE() ) {
     my $unicode_text = SDL_iconv_utf8_ucs2($message);
-    if ( $rendermethod == SDL2::FFI::TextRenderSolid() ) {
+    if ( $rendermethod == SDL3::TextRenderSolid() ) {
         $text = TTF_RenderUNICODE_Solid( $font, $unicode_text, $forecol );
     }
-    elsif ( $rendermethod == SDL2::FFI::TextRenderShaded() ) {
+    elsif ( $rendermethod == SDL3::TextRenderShaded() ) {
         $text = TTF_RenderUNICODE_Shaded( $font, $unicode_text, $forecol, $backcol );
     }
-    elsif ( $rendermethod == SDL2::FFI::TextRenderBlended() ) {
+    elsif ( $rendermethod == SDL3::TextRenderBlended() ) {
         $text = TTF_RenderUTF8_Blended( $font, $unicode_text, $forecol );
     }
     SDL_free($unicode_text);
@@ -330,9 +331,9 @@ my ( $window, $texture, $renderer, $font );
 #TTF_Font* font;
 #string input;
 my $input = '';
-my $text;    # SDL2::Texture
-my $fg = SDL2::Color->new( {r => 255, g => 0, b => 0, a=> 255 });
-my $bg = SDL2::Color->new( {r => 0, g => 0, b => 255, a=> 100 });
+my $text;    # SDL3::Texture
+my $fg = SDL3::Color->new( {r => 255, g => 0, b => 0, a=> 255 });
+my $bg = SDL3::Color->new( {r => 0, g => 0, b => 255, a=> 100 });
 
 
 END {
@@ -351,8 +352,8 @@ END {
     IMG_Quit();
     SDL_Quit();
 }
-     my $e    = SDL2::Event->new;
-    my $dest = SDL2::Rect->new;
+     my $e    = SDL3::Event->new;
+    my $dest = SDL3::Rect->new;
 	my $keys = SDL_GetKeyboardState();
 
 sub loop() {

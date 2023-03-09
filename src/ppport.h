@@ -12290,7 +12290,7 @@ extern CV *DPPP_(my_newCONSTSUB)(HV *stash, const char *name, SV *sv);
 #endif
 #endif
 #ifndef NOOP
-#define NOOP /*EMPTY*/ (void) 0
+#define NOOP /*EMPTY*/ (void)0
 #endif
 
 #ifndef dNOOP
@@ -14554,7 +14554,7 @@ extern void DPPP_(my_ck_warner_d)(pTHX_ U32 err, const char *pat, ...);
 #if defined(PERL_USE_GCC_BRACE_GROUPS)
 #ifndef SvUVx
 #define SvUVx(sv)                                                                                  \
-    ({ SV *_sv = (sv));                                       \
+    ({ SV *_sv = (sv));                                                                            \
         SvUV(_sv);                                                                                 \
     })
 #endif
@@ -15237,9 +15237,7 @@ extern void DPPP_(my_vload_module)(U32 flags, SV *name, SV *ver, va_list *args);
     else
         veop = NULL;
     if (flags & PERL_LOADMOD_NOIMPORT) { imop = sawparens(newNULLLIST()); }
-    else if (flags & PERL_LOADMOD_IMPORT_OPS) {
-        imop = va_arg(*args, OP *);
-    }
+    else if (flags & PERL_LOADMOD_IMPORT_OPS) { imop = va_arg(*args, OP *); }
     else {
         SV *sv;
         imop = NULL;
@@ -15538,9 +15536,7 @@ extern void DPPP_(my_load_module)(U32 flags, SV *name, SV *ver, ...);
             Perl_sv_setsv_flags(aTHX_(dstr), (sstr), (flags) & ~SV_NOSTEAL);                       \
             SvTEMP_on((SV *)(sstr));                                                               \
         }                                                                                          \
-        else {                                                                                     \
-            Perl_sv_setsv_flags(aTHX_(dstr), (sstr), (flags) & ~SV_NOSTEAL);                       \
-        }                                                                                          \
+        else { Perl_sv_setsv_flags(aTHX_(dstr), (sstr), (flags) & ~SV_NOSTEAL); }                  \
     }                                                                                              \
     STMT_END
 #else
@@ -15562,9 +15558,7 @@ extern void DPPP_(my_load_module)(U32 flags, SV *name, SV *ver, ...);
                 sv_setsv((dstr), (sstr));                                                          \
                 SvGMAGICAL_on((SV *)(sstr));                                                       \
             }                                                                                      \
-            else {                                                                                 \
-                sv_setsv((dstr), (sstr));                                                          \
-            }                                                                                      \
+            else { sv_setsv((dstr), (sstr)); }                                                     \
             SvTEMP_on((SV *)(sstr));                                                               \
         }                                                                                          \
         else {                                                                                     \
@@ -15573,9 +15567,7 @@ extern void DPPP_(my_load_module)(U32 flags, SV *name, SV *ver, ...);
                 sv_setsv((dstr), (sstr));                                                          \
                 SvGMAGICAL_on((SV *)(sstr));                                                       \
             }                                                                                      \
-            else {                                                                                 \
-                sv_setsv((dstr), (sstr));                                                          \
-            }                                                                                      \
+            else { sv_setsv((dstr), (sstr)); }                                                     \
         }                                                                                          \
     }                                                                                              \
     STMT_END
@@ -16055,9 +16047,7 @@ static
             mg->mg_len = -42; /* XXX: this is the tricky part */                                   \
             mg->mg_ptr = SvMp_name;                                                                \
         }                                                                                          \
-        else {                                                                                     \
-            sv_magic(SvMp_sv, obj, how, SvMp_name, SvMp_namlen);                                   \
-        }                                                                                          \
+        else { sv_magic(SvMp_sv, obj, how, SvMp_name, SvMp_namlen); }                              \
     }                                                                                              \
     STMT_END
 
@@ -17786,9 +17776,7 @@ extern char *DPPP_(my_pv_escape)(pTHX_ SV *dsv, char const *const str, const STR
             else
                 chsize = my_snprintf(octbuf, sizeof octbuf, "%cx{%" UVxf "}", esc, u);
         }
-        else if (flags & PERL_PV_ESCAPE_NOBACKSLASH) {
-            chsize = 1;
-        }
+        else if (flags & PERL_PV_ESCAPE_NOBACKSLASH) { chsize = 1; }
         else {
             if (c == dq || c == esc || !isPRINT(c)) {
                 chsize = 2;
@@ -17827,9 +17815,7 @@ extern char *DPPP_(my_pv_escape)(pTHX_ SV *dsv, char const *const str, const STR
                         pv < end && isDIGIT((U8) * (pv + readsize)) ? "%c%03o" : "%c%o", esc, c);
                 }
             }
-            else {
-                chsize = 1;
-            }
+            else { chsize = 1; }
         }
         if (max && wrote + chsize > max) { break; }
         else if (chsize > 1) {

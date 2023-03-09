@@ -1,14 +1,14 @@
 use strict;
 use warnings;
 use lib '../lib';
-use SDL2::FFI qw[SDL_Log :init :version :audio SDL_GetTicks SDL_Delay SDL_TRUE];
-use SDL2::Mixer qw[:all];
+use SDL3        qw[SDL_Log :init :version :audio SDL_GetTicks SDL_Delay SDL_TRUE];
+use SDL3::Mixer qw[:all];
 use experimental 'signatures';
 use Getopt::Long qw[GetOptions :config no_ignore_case bundling];
 $|++;
 #
 my $audio_open = 0;
-my $music;    # SDL2::Mixer::Music;
+my $music;    # SDL3::Mixer::Music;
 my $next_track = 0;
 
 sub cleanup ($exitcode) {

@@ -1,6 +1,5 @@
 use strictures;
-use lib '../lib';
-use SDL2::FFI qw[:all];
+use SDL3 qw[:all];
 sub DEFAULT_RESOLUTION() {1}
 my $ticks = 0;
 

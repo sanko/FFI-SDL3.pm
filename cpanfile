@@ -1,5 +1,5 @@
 requires 'perl' => '5.030000';
-requires 'FFI::Platypus', '1.55';
+requires 'FFI::Platypus', '2.00';
 requires 'FFI::C';
 
 #requires 'File::Spec::Functions';
@@ -10,7 +10,7 @@ requires 'File::Share';
 requires 'Try::Tiny';
 recommends 'B::Deparse';
 requires 'Path::Tiny';
-requires 'FFI::ExtractSymbols', '0.06';
+requires 'FFI::ExtractSymbols';
 #
 requires 'Data::Dump';
 on test => sub {
@@ -19,6 +19,8 @@ on test => sub {
     requires 'Test::NeedsDisplay', '1.07';
 };
 on configure => sub {
+    requires 'Net::SSLeay' if $^O eq 'MSWin32';
+    requires 'Alien::MSYS' if $^O eq 'MSWin32';
     requires 'IO::Socket::SSL';
     requires 'Capture::Tiny';
     requires 'Devel::CheckBin';
@@ -26,13 +28,10 @@ on configure => sub {
     requires 'HTTP::Tiny';
     requires 'Path::Tiny';
     requires 'Archive::Extract';
-    requires 'FFI::ExtractSymbols', '0.06';
     requires 'FFI::Build';
+    requires 'FFI::ExtractSymbols';
     requires 'ExtUtils::CBuilder';
     requires 'HTTP::Tiny';
-
-    # Thanks, Windows!
-    #requires 'Alien::MSYS';
     requires 'Alien::gmake';
 
     #requires 'Alien::autoconf';

@@ -2,10 +2,10 @@
 # Based on https://gamedev.stackexchange.com/questions/71990/render-two-images-to-an-sdl-window
 use strictures 2;
 use lib '../lib';
-use SDL2::FFI qw[:all];
+use SDL3 qw[:all];
 my $done       = 0;
-my $event      = SDL2::Event->new;
-my $button_pos = SDL2::Rect->new( { x => 0, y => 0, w => 320, h => 65 } );
+my $event      = SDL3::Event->new;
+my $button_pos = SDL3::Rect->new( { x => 0, y => 0, w => 320, h => 65 } );
 SDL_Init(SDL_INIT_VIDEO);
 END { SDL_QUIT() }
 my $window = SDL_CreateWindow( 'Weird but okay',

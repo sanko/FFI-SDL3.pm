@@ -1,8 +1,9 @@
 use strictures 2;
-use lib '../lib', 'lib';
+
+#use lib '../lib', 'lib';
 use experimental 'signatures';
 use constant { WND_W => 1280, WND_H => 720 };
-use SDL2::FFI qw[:all];
+use SDL3 qw[:all];
 $|++;
 
 package Pong::Ball {
@@ -10,7 +11,7 @@ package Pong::Ball {
     use strictures 2;
     use experimental 'signatures';
     use Types::Standard qw[Int Num];
-    use SDL2::FFI qw[SDL_SetRenderDrawColor SDL_RenderFillRect];
+    use SDL3            qw[SDL_SetRenderDrawColor SDL_RenderFillRect];
     has [qw[vx vy speed]] => ( is => 'rw', isa => Num, default => 0, lazy => 1, trigger => \&move );
     has [qw[x y w h]] => ( is => 'rw', isa => Num, default => 20, lazy => 1 );
 
@@ -22,7 +23,7 @@ package Pong::Ball {
     sub draw ( $s, $renderer ) {
         SDL_SetRenderDrawColor( $renderer, 255, 255, 255, 255 );
         SDL_RenderFillRect( $renderer,
-            SDL2::Rect->new( { x => $s->x - $s->w / 2, y => $s->y, w => $s->w, h => $s->h } ) );
+            SDL3::Rect->new( { x => $s->x - $s->w / 2, y => $s->y, w => $s->w, h => $s->h } ) );
     }
 };
 
@@ -31,13 +32,13 @@ package Pong::Player {
     use strictures 2;
     use experimental 'signatures';
     use Types::Standard qw[Int Num InstanceOf];
-    use SDL2::FFI qw[SDL_SetRenderDrawColor SDL_RenderFillRect];
+    use SDL3            qw[SDL_SetRenderDrawColor SDL_RenderFillRect];
     has [qw[score speed x y w h]] => ( is => 'rw', isa => Num, default => 0 );
 
     sub draw ( $s, $renderer ) {
         SDL_SetRenderDrawColor( $renderer, 200, 200, 200, 255 );
         SDL_RenderFillRect( $renderer,
-            SDL2::Rect->new( { x => $s->x, y => $s->y, w => $s->w, h => $s->h } ) );
+            SDL3::Rect->new( { x => $s->x, y => $s->y, w => $s->w, h => $s->h } ) );
     }
 };
 END { SDL_Quit() }
@@ -57,7 +58,7 @@ my @angle = ( -1, -.75, -.5, -.25, 0, 0, .25, .5, .75, 1 );
 my $tid = SDL_AddTimer( 1000, sub { warn 'ping'; shift } );
 while (1) {
     SDL_Yield();
-    while ( SDL_PollEvent( my $e = SDL2::Event->new ) ) {
+    while ( SDL_PollEvent( my $e = SDL3::Event->new ) ) {
         exit if $e->type == SDL_QUIT;
         if ( $e->type eq SDL_KEYDOWN ) {
             exit                                 if $e->key->keysym->sym == SDLK_ESCAPE;
@@ -100,7 +101,7 @@ use strictures 2;
 use lib '../lib', 'lib';
 use experimental 'signatures';
 use constant { WND_W => 1280, WND_H => 720 };
-use SDL2::FFI qw[:all];
+use SDL3 qw[:all];
 $|++;
 
 =cut
@@ -111,7 +112,7 @@ package Pong::Ball {
     use Moo;
     use experimental 'signatures';
     use Types::Standard qw[Ref Int Num];
-    use SDL2::FFI qw[SDL_SetRenderDrawColor SDL_RenderFillRect];
+    use SDL3 qw[SDL_SetRenderDrawColor SDL_RenderFillRect];
     has [qw[vx vy speed]] => ( is => 'rw', isa => Num, default => 1, lazy => 1 );
     has rect => ( is => 'ro', isa => Ref, handles => [qw[w h x y]] );
 
@@ -130,7 +131,7 @@ package Pong::Player {
     use Moo;
     use experimental 'signatures';
     use Types::Standard qw[Int Num Ref];
-    use SDL2::FFI qw[SDL_SetRenderDrawColor SDL_RenderFillRect];
+    use SDL3 qw[SDL_SetRenderDrawColor SDL_RenderFillRect];
     has [qw[score speed]] => ( is => 'rw', isa => Num, default => 0 );
     has rect              => ( is => 'ro', isa => Ref, handles => [qw[w h x y]] );
     sub move ($s) {1}
@@ -149,12 +150,12 @@ die SDL_GetError
     SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC,
     my $win, my $ren ) == -1;
 my $l = Pong::Player->new(
-    rect => SDL2::Rect->new( { x => 100, y => ( WND_H / 2 ) - 75, w => 20, h => 150 } ) );
+    rect => SDL3::Rect->new( { x => 100, y => ( WND_H / 2 ) - 75, w => 20, h => 150 } ) );
 my $r = Pong::Player->new(
-    rect => SDL2::Rect->new( { x => WND_W - 120, y => ( WND_H / 2 ) - 75, w => 20, h => 150 } ) );
+    rect => SDL3::Rect->new( { x => WND_W - 120, y => ( WND_H / 2 ) - 75, w => 20, h => 150 } ) );
 my $ball = Pong::Ball->new(
     speed => 1,
-    rect  => SDL2::Rect->new( { x => ( WND_W / 2 ), y => ( WND_H / 2 ), w => 20, h => 20 } )
+    rect  => SDL3::Rect->new( { x => ( WND_W / 2 ), y => ( WND_H / 2 ), w => 20, h => 20 } )
 );
 my @angle = ( -1, -.75, -.5, -.25, 0, 0, .25, .5, .75, 1 );
 
@@ -174,16 +175,16 @@ sub draw {
 =cut
 
 my %_timers;
-SDL2::FFI::ffi->type( '(int)->int' => 'closure_t' );
-SDL2::FFI::ffi->type( 'opaque'     => 'pointer' );
-SDL2::FFI::ffi->type( opaque       => 'SDL_WindowX' );
-SDL2::FFI::attach(
+SDL3->type( '(int)->int' => 'closure_t' );
+SDL3->type( 'opaque'     => 'pointer' );
+SDL3->type( opaque       => 'SDL_WindowX' );
+SDL3::attach(
     event => {
         init_timer => [
             [ 'int', 'closure_t', 'opaque' ],
             'int' => sub {
                 my ( $inner, $time, $code, $args ) = @_;
-                my $cb = SDL2::FFI::ffi->closure(
+                my $cb = SDL3->closure(
                     $code
 
                         #sub {
@@ -209,8 +210,8 @@ SDL2::FFI::attach(
         window_to_window   => [ ['SDL_Window'] ],
     }
 );
-my $ptr = SDL2::FFI::ffi->function( SDL_GetWindowSurface => ['SDL_Window'], 'SDL_Surface' );
-SDL2::FFI::ffi->attach(
+my $ptr = SDL3->function( SDL_GetWindowSurface => ['SDL_Window'], 'SDL_Surface' );
+SDL3->attach(
     [ SDL_GetWindowSurface => 'My_GetWindowSurface' ] => ['SDL_Window'],
     'SDL_Surface'
 );
@@ -218,7 +219,7 @@ if ( SDL_Init(SDL_INIT_VIDEO) < 0 ) {
     die 'could not initialize sdl2: ' . SDL_GetError();
 }END { SDL_Quit(); }
 
-SDL2::FFI::SDL_AddTimer(
+SDL3::SDL_AddTimer(
     1000,
     sub {
         use Data::Dump;
@@ -233,15 +234,15 @@ if ( SDL_Init(SDL_INIT_VIDEO) < 0 ) {
     printf( "could not initialize sdl2: %s\n", SDL_GetError() );
     exit 1;
 }
-my $window   = SDL2::FFI::make_window();
-my $window_x = SDL2::Window->new();
+my $window   = SDL3::make_window();
+my $window_x = SDL3::Window->new();
 
-#SDL2::FFI::window_to_window($window, $window_x);
+#SDL3::window_to_window($window, $window_x);
 #die;
 #warn $window->magic;
 #SDL_Surface * screenSurface = NULL;
 my $screenSurface =
-SDL2::FFI::get_surface($window);
+SDL3::get_surface($window);
 
 SDL_GetWindowSurface($window);
 #$screenSurface = My_GetWindowSurface($window);
@@ -249,12 +250,12 @@ SDL_GetWindowSurface($window);
 die SDL_GetError() if !$screenSurface;
 SDL_FillRect( $screenSurface, undef, SDL_MapRGB( $screenSurface->format, 0xFF, 0xFF, 0xFF ) );
 SDL_UpdateWindowSurface($window);
-my $e = SDL2::Event->new();
+my $e = SDL3::Event->new();
 
-#my $e = SDL2::FFI::get_event();
+#my $e = SDL3::get_event();
 warn $e;
 while (1) {
-    my $quit = SDL2::FFI::mainloop( $window, $e );
+    my $quit = SDL3::mainloop( $window, $e );
     warn $quit;
     exit if $quit;
 }
@@ -263,7 +264,7 @@ my $quit = 0;
 
 while (!$quit) {
 	draw;
-	$quit = SDL2::FFI::mainloop($e);
+	$quit = SDL3::mainloop($e);
 }
 
 SDL_Quit();
@@ -273,11 +274,11 @@ while (1) {
     while (
         #SDL_PollEventX( $e )
         SDL_PollEvent($e)
-		#SDL2::FFI::loop($e)
+		#SDL3::loop($e)
 
-        #$e = SDL2::FFI::fakeloop()
+        #$e = SDL3::fakeloop()
     ) {
-        #SDL2::FFI::loop( $e );
+        #SDL3::loop( $e );
 		warn $e->type;
         die 'FINALLY' if $e->type == SDL_USEREVENT;
         exit          if $e->type == SDL_QUIT;

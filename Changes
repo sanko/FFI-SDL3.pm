@@ -1,6 +1,8 @@
-Revision history for Perl extension SDL2::FFI
+Revision history for Perl extension SDL3
 
 {{$NEXT}}
+
+    - Upstream SDL has been bumped to "Version 3.0" (but as part of some sort of backporting scheme)
 
 0.08 2021-11-29T01:56:01Z
 

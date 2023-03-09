@@ -1,6 +1,5 @@
 use strictures 2;
-use lib '../blib/lib';
-use SDL2::FFI qw[:all];
+use SDL3 qw[:all];
 
 # Taken from example found here: https://wiki.libsdl.org/SDL_CreateSoftwareRenderer
 # Globals
@@ -10,16 +9,16 @@ my $id = SDL_AddTimer( 10000, sub {...} );
 sub DrawChessBoard {
     my ($renderer) = @_;
     my ( $row, $column, $x );
-    my $rect = SDL2::Rect->new;
+    my $rect = SDL3::Rect->new;
 
     # Get the Size of drawing surface
-    SDL_RenderGetViewport( $renderer, my $darea = SDL2::Rect->new() );
+    SDL_RenderGetViewport( $renderer, my $darea = SDL3::Rect->new() );
     for my $row ( 0 .. 7 ) {
         $column = $row % 2;
         $x      = $column;
         for ( ; $column < 4 + ( $row % 2 ); $column++ ) {
             SDL_SetRenderDrawColor( $renderer, 0, 0, 0, 0xFF );
-            $rect = SDL2::Rect->new(
+            $rect = SDL3::Rect->new(
                 {   w => $darea->w / 8,
                     h => $darea->h / 8,
                     x => $x * $rect->w,
@@ -63,7 +62,7 @@ SDL_RenderClear($renderer);
 # Draw the Image on rendering surface */
 $done = 0;
 while ( !$done ) {
-    while ( SDL_PollEvent( my $e = SDL2::Event->new ) ) {
+    while ( SDL_PollEvent( my $e = SDL3::Event->new ) ) {
         if ( $e->type == SDL_QUIT ) {
             $done = 1;
             exit;

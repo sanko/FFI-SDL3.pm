@@ -1,10 +1,10 @@
 use strictures 2;
 use lib '../lib';
-use SDL2::FFI qw[:all];
+use SDL3 qw[:all];
 
 # https://gigi.nullneuron.net/gigilabs/sdl2-pixel-drawing/
 my $quit  = 0;
-my $event = SDL2::Event->new();
+my $event = SDL3::Event->new();
 SDL_Init(SDL_INIT_VIDEO);
 my $window = SDL_CreateWindow( "SDL2 Pixel Drawing",
     SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 640, 480, 0 );
@@ -27,7 +27,7 @@ while ( !$quit ) {
     }
     elsif ( $event->type == SDL_MOUSEMOTION && $drawing ) {
         push @pixels,    #{x => $event->motion->x, y => $event->motion->y};
-            SDL2::Point->new( { x => $event->motion->x, y => $event->motion->y } );
+            SDL3::Point->new( { x => $event->motion->x, y => $event->motion->y } );
 
         #warn sprintf 'x: %d * y: %d', $pixels[-1]->x, $pixels[-1]->y;
     }

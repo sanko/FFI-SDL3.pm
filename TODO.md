@@ -4,6 +4,6 @@ This is an evolving list of things I need to remind myself to complete or revisi
 
 ## Thread Safety
 
-   - [ ] `SDL_AudioCallback` inside SDL2::AudioSpec (see `eg/play_sound.pl` for test)
+   - [ ] `SDL_AudioCallback` inside SDL3::AudioSpec (see `eg/play_sound.pl` for test)
    - [ ] `SDL_AddCallback` tips over when event loop triggers it; works inside `SDL_Delay( ... )` so don't be fooled
    - [ ] SDL2_gfx

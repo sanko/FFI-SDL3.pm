@@ -1,14 +1,14 @@
 use strict;
 use warnings;
 use Test2::V0;
-use Test2::Tools::Class qw[isa_ok can_ok];
+use Test2::Tools::Class     qw[isa_ok can_ok];
 use Test2::Tools::Exception qw[try_ok];
 use Path::Tiny;
 use lib -d '../t' ? './lib' : 't/lib';
 use lib '../lib', 'lib';
 #
-use SDL2::FFI qw[SDL_RWFromFile SDL_FreeSurface];
-use SDL2::Image qw[:all];
+use SDL3        qw[SDL_RWFromFile SDL_FreeSurface];
+use SDL3::Image qw[:all];
 #
 $|++;
 #
@@ -28,14 +28,14 @@ my $pnm = path( ( -d '../t' ? './' : './t/' ) . 'etc/circle.pnm' );
 # Files not created by me:
 #   - circle.pnm: https://people.math.sc.edu/Burkardt/data/pnm/pnm.html
 #
-my $compile_version = SDL2::Version->new();
+my $compile_version = SDL3::Version->new();
 my $link_version    = IMG_Linked_Version();
 SDL_IMAGE_VERSION($compile_version);
 diag sprintf 'compiled with SDL_image version: %d.%d.%d', $compile_version->major,
     $compile_version->minor, $compile_version->patch;
 diag sprintf 'running with SDL_image version: %d.%d.%d', $link_version->major,
     $link_version->minor, $link_version->patch;
-IMG_Init( SDL2::Image::IMG_INIT_PNG() );
+IMG_Init( SDL3::Image::IMG_INIT_PNG() );
 #
 is IMG_Init(IMG_INIT_PNG), IMG_INIT_PNG, 'IMG_Init( IMG_INIT_PNG ) returned IMG_INIT_PNG';
 diag 'Calling IMG_Quit()';
@@ -47,53 +47,53 @@ is IMG_GetError(), 'myfunc is not implemented! 6 was passed in.',
     'IMG_SetError( ... ) and IMG_GetError( ... ) work';
 #
 my $surface;
-isa_ok $surface = IMG_Load($png), ['SDL2::Surface'], 'IMG_Load( ... ) returns a SDL2::Surface';
+isa_ok $surface = IMG_Load($png), ['SDL3::Surface'], 'IMG_Load( ... ) returns a SDL3::Surface';
 SDL_FreeSurface($surface);
 is IMG_Load('nope.jpeg'), undef, 'IMG_Load( "nope.jpeg" ) returns undef';
 is IMG_Load_RW( SDL_RWFromFile( 'nope.jpeg', 'rb' ), 1 ), undef,
     'IMG_Load_RW( ... ) with a fake image does not work';
-isa_ok $surface = IMG_Load_RW( SDL_RWFromFile( $png, 'rb' ), 1 ), ['SDL2::Surface'],
+isa_ok $surface = IMG_Load_RW( SDL_RWFromFile( $png, 'rb' ), 1 ), ['SDL3::Surface'],
     'IMG_Load_RW( ... ) with a real PNG works';
 SDL_FreeSurface($surface);
-isa_ok $surface = IMG_LoadTyped_RW( SDL_RWFromFile( $png, 'rb' ), 1, 'PNG' ), ['SDL2::Surface'],
+isa_ok $surface = IMG_LoadTyped_RW( SDL_RWFromFile( $png, 'rb' ), 1, 'PNG' ), ['SDL3::Surface'],
     'IMG_LoadTyped_RW( ... ) with a real PNG works';
 SDL_FreeSurface($surface);
-isa_ok $surface = IMG_LoadCUR_RW( SDL_RWFromFile( $cur, 'rb' ) ), ['SDL2::Surface'],
+isa_ok $surface = IMG_LoadCUR_RW( SDL_RWFromFile( $cur, 'rb' ) ), ['SDL3::Surface'],
     'IMG_LoadCUR_RW( ... ) with a real CUR works';
 SDL_FreeSurface($surface);
-isa_ok $surface = IMG_LoadICO_RW( SDL_RWFromFile( $ico, 'rb' ) ), ['SDL2::Surface'],
+isa_ok $surface = IMG_LoadICO_RW( SDL_RWFromFile( $ico, 'rb' ) ), ['SDL3::Surface'],
     'IMG_LoadICO_RW( ... ) with a real ICO works';
 SDL_FreeSurface($surface);
-isa_ok $surface = IMG_LoadBMP_RW( SDL_RWFromFile( $bmp, 'rb' ) ), ['SDL2::Surface'],
+isa_ok $surface = IMG_LoadBMP_RW( SDL_RWFromFile( $bmp, 'rb' ) ), ['SDL3::Surface'],
     'IMG_LoadBMP_RW( ... ) with a real BMP works';
 SDL_FreeSurface($surface);
-isa_ok $surface = IMG_LoadPNM_RW( SDL_RWFromFile( $pnm, 'rb' ) ), ['SDL2::Surface'],
+isa_ok $surface = IMG_LoadPNM_RW( SDL_RWFromFile( $pnm, 'rb' ) ), ['SDL3::Surface'],
     'IMG_LoadPNM_RW( ... ) with a real PNM works';
 SDL_FreeSurface($surface);
-isa_ok $surface = IMG_LoadXPM_RW( SDL_RWFromFile( $xpm, 'rb' ) ), ['SDL2::Surface'],
+isa_ok $surface = IMG_LoadXPM_RW( SDL_RWFromFile( $xpm, 'rb' ) ), ['SDL3::Surface'],
     'IMG_LoadXPM_RW( ... ) with a real XPM works';
 todo 'This dies with an OOM error... weird' => sub {
     diag IMG_GetError()
-        unless isa_ok $surface = IMG_LoadXCF_RW( SDL_RWFromFile( $xcf, 'rb' ) ), ['SDL2::Surface'],
+        unless isa_ok $surface = IMG_LoadXCF_RW( SDL_RWFromFile( $xcf, 'rb' ) ), ['SDL3::Surface'],
         'IMG_LoadXCF_RW( ... ) with a real XCF works';
     SDL_FreeSurface($surface);
 };
-isa_ok $surface = IMG_LoadPCX_RW( SDL_RWFromFile( $pcx, 'rb' ) ), ['SDL2::Surface'],
+isa_ok $surface = IMG_LoadPCX_RW( SDL_RWFromFile( $pcx, 'rb' ) ), ['SDL3::Surface'],
     'IMG_LoadPCX_RW( ... ) with a real PCX works';
 SDL_FreeSurface($surface);
-isa_ok $surface = IMG_LoadGIF_RW( SDL_RWFromFile( $gif, 'rb' ) ), ['SDL2::Surface'],
+isa_ok $surface = IMG_LoadGIF_RW( SDL_RWFromFile( $gif, 'rb' ) ), ['SDL3::Surface'],
     'IMG_LoadGIF_RW( ... ) with a real GIF works';
 SDL_FreeSurface($surface);
-isa_ok $surface = IMG_LoadJPG_RW( SDL_RWFromFile( $jpg, 'rb' ) ), ['SDL2::Surface'],
+isa_ok $surface = IMG_LoadJPG_RW( SDL_RWFromFile( $jpg, 'rb' ) ), ['SDL3::Surface'],
     'IMG_LoadJPG_RW( ... ) with a real JPEG works';
 SDL_FreeSurface($surface);
-isa_ok $surface = IMG_LoadTIF_RW( SDL_RWFromFile( $tif, 'rb' ) ), ['SDL2::Surface'],
+isa_ok $surface = IMG_LoadTIF_RW( SDL_RWFromFile( $tif, 'rb' ) ), ['SDL3::Surface'],
     'IMG_LoadTIF_RW( ... ) with a real TIF works';
 SDL_FreeSurface($surface);
-isa_ok $surface = IMG_LoadPNG_RW( SDL_RWFromFile( $png, 'rb' ) ), ['SDL2::Surface'],
+isa_ok $surface = IMG_LoadPNG_RW( SDL_RWFromFile( $png, 'rb' ) ), ['SDL3::Surface'],
     'IMG_LoadPNG_RW( ... ) with a real PNG works';
 SDL_FreeSurface($surface);
-isa_ok $surface = IMG_LoadTGA_RW( SDL_RWFromFile( $tga, 'rb' ) ), ['SDL2::Surface'],
+isa_ok $surface = IMG_LoadTGA_RW( SDL_RWFromFile( $tga, 'rb' ) ), ['SDL3::Surface'],
     'IMG_LoadTGA_RW( ... ) with a real TGA works';
 SDL_FreeSurface($surface);
 diag 'I do not have an image to test IMG_LoadLBM_RW( ... )';
@@ -102,7 +102,7 @@ diag 'I do not have an image to test IMG_LoadXV_RW( ... )';
 {
     my @lines = grep {defined} map { /^\"(.*)\",?$/; $1 } $xpm->lines();
     diag scalar @lines;
-    isa_ok $surface = IMG_ReadXPMFromArray(@lines), ['SDL2::Surface'],
+    isa_ok $surface = IMG_ReadXPMFromArray(@lines), ['SDL3::Surface'],
         'IMG_ReadXPMFromArray( ... ) with a real XPM works';
     SDL_FreeSurface($surface);
 }

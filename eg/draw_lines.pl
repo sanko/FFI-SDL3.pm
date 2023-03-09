@@ -1,11 +1,11 @@
 use strictures 2;
 use lib '../lib';
-use SDL2::FFI qw[:all];
+use SDL3 qw[:all];
 use Data::Dump;
 
 # https://gigi.nullneuron.net/gigilabs/drawing-lines-with-sdl2/
 my $quit  = 0;
-my $event = SDL2::Event->new;
+my $event = SDL3::Event->new;
 SDL_Init(SDL_INIT_VIDEO);
 my $window = SDL_CreateWindow( "My SDL Empty Window",
     SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 640, 480, SDL_WINDOW_RESIZABLE );

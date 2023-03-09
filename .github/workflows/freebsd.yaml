@@ -1,0 +1,31 @@
+name: FreeBSD
+
+on:
+    push:
+        branches: '*'
+    pull_request:
+        branches: '*'
+
+jobs:
+  perl-job:
+    runs-on: macos-12
+    name: FreeBSD Perl ${{matrix.perl}}
+    strategy:
+      fail-fast: false
+      matrix:
+        perl: [ '5.32' ]
+    steps:
+    - uses: actions/checkout@v2
+      with:
+        submodules: 'recursive'
+    - name: Test in FreeBSD
+      id: test
+      uses: vmactions/freebsd-vm@v0.3.0
+      with:
+        usesh: true
+        prepare: pkg install -y lang/perl${{matrix.perl}} p5-App-cpanminus
+        run: |
+          freebsd-version
+          perl -V
+          cpanm --installdeps -v -n --mirror http://cpan.cpantesters.org/ .
+          cpanm -v --test-only .

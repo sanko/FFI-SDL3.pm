@@ -4,13 +4,13 @@ use experimental 'signatures';
 $|++;
 #
 #use Carp::Always;
-use SDL2::FFI
+use SDL3
     qw[:init :audio SDL_Log SDL_RWFromFile SDL_QuitRequested SDL_Delay SDL_AddTimer SDL_PollEvent SDL_GetError /Timer/];
-use SDL2::Mixer qw[:all];
+use SDL3::Mixer qw[:all];
 #
 {
     use Path::Tiny;
-    my $wav = '/home/sanko/Projects/SDL2.pm/t/etc/sample.wav';
+    my $wav = '/home/s/Desktop/Projects/SDL2.pm/t/etc/sample.wav';
     if ( SDL_Init( SDL_INIT_AUDIO | SDL_INIT_TIMER ) < 0 ) {
         printf("Failed to init SDL\n");
         exit(1);
@@ -40,7 +40,7 @@ use SDL2::Mixer qw[:all];
     #    sub {
     #        #use Data::Dump;
     #        #ddx \@_;
-    #        #warn sprintf 'Timer saved us! %d | %d', $done, SDL2::FFI::SDL_GetTicks();
+    #        #warn sprintf 'Timer saved us! %d | %d', $done, SDL3::SDL_GetTicks();
     #        $done++;
     #        100;
     #    }
@@ -219,7 +219,7 @@ Mix_RegisterEffect(MIX_CHANNEL_POST, sub { warn 'this'; }, sub {warn 'that'}, {t
 
 #Mix_SetPostMix(undef);
 Mix_PlayMusic( $music, 3 );
-my $event = SDL2::Event->new;
+my $event = SDL3::Event->new;
 SDL_AddTimer( 100, sub { $done++ if !Mix_PlayingMusic(); return shift; } );
 while ( !$done ) {
 

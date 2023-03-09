@@ -4,7 +4,7 @@ use Test2::V0;
 use Test2::Tools::ClassicCompare qw[is_deeply];
 use lib -d '../t' ? './lib' : 't/lib';
 use lib '../lib', 'lib';
-use SDL2::FFI qw[:all];
+use SDL3 qw[:all];
 use experimental 'signatures';
 $|++;
 #

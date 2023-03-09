@@ -1,6 +1,6 @@
 use strictures 2;
 use lib '../lib';
-use SDL2::FFI qw[:all];
+use SDL3 qw[:all];
 use Data::Dump;
 $|++;
 SDL_SetHintWithPriority( SDL_HINT_EVENT_LOGGING, 2, SDL_HINT_OVERRIDE );
@@ -20,7 +20,8 @@ SDL_SetHint( SDL_HINT_XINPUT_ENABLED, 0 );
 #SDL_ClearHints;
 #SDL_SetError( 'This operation has failed: %d', 4 );
 SDL_Log( 'This operation has failed: %d', 4 );
-SDL_LogVerbose( SDL_LOG_PRIORITY_INFO,
+SDL_LogVerbose(
+    SDL_LOG_PRIORITY_INFO,
     'Current time: %s [%ds exec]',
     scalar localtime(),
     time - $^T
@@ -35,7 +36,7 @@ warn SDL_GetErrorMsg( $x, 300 );
 
 # https://gigi.nullneuron.net/gigilabs/drawing-lines-with-sdl2/
 my $quit  = 0;
-my $event = SDL2::Event->new;
+my $event = SDL3::Event->new;
 SDL_Init(SDL_INIT_EVERYTHING);
 my $window = SDL_CreateWindow( "My SDL Empty Window",
     SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 640, 480, 0 );
@@ -75,12 +76,12 @@ while ( !$quit ) {
     if ($drawing) {
         SDL_SetRenderDrawColor( $renderer, 0, 0, 0, 255 );
         SDL_RenderDrawRect( $renderer,
-            SDL2::Rect->new( { x => $x1, y => $y1, w => $x2 - $x1, h => $y2 - $y1 } ) );
+            SDL3::Rect->new( { x => $x1, y => $y1, w => $x2 - $x1, h => $y2 - $y1 } ) );
     }
     if (@rects) {
         SDL_SetRenderDrawColor( $renderer, 128, 128, 128, 255 );
         for my $rect (@rects) {
-            SDL_RenderDrawRect( $renderer, SDL2::Rect->new($rect) );
+            SDL_RenderDrawRect( $renderer, SDL3::Rect->new($rect) );
         }
     }
     SDL_RenderPresent($renderer);

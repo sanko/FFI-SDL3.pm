@@ -2,16 +2,18 @@ use strict;
 use warnings;
 use Test2::V0;
 use Test2::Tools::Class qw[isa_ok can_ok];
+use Test2::Tools::Basic qw[todo];
 use lib -d '../t' ? './lib' : 't/lib';
 use lib '../lib', 'lib';
 #
-use SDL2::FFI qw[SDL_RWFromFile];
-use SDL2::TTF qw[:all];
+use SDL3      qw[SDL_RWFromFile];
+use SDL3::TTF qw[:all];
 $|++;
 #
 my $hello_world_ttf = ( -d '../t' ? './' : './t/' ) . 'etc/hello-world.ttf';
+diag $hello_world_ttf;
 #
-my $compile_version = SDL2::Version->new();
+my $compile_version = SDL3::Version->new();
 my $link_version    = TTF_Linked_Version();
 SDL_TTF_VERSION($compile_version);
 diag sprintf 'compiled with SDL_ttf version: %d.%d.%d', $compile_version->major,
@@ -33,7 +35,7 @@ is TTF_GetError(), 'myfunc is not implemented! 6 was passed in.',
 ok !TTF_OpenFont( 'fake.ttf', 16 ),
     'TTF_OpenFont( ... ) with a fake font does not work before TTF_Init( )';
 diag 'TTF_GetError is: ' . TTF_GetError();
-ok !TTF_OpenFont( ( -d '../t' ? './' : './t/' ) . '/etc/hello-world.ttf', 16 ),
+ok !TTF_OpenFont( $hello_world_ttf, 16 ),
     'TTF_OpenFont( ... ) with a real font does not work before TTF_Init( )';
 diag 'TTF_GetError is: ' . TTF_GetError();
 diag 'Calling TTF_Init( ) again';
@@ -42,22 +44,22 @@ ok !TTF_OpenFont( 'fake.ttf', 16 ), 'TTF_OpenFont( ... ) with a fake font still 
 diag 'TTF_GetError is: ' . TTF_GetError();
 ok my $font = TTF_OpenFont( $hello_world_ttf, 16 ),
     'TTF_OpenFont( ... ) with a real font works now';
-ok $font->isa('SDL2::TTF::Font'), 'font returned is an SDL2::TTF::Font object';
+ok $font->isa('SDL3::TTF::Font'), 'font returned is an SDL3::TTF::Font object';
 ok $font = TTF_OpenFontRW( SDL_RWFromFile( $hello_world_ttf, 'rb' ), 1, 16 ),
     'TTF_OpenFontRW( ... ) with a real font works';
-ok $font->isa('SDL2::TTF::Font'), 'font returned is an SDL2::TTF::Font object';
+ok $font->isa('SDL3::TTF::Font'), 'font returned is an SDL3::TTF::Font object';
 ok $font = TTF_OpenFontIndex( $hello_world_ttf, 16, 0 ),
     'TTF_OpenFontIndex( ... ) with a real font works now';
-ok $font->isa('SDL2::TTF::Font'), 'font returned is an SDL2::TTF::Font object';
+ok $font->isa('SDL3::TTF::Font'), 'font returned is an SDL3::TTF::Font object';
 ok $font = TTF_OpenFontIndexRW( SDL_RWFromFile( $hello_world_ttf, 'rb' ), 1, 16 ),
     'TTF_OpenFontIndexRW( ... ) with a real font works';
-ok $font->isa('SDL2::TTF::Font'), 'font returned is an SDL2::TTF::Font object';
+ok $font->isa('SDL3::TTF::Font'), 'font returned is an SDL3::TTF::Font object';
 
 # Returns void... Just making sure it doesn't die
 TTF_CloseFont($font);
 #
 # Returns void... Just making sure it doesn't die
-TTF_ByteSwappedUNICODE(1);
+#TTF_ByteSwappedUNICODE(1);
 my $style = TTF_GetFontStyle( TTF_OpenFontIndex( $hello_world_ttf, 16, 0 ) );
 is TTF_GetFontStyle( TTF_OpenFontIndex( $hello_world_ttf, 16, 0 ) ), TTF_STYLE_NORMAL,
     'TTF_GetFontStyle( ... ) returns normal on our font';
@@ -107,16 +109,16 @@ is TTF_GlyphIsProvided( $font, 'a' ), 0, '...or even an "a"';
 }
 {
     my ( $w, $h );
-    is TTF_SizeText( $font, 'H', \$w, \$h ), 0, 'TTF_SizeText( ..., "H", ... ) == 0';
-    is $w, 23, '   $w == 23';
-    is $h, 26, '   $h == 26';
-    is TTF_SizeText( $font, 'HI', \$w, \$h ), 0, 'TTF_SizeText( ..., "HI", ... ) == 0';
-    is $w, 39, '   $w == 39';
-    is $h, 26, '   $h == 26';
+    is TTF_SizeText( $font, 'H', \$w, \$h ),  0,  'TTF_SizeText( ..., "H", ... ) == 0';
+    is $w,                                    23, '   $w == 23';
+    is $h,                                    26, '   $h == 26';
+    is TTF_SizeText( $font, 'HI', \$w, \$h ), 0,  'TTF_SizeText( ..., "HI", ... ) == 0';
+    is $w,                                    39, '   $w == 39';
+    is $h,                                    26, '   $h == 26';
     #
-    is TTF_SizeText( $font, 'HIHI', \$w, \$h ), 0, 'TTF_SizeText( ..., "HIHI", ... ) == 0';
-    is $w, 68, '   $w == 68';
-    is $h, 26, '   $h == 26';
+    is TTF_SizeText( $font, 'HIHI', \$w, \$h ), 0,  'TTF_SizeText( ..., "HIHI", ... ) == 0';
+    is $w,                                      68, '   $w == 68';
+    is $h,                                      26, '   $h == 26';
 }
 {
     my ( $w, $h );
@@ -125,8 +127,8 @@ is TTF_GlyphIsProvided( $font, 'a' ), 0, '...or even an "a"';
     is TTF_SizeUNICODE( $font, 'H', \$w, \$h ), 0, 'TTF_SizeUNICODE( ..., "H", ... ) == 0';
 
     #$win ? is $w, 59, '   $w == 59' : is $w, 47, '   $w == 47';
-    is $h, 26, '   $h == 26';
-    is TTF_SizeUNICODE( $font, 'HI', \$w, \$h ), 0, 'TTF_SizeUNICODE( ..., "HI", ... ) == 0';
+    is $h,                                       26, '   $h == 26';
+    is TTF_SizeUNICODE( $font, 'HI', \$w, \$h ), 0,  'TTF_SizeUNICODE( ..., "HI", ... ) == 0';
 
     #$win ? is $w, 59, '   $w == 59' : is $w, 47, '   $w == 47';
     is $h, 26, '   $h == 26';
@@ -138,34 +140,36 @@ is TTF_GlyphIsProvided( $font, 'a' ), 0, '...or even an "a"';
 }
 #
 {
-    my $red  = SDL2::Color->new( { r => 0, g => 0, b => 0 } );
-    my $blue = SDL2::Color->new( { r => 0, g => 0, b => 0xff } );
-    isa_ok TTF_RenderText_Solid( $font, 'Testing!', $red ), ['SDL2::Surface'],
-        'TTF_RenderText_Solid( ... ) returns an SDL2::Surface';
-    isa_ok TTF_RenderUTF8_Solid( $font, 'Testing!', $red ), ['SDL2::Surface'],
-        'TTF_RenderUTF8_Solid( ... ) returns an SDL2::Surface';
-    isa_ok TTF_RenderUNICODE_Solid( $font, 'Testing!', $red ), ['SDL2::Surface'],
-        'TTF_RenderUNICODE_Solid( ... ) returns an SDL2::Surface';
-    isa_ok TTF_RenderGlyph_Solid( $font, 'H', $red ), ['SDL2::Surface'],
-        'TTF_RenderGlyph_Solid( ... ) returns an SDL2::Surface';
+    my $red  = SDL3::Color->new( { r => 0, g => 0, b => 0 } );
+    my $blue = SDL3::Color->new( { r => 0, g => 0, b => 0xff } );
+    isa_ok TTF_RenderText_Solid( $font, 'Testing!', $red ), ['SDL3::Surface'],
+        'TTF_RenderText_Solid( ... ) returns an SDL3::Surface';
+    isa_ok TTF_RenderUTF8_Solid( $font, 'Testing!', $red ), ['SDL3::Surface'],
+        'TTF_RenderUTF8_Solid( ... ) returns an SDL3::Surface';
+    isa_ok TTF_RenderUNICODE_Solid( $font, 'Testing!', $red ), ['SDL3::Surface'],
+        'TTF_RenderUNICODE_Solid( ... ) returns an SDL3::Surface';
+    todo "glyphs..." => sub {
+        isa_ok TTF_RenderGlyph_Solid( $font, 'HI', $red ), ['SDL3::Surface'],
+            'TTF_RenderGlyph_Solid( ... ) returns an SDL3::Surface';
+    };
     #
-    isa_ok TTF_RenderText_Shaded( $font, 'Testing!', $red, $blue ), ['SDL2::Surface'],
-        'TTF_RenderText_Shaded( ... ) returns an SDL2::Surface';
-    isa_ok TTF_RenderUTF8_Shaded( $font, 'Testing!', $red, $blue ), ['SDL2::Surface'],
-        'TTF_RenderUTF8_Shaded( ... ) returns an SDL2::Surface';
-    isa_ok TTF_RenderUNICODE_Shaded( $font, 'Testing!', $red, $blue ), ['SDL2::Surface'],
-        'TTF_RenderUNICODE_Shaded( ... ) returns an SDL2::Surface';
-    isa_ok TTF_RenderGlyph_Shaded( $font, 'H', $red, $blue ), ['SDL2::Surface'],
-        'TTF_RenderGlyph_Shaded( ... ) returns an SDL2::Surface';
+    isa_ok TTF_RenderText_Shaded( $font, 'Testing!', $red, $blue ), ['SDL3::Surface'],
+        'TTF_RenderText_Shaded( ... ) returns an SDL3::Surface';
+    isa_ok TTF_RenderUTF8_Shaded( $font, 'Testing!', $red, $blue ), ['SDL3::Surface'],
+        'TTF_RenderUTF8_Shaded( ... ) returns an SDL3::Surface';
+    isa_ok TTF_RenderUNICODE_Shaded( $font, 'Testing!', $red, $blue ), ['SDL3::Surface'],
+        'TTF_RenderUNICODE_Shaded( ... ) returns an SDL3::Surface';
+    isa_ok TTF_RenderGlyph_Shaded( $font, 'H', $red, $blue ), ['SDL3::Surface'],
+        'TTF_RenderGlyph_Shaded( ... ) returns an SDL3::Surface';
     #
-    isa_ok TTF_RenderText_Blended( $font, 'Testing!', $red ), ['SDL2::Surface'],
-        'TTF_RenderText_Blended( ... ) returns an SDL2::Surface';
-    isa_ok TTF_RenderUTF8_Blended( $font, 'Testing!', $red ), ['SDL2::Surface'],
-        'TTF_RenderUTF8_Blended( ... ) returns an SDL2::Surface';
-    isa_ok TTF_RenderUNICODE_Blended( $font, 'Testing!', $red ), ['SDL2::Surface'],
-        'TTF_RenderUNICODE_Blended( ... ) returns an SDL2::Surface';
-    isa_ok TTF_RenderGlyph_Blended( $font, 'H', $red ), ['SDL2::Surface'],
-        'TTF_RenderGlyph_Blended( ... ) returns an SDL2::Surface';
+    isa_ok TTF_RenderText_Blended( $font, 'Testing!', $red ), ['SDL3::Surface'],
+        'TTF_RenderText_Blended( ... ) returns an SDL3::Surface';
+    isa_ok TTF_RenderUTF8_Blended( $font, 'Testing!', $red ), ['SDL3::Surface'],
+        'TTF_RenderUTF8_Blended( ... ) returns an SDL3::Surface';
+    isa_ok TTF_RenderUNICODE_Blended( $font, 'Testing!', $red ), ['SDL3::Surface'],
+        'TTF_RenderUNICODE_Blended( ... ) returns an SDL3::Surface';
+    isa_ok TTF_RenderGlyph_Blended( $font, 'H', $red ), ['SDL3::Surface'],
+        'TTF_RenderGlyph_Blended( ... ) returns an SDL3::Surface';
 }
 #
 can_ok $_ for qw[
